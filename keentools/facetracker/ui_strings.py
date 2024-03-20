@@ -258,6 +258,10 @@ buttons = {
         'Reset',
         'Reset all to default values'
     ),
+    FTConfig.ft_wireframe_color_idname: Button(
+        'Wireframe color',
+        'Choose the wireframe coloring scheme'
+    ),
     FTConfig.ft_reset_texture_resolution_idname: Button(
         'Reset',
         'Reset texture resolution to default values'

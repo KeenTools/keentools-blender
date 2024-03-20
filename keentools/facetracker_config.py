@@ -111,13 +111,13 @@ class FTConfig:
     ft_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
     ft_user_preferences_get_colors = operators + '.user_pref_get_colors'
     ft_user_preferences_reset_all = operators + '.user_pref_reset_all'
+    ft_wireframe_color_idname = operators + '.wireframe_color'
 
     ft_render_with_background_idname = operators + '.render_with_background'
     ft_revert_default_render_idname = operators + '.revert_default_render'
 
-    ft_analyze_call_idname = 'keentools_gt' + '.analyze_call'  # TODO: Check operator!
-
-    ft_precalc_info_idname = 'keentools_gt' + '.precalc_info'  # TODO: Check operator!
+    ft_analyze_call_idname = operators + '.analyze_call'
+    ft_precalc_info_idname = operators + '.precalc_info'
 
     ft_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
@@ -144,10 +144,11 @@ class FTConfig:
     ft_camera_panel_idname = _PT + 'camera_panel'
     ft_tracking_panel_idname = _PT + 'tracking_panel'
     ft_appearance_panel_idname = _PT + 'appearance_panel'
-    ft_animation_panel_idname = _PT + 'animation_panel'
+    ft_scene_panel_idname = _PT + 'scene_panel'
     ft_texture_panel_idname = _PT + 'texture_panel'
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
+    ft_support_panel_idname = _PT + 'support_panel'
 
     # Help ids
     ft_help_inputs_idname = operators + '.help_inputs'

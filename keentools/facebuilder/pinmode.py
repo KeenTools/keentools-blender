@@ -54,6 +54,8 @@ from ..utils.localview import (exit_area_localview,
                                check_context_localview)
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
+from ..preferences.hotkeys import (facebuilder_keymaps_register,
+                                   facebuilder_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -187,7 +189,7 @@ class FB_OT_PinMode(Operator):
             vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.output('_delete_found_pin call')
+        _log.yellow('_delete_found_pin call')
         settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -202,6 +204,8 @@ class FB_OT_PinMode(Operator):
         if not FBLoader.solve(headnum, camnum):
             _log.error('FB DELETE PIN PROBLEM')
             unregister_undo_handler()
+
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         update_head_mesh_non_neutral(fb, head)
@@ -221,7 +225,7 @@ class FB_OT_PinMode(Operator):
                                             wireframe=True,
                                             pins_and_residuals=True)
 
-        _log.output('_delete_found_pin end')
+        _log.output('_delete_found_pin end >>>')
 
         return {'RUNNING_MODAL'}
 
@@ -238,6 +242,7 @@ class FB_OT_PinMode(Operator):
         FBLoader.load_pins_into_viewport(headnum, camnum)
         FBLoader.update_fb_viewport_shaders(area=area,
                                             wireframe=True,
+                                            camera_pos=True,
                                             pins_and_residuals=True)
 
     def _on_right_mouse_press(self, area: Area,
@@ -278,12 +283,12 @@ class FB_OT_PinMode(Operator):
         return True
 
     def execute(self, context: Any) -> Set:  # Testing purpose only
-        _log.output('PinMode execute call')
+        _log.green('PinMode execute call')
         self._init_wireframer_colors_and_batches()
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.green(f'{self.__class__.__name__} invoke')
         settings = fb_settings()
 
         _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
@@ -450,7 +455,17 @@ class FB_OT_PinMode(Operator):
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
         if first_start:
+            if len(head.cameras) == 1 and not camera.has_pins():
+                op = get_operator(FBConfig.fb_pickmode_starter_idname)
+                op('INVOKE_DEFAULT',
+                   headnum=settings.current_headnum,
+                   camnum=settings.current_camnum,
+                   auto_detect_single=True)
+
             push_head_in_undo_history(head, 'Pin Mode Start')
+
+            if settings.preferences().prevent_fb_view_rotation:
+                facebuilder_keymaps_register()
         else:
             push_head_in_undo_history(head, 'Pin Mode Switch')
             _log.output('FB PINMODE SWITCH ONLY')
@@ -519,6 +534,8 @@ class FB_OT_PinMode(Operator):
             _log.error(f'{self.pinmode_id} != {settings.pinmode_id}')
             unregister_undo_handler()
             exit_area_localview(context.area)
+
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         headnum = settings.current_headnum
@@ -527,6 +544,8 @@ class FB_OT_PinMode(Operator):
         if self._modal_should_finish(context, event):
             unregister_undo_handler()
             exit_area_localview(context.area)
+
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         region_check = self._check_camera_state_changed(context.space_data.region_3d)
@@ -569,6 +588,8 @@ class FB_OT_PinMode(Operator):
             _log.output('WIREFRAME IS OFF')
             unregister_undo_handler()
             FBLoader.out_pinmode(headnum)
+
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         vp.create_batch_2d(context.area)

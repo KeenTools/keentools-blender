@@ -148,8 +148,9 @@ class FBCameraItem(PropertyGroup):
     orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
     focal: FloatProperty(
-        description="35mm equivalent focal length (mm)",
-        name="Focal Length (mm)", default=50,
+        description="35mm equivalent focal length",
+        name="Focal Length", default=50,
+        unit="CAMERA",
         min=0.1, update=update_camera_focal)
 
     background_scale: FloatProperty(
@@ -158,20 +159,20 @@ class FBCameraItem(PropertyGroup):
         min=0.0001)
 
     auto_focal_estimation: BoolProperty(
-        name="Focal Length Estimation",
-        description="When turned on, FaceBuilder will try to estimate "
-                    "focal length based on the position of the model "
-                    "in the frame",
+        name='Estimate focal length',
+        description='Automatically estimate focal length '
+                    'while aligning mesh to image. '
+                    'Activates from 4th pin and on',
         default=True)
 
     tone_exposure: FloatProperty(
-        name='Exposure', description='Tone gain',
+        name='Exposure', description='Adjust exposure in current view',
         default=Config.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     tone_gamma: FloatProperty(
-        name='Gamma correction', description='Tone gamma correction',
+        name='Gamma', description='Adjust gamma in current view',
         default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
@@ -436,9 +437,9 @@ def expression_views_callback(self, context):
 class FBHeadItem(PropertyGroup):
     use_emotions: BoolProperty(name='Allow facial expressions',
                                default=False, update=update_use_emotions)
-    lock_blinking: BoolProperty(name='Lock eye blinking',
+    lock_blinking: BoolProperty(name='Lock eyelids',
                                 default=False, update=update_lock_blinking)
-    lock_neck_movement: BoolProperty(name='Lock neck movement',
+    lock_neck_movement: BoolProperty(name='Lock neck',
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)
@@ -461,13 +462,14 @@ class FBHeadItem(PropertyGroup):
         min=0.01, update=update_head_focal)
 
     auto_focal_estimation: BoolProperty(
-        name="Focal Length Estimation",
+        name="Estimate focal length",
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
         default=False)
 
-    masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
+    masks: BoolVectorProperty(name='Masks',
+                              description='Turn model parts on and off',
                               size=12, subtype='NONE',
                               default=(True,) * 12,
                               update=update_mesh_simple)
@@ -482,8 +484,7 @@ class FBHeadItem(PropertyGroup):
     exif: PointerProperty(type=FBExifItem)
 
     model_scale: FloatProperty(
-        description="Geometry input scale. "
-                    "All operations are performed with the scaled geometry.",
+        description="Adjust absolute size of 3D head",
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
@@ -495,7 +496,7 @@ class FBHeadItem(PropertyGroup):
         default=False)
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
-                             description='Model selector',
+                             description='Selected topology',
                              update=update_mesh_with_dialog)
 
     model_type_previous: EnumProperty(name='Current Topology',
@@ -504,7 +505,7 @@ class FBHeadItem(PropertyGroup):
 
     expression_view: EnumProperty(name='Expression View Selector',
                                   items=expression_views_callback,
-                                  description='What expression will display after pinning',
+                                  description='Use expression from',
                                   update=update_expression_view)
 
     def blenshapes_are_relevant(self):
@@ -732,8 +733,8 @@ class FBSceneSettings(PropertyGroup):
         self.adaptive_opacity = (x2 - x1) / denom
 
     wireframe_opacity: FloatProperty(
-        description='From 0.0 to 1.0',
-        name='The FaceBuilder wireframe Opacity',
+        description='',
+        name='Wireframe opacity',
         default=UserPreferences.get_value_safe('fb_wireframe_opacity',
                                                UserPreferences.type_float),
         min=0.0, max=1.0,
@@ -741,8 +742,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_opacity', 'float'),
         set=universal_cached_setter('fb_wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
-        description='Color of the FaceBuilder mesh wireframe in pin-mode',
-        name='Wireframe Color', subtype='COLOR',
+        description='',
+        name='Base mesh colour', subtype='COLOR',
         default=UserPreferences.get_value_safe('fb_wireframe_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
@@ -750,8 +751,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_color', 'color'),
         set=universal_cached_setter('fb_wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
-        description='Color of special parts in pin-mode',
-        name='Wireframe Special Color', subtype='COLOR',
+        description='',
+        name='Facial features colour', subtype='COLOR',
         default=UserPreferences.get_value_safe('fb_wireframe_special_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
@@ -759,8 +760,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_special_color', 'color'),
         set=universal_cached_setter('fb_wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
-        description='Color of midline in pin-mode',
-        name='Wireframe Midline Color', subtype='COLOR',
+        description='',
+        name='Midlines colour', subtype='COLOR',
         default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
@@ -768,9 +769,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
         set=universal_cached_setter('fb_wireframe_midline_color'))
     show_specials: BoolProperty(
-        description='Use different colors for important head parts '
-                    'on the mesh',
-        name='Special face parts', default=True, update=update_wireframe_image)
+        description='',
+        name='Highlight facial features', default=True, update=update_wireframe_image)
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',
         default=True,
@@ -786,8 +786,7 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('pin_size', 'float'),
         set=universal_cached_setter('pin_size'))
     pin_sensitivity: FloatProperty(
-        description='Set active area in pixels',
-        name='Active area',
+        name='Sensitivity', description='Active area in pixels',
         default=UserPreferences.get_value_safe('pin_sensitivity',
                                                UserPreferences.type_float),
         min=1.0, max=100.0,
@@ -799,8 +798,8 @@ class FBSceneSettings(PropertyGroup):
 
     # Other settings
     shape_rigidity: FloatProperty(
-        description='Change how much pins affect the model shape. '
-                    'Accessible in Pinmode only',
+        description='Adjust overall mesh rigidity: '
+                    '0 - most flexible, 10 - most rigid, default = 1',
         name='Shape rigidity', default=1.0, min=0.001, max=1000.0,
         update=update_shape_rigidity)
     expression_rigidity: FloatProperty(
@@ -830,43 +829,37 @@ class FBSceneSettings(PropertyGroup):
     # Texture Baking parameters
     # -------------------------
     tex_width: IntProperty(
-        description="Width size of output texture",
+        description="Width in pixels",
         name="Width", default=Config.default_tex_width)
     tex_height: IntProperty(
-        description="Height size of output texture",
+        description="Height in pixels",
         name="Height", default=Config.default_tex_height)
 
     tex_face_angles_affection: FloatProperty(
-        description="Choose how much a polygon view angle affects "
-                    "a pixel color: with 0 you will get an average "
-                    "color from all views; with 100 you'll get color "
-                    "information only from the polygons at which a camera "
-                    "is looking at 90 degrees",
+        description="Blending of colours between different cameras: "
+                    "0 - average colour from all views, "
+                    "100 - colour from 90 degree views only",
         name="Angle strictness",
         default=Config.default_tex_face_angles_affection, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
-        description="Expand texture edges",
+        description="Extrapolate texture to fill gaps",
         name="Expand edges (%)", default=Config.default_tex_uv_expand_percents)
     tex_back_face_culling: BoolProperty(
         description="Exclude backfacing polygons from the created texture",
         name="Back face culling", default=True)
     tex_equalize_brightness: BoolProperty(
-        description="Experimental. Automatically equalize "
-                    "brightness across images",
+        description="Equalize brightness",
         name="Equalize brightness", default=False)
     tex_equalize_colour: BoolProperty(
-        description="Experimental. Automatically equalize "
-                    "colors across images",
+        description="Equalize color",
         name="Equalize color", default=False)
     tex_fill_gaps: BoolProperty(
-        description="Experimental. Tries automatically fill "
-                    "holes in face texture with appropriate "
-                    "color",
+        description="Automatically fill the gaps with nearby colour",
         name="Autofill", default=False)
 
     tex_auto_preview: BoolProperty(
-        description="Automatically apply the created texture",
-        name="Automatically apply the created texture", default=True)
+        description="Make texture visible in viewport after baking",
+        name="Automatically apply texture to 3D head", default=True)
 
     @contextmanager
     def ui_write_mode_context(self):

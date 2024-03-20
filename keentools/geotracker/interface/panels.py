@@ -407,8 +407,9 @@ class GT_PT_MasksPanel(AllVisible):
         row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
                         bpy.data, 'movieclips', text='')
-        row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
-                     text='', icon='FILEBROWSER')
+        op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
+                          text='', icon='FILEBROWSER')
+        op.product = ProductType.GEOTRACKER
         row.prop(geotracker, 'mask_2d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
@@ -803,8 +804,10 @@ class GT_UL_selected_frame_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
         layout.label(text=f'frame {item.num}')
-        layout.operator(GTConfig.gt_go_to_bake_frame_idname, text='',
-                        icon='HIDE_OFF', emboss=False).num = index
+        op = layout.operator(GTConfig.gt_go_to_bake_frame_idname, text='',
+                             icon='HIDE_OFF', emboss=False)
+        op.num = index
+        op.product = ProductType.GEOTRACKER
 
 
 class GT_PT_TexturePanel(AllVisible):
@@ -827,8 +830,9 @@ class GT_PT_TexturePanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.scale_y = 2.0
-        row.operator(GTConfig.gt_bake_from_selected_frames_idname,
-                     icon='IMAGE')
+        op = row.operator(GTConfig.gt_bake_from_selected_frames_idname,
+                          icon='IMAGE')
+        op.product = ProductType.GEOTRACKER
 
         settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -837,15 +841,18 @@ class GT_PT_TexturePanel(AllVisible):
 
         if texture_exists:
             row = col.row(align=True)
-            row.operator(GTConfig.gt_texture_file_export_idname,
-                         text='Export', icon='EXPORT')
-            row.operator(GTConfig.gt_delete_texture_idname,
-                         text='Delete', icon='X')
+            op = row.operator(GTConfig.gt_texture_file_export_idname,
+                              text='Export', icon='EXPORT')
+            op.product = ProductType.GEOTRACKER
+            op = row.operator(GTConfig.gt_delete_texture_idname,
+                              text='Delete', icon='X')
+            op.product = ProductType.GEOTRACKER
 
         layout.separator()
         row = layout.row()
         row.scale_y = Config.btn_scale_y
-        row.operator(GTConfig.gt_reproject_tex_sequence_idname)
+        op = row.operator(GTConfig.gt_reproject_tex_sequence_idname)
+        op.product = ProductType.GEOTRACKER
 
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
@@ -854,7 +861,8 @@ class GT_PT_TexturePanel(AllVisible):
         row = col.split(factor=0.15, align=True)
         row.label(text='', icon='ERROR')
         row.label(text='Missing UVs')
-        box.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        op = box.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        op.product = ProductType.GEOTRACKER
 
     def _draw_overlapping_detected(self, layout):
         box = layout.box()
@@ -868,9 +876,12 @@ class GT_PT_TexturePanel(AllVisible):
             col.label(text=txt)
 
         col = box.column(align=True)
-        col.operator(GTConfig.gt_repack_overlapping_uv_idname)
-        col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
-        col.operator(GTConfig.gt_check_uv_overlapping_idname, text='Re-check')
+        op = col.operator(GTConfig.gt_repack_overlapping_uv_idname)
+        op.product = ProductType.GEOTRACKER
+        op = col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        op.product = ProductType.GEOTRACKER
+        op = col.operator(GTConfig.gt_check_uv_overlapping_idname, text='Re-check')
+        op.product = ProductType.GEOTRACKER
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -900,13 +911,16 @@ class GT_PT_TexturePanel(AllVisible):
         )
 
         col2 = row.column(align=True)
-        col2.operator(GTConfig.gt_add_bake_frame_idname,
-                     text='', icon='ADD')
-        col2.operator(GTConfig.gt_remove_bake_frame_idname,
-                     text='', icon='REMOVE')
+        op = col2.operator(GTConfig.gt_add_bake_frame_idname,
+                           text='', icon='ADD')
+        op.product = ProductType.GEOTRACKER
+        op = col2.operator(GTConfig.gt_remove_bake_frame_idname,
+                           text='', icon='REMOVE')
+        op.product = ProductType.GEOTRACKER
         col2.separator()
-        col2.operator(GTConfig.gt_texture_bake_options_idname,
-                     text='', icon='PREFERENCES')
+        op = col2.operator(GTConfig.gt_texture_bake_options_idname,
+                           text='', icon='PREFERENCES')
+        op.product = ProductType.GEOTRACKER
 
         col.separator()
         self._draw_buttons(col, not not geotracker.movie_clip)
@@ -915,8 +929,8 @@ class GT_PT_TexturePanel(AllVisible):
             _draw_calculating_indicator(layout)
 
 
-class GT_PT_AnimationPanel(AllVisible):
-    bl_idname = GTConfig.gt_animation_panel_idname
+class GT_PT_ScenePanel(AllVisible):
+    bl_idname = GTConfig.gt_scene_panel_idname
     bl_label = 'Scene'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -945,21 +959,26 @@ class GT_PT_AnimationPanel(AllVisible):
         layout.label(text='Transform')
 
         col = layout.row(align=True)
-        col.operator(GTConfig.gt_rescale_window_idname)
+        op = col.operator(GTConfig.gt_rescale_window_idname)
+        op.product = ProductType.GEOTRACKER
 
-        col.operator(GTConfig.gt_move_window_idname)
+        op = col.operator(GTConfig.gt_move_window_idname)
+        op.product = ProductType.GEOTRACKER
 
-        layout.operator(GTConfig.gt_rig_window_idname)
+        op = layout.operator(GTConfig.gt_rig_window_idname)
+        op.product = ProductType.GEOTRACKER
 
         layout.label(text='Animation')
 
         col = layout.column(align=True)
         col.prop(settings, 'transfer_animation_selector', text='')
-        col.operator(GTConfig.gt_transfer_tracking_idname)
+        op = col.operator(GTConfig.gt_transfer_tracking_idname)
+        op.product = ProductType.GEOTRACKER
 
         layout.separator()
 
-        layout.operator(GTConfig.gt_unbreak_rotation_idname)
+        op = layout.operator(GTConfig.gt_unbreak_rotation_idname)
+        op.product = ProductType.GEOTRACKER
 
         layout.separator()
 
@@ -978,7 +997,9 @@ class GT_PT_AnimationPanel(AllVisible):
             btn.enabled = True
         else:
             btn.enabled = False
-        btn.operator(GTConfig.gt_bake_animation_to_world_idname, text='Bake')
+        op = btn.operator(GTConfig.gt_bake_animation_to_world_idname,
+                          text='Bake')
+        op.product = ProductType.GEOTRACKER
 
         layout.separator()
 
@@ -990,7 +1011,8 @@ class GT_PT_AnimationPanel(AllVisible):
             row.prop(settings, 'export_locator_orientation', text='')
         row = col.split(factor=0.4, align=True)
         row.prop(settings, 'export_linked_locator')
-        row.operator(GTConfig.gt_export_animated_empty_idname)
+        op = row.operator(GTConfig.gt_export_animated_empty_idname)
+        op.product = ProductType.GEOTRACKER
 
 
 class GT_PT_RenderingPanel(AllVisible):
@@ -1083,3 +1105,30 @@ class GT_PT_SmoothingPanel(AllVisible):
 
         if not GTConfig.hidden_feature:
             self._tracking_locks(layout, geotracker)
+
+
+class GT_PT_SupportPanel(AllVisible, Panel):
+    bl_idname = GTConfig.gt_support_panel_idname
+    bl_label = 'Support'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not geotracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = gt_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(Config.kt_report_bug_idname, icon='ERROR')
+        op.product = ProductType.GEOTRACKER
+        op = col.operator(Config.kt_share_feedback_idname,
+                          icon='OUTLINER_OB_LIGHT')
+        op.product = ProductType.GEOTRACKER

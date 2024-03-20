@@ -20,7 +20,7 @@ from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
 from datetime import datetime
-from typing import Tuple, List, Optional, Any
+from typing import Tuple, List, Optional, Any, Dict
 
 import bpy
 from bpy.types import Operator
@@ -177,9 +177,15 @@ class CurrentStateExecutor:
 
 
 class KTUpdater:
-    _response = {'FaceBuilder': None, 'GeoTracker': None, 'FaceTracker': None}
-    _parsed_response_content = {'FaceBuilder': None, 'GeoTracker': None,
-                                'FaceTracker': None, 'KeenTools': None}
+    _response: Dict = {'FaceBuilder': None, 'GeoTracker': None,
+                       'FaceTracker': None, 'KeenTools': None}
+    _parsed_response_content: Dict = {'FaceBuilder': None, 'GeoTracker': None,
+                                      'FaceTracker': None, 'KeenTools': None}
+    _max_log_counter: int = 25
+    _log_counter: Dict = {'FaceBuilder': _max_log_counter,
+                          'GeoTracker': _max_log_counter,
+                          'FaceTracker': _max_log_counter,
+                          'KeenTools': _max_log_counter}
 
     @classmethod
     def is_available(cls) -> bool:
@@ -211,7 +217,9 @@ class KTUpdater:
 
     @classmethod
     def set_response(cls, product: str, val: Optional[Any]) -> None:
+        _log.green(f'set_response:\n{product}\n{val}')
         cls._response[product] = val
+        _log.yellow(f'response:\n{cls._response}')
 
     @classmethod
     def get_response(cls, *, product: Optional[str]=None) -> Optional[Any]:
@@ -235,6 +243,7 @@ class KTUpdater:
 
     @classmethod
     def set_parsed(cls, product: str, val: Optional[Any]) -> None:
+        _log.green(f'set_parsed:\n{product}\n{val}')
         cls._parsed_response_content[product] = val
 
     @classmethod
@@ -269,7 +278,14 @@ class KTUpdater:
 
     @classmethod
     def call_updater(cls, product: str) -> None:
-        _log.cyan(f'call_updater [{product}]')
+        if product not in cls._log_counter.keys():
+            _log.error(f'call_updater: {product}')
+            return
+        cls._log_counter[product] += 1
+        if cls._log_counter[product] >= cls._max_log_counter:
+            cls._log_counter[product] = 0
+            _log.cyan(f'call_updater [{product}] x{cls._max_log_counter}')
+
         if cls.has_response_message(product) or not pkt_is_installed():
             return
         uc = cls.get_update_checker()
@@ -470,10 +486,9 @@ class KTInstallationReminder:
     @classmethod
     def render_message(cls, limit: int=32) -> List[str]:
         _message_text: str = \
-            'The new version of FaceBuilder and GeoTracker ' \
-            'is ready to be installed. ' \
-            'Blender will be relaunched automatically. ' \
-            'Please save your project before proceeding.'
+            'New version of KeenTools add-on is ready to be installed. ' \
+            'Make sure all changes are saved before you continue. ' \
+            'Blender will be relaunched automatically.'
         return render_main(parse_html(_message_text), limit)
 
     @classmethod

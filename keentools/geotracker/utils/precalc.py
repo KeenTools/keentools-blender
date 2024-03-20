@@ -83,7 +83,7 @@ class PrecalcTimer(CalcTimer):
 
         progress, message = self._runner.current_progress()
         _log.output(f'precalc runner_state: {progress} {message}')
-        analysing_screen_message(message)
+        analysing_screen_message(message, product=self.product)
 
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
@@ -145,13 +145,13 @@ class PrecalcTimer(CalcTimer):
 
     def start(self) -> bool:
         self._start_time = time.time()
-        prepare_camera(self.get_area(), product=self.product_type)
+        prepare_camera(self.get_area(), product=self.product)
         settings = self.get_settings()
         settings.calculating_mode = 'PRECALC'
 
         self.set_current_state(self.runner_state)
         # self._area_header('Precalc is calculating... Please wait')
-        analysing_screen_message('Initialization')
+        analysing_screen_message('Initialization', product=self.product)
 
         _func = self.timer_func
         if not bpy_background_mode():

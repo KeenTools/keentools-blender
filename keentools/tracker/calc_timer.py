@@ -80,11 +80,11 @@ class TimerMixin:
 
 class CalcTimer(TimerMixin):
     def get_settings(self) -> Any:
-        return get_settings(self.product_type)
+        return get_settings(self.product)
 
     def __init__(self, area: Optional[Area] = None,
-                 runner: Optional[Any] = None, *,
-                 product: int = ProductType.GEOTRACKER):
+                 runner: Optional[Any] = None, *, product: int):
+        self.product = product
         self.current_state: Callable = self.timeline_state
 
         self._interval: float = 0.001
@@ -94,7 +94,6 @@ class CalcTimer(TimerMixin):
         self._start_time: float = 0.0
         self._area: Area = area
 
-        self.product_type = product
         self.interrupt_operator_name = GTConfig.gt_interrupt_modal_idname \
             if product == ProductType.GEOTRACKER \
             else FTConfig.ft_interrupt_modal_idname
@@ -137,7 +136,8 @@ class CalcTimer(TimerMixin):
         self.remove_timer(self)
         settings = self.get_settings()
         settings.stop_calculating()
-        revert_default_screen_message(unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode,
+                                      product=self.product)
 
         if not settings.pinmode:
             area = self.get_area()
@@ -220,8 +220,10 @@ class _CommonTimer(TimerMixin):
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False,
                  *, success_callback: Optional[Callable] = None,
-                 error_callback: Optional[Callable] = None):
+                 error_callback: Optional[Callable] = None,
+                 product: int):
 
+        self.product = product
         self.current_state: Callable = self.timeline_state
         self.tracking_computation: Any = computation
 
@@ -241,7 +243,7 @@ class _CommonTimer(TimerMixin):
         self.add_timer(self)
 
     def create_shape_keyframe(self):
-        pass
+        _log.magenta(f'{self.__class__.__name__} empty create_shape_keyframe')
 
     def set_current_state(self, func: Callable) -> None:
         self.current_state = func
@@ -355,7 +357,7 @@ class _CommonTimer(TimerMixin):
         if attempts >= max_attempts and \
                 self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
-        revert_default_screen_message()
+        revert_default_screen_message(product=self.product)
         self._stop_user_interrupt_operator()
         settings = self.get_settings()
         loader = settings.loader()
@@ -394,7 +396,8 @@ class _CommonTimer(TimerMixin):
                     finished_frames=finished_frames,
                     total_frames=total_frames,
                     current_stage=current_stage + 1,
-                    total_stages=total_stages)
+                    total_stages=total_stages,
+                    product=self.product)
                 settings = self.get_settings()
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
@@ -436,7 +439,8 @@ class _CommonTimer(TimerMixin):
         if not bpy_background_mode():
             self._start_user_interrupt_operator()
         operation_calculation_screen_message(self._operation_name,
-                                             self._operation_help)
+                                             self._operation_help,
+                                             product=self.product)
         settings = self.get_settings()
         settings.calculating_mode = self._calc_mode
 
@@ -454,10 +458,12 @@ class _CommonTimer(TimerMixin):
 class TrackTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
-                 error_callback: Optional[Callable] = None):
+                 error_callback: Optional[Callable] = None,
+                 product: int = ProductType.GEOTRACKER):
         super().__init__(computation, from_frame,
                          success_callback=success_callback,
-                         error_callback=error_callback)
+                         error_callback=error_callback,
+                         product=product)
         self._operation_name = 'Tracking'
         self._operation_help = 'ESC to stop'
         self._calc_mode = 'TRACKING'
@@ -480,10 +486,11 @@ class FTTrackTimer(TrackTimer):
 class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
-                 error_callback: Optional[Callable] = None):
+                 error_callback: Optional[Callable] = None,
+                 product: int):
         super().__init__(computation, from_frame, revert_current_frame=True,
                          success_callback=success_callback,
-                         error_callback=error_callback)
+                         error_callback=error_callback, product=product)
         self._operation_name = 'Refining'
         self._operation_help = 'ESC to abort. Changes have NOT yet been applied'
         self._calc_mode = 'REFINE'
@@ -503,14 +510,18 @@ class FTRefineTimer(RefineTimer):
     def user_interrupt_operator_name(cls):
         return FTConfig.ft_interrupt_modal_idname
 
+    def create_shape_keyframe(self):
+        _log.red(f'{self.__class__.__name__} create_shape_keyframe')
+        create_relative_shape_keyframe(bpy_current_frame())
+
 
 class RefineTimerFast(RefineTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
-                 error_callback: Optional[Callable] = None):
+                 error_callback: Optional[Callable] = None, product: int):
         super().__init__(computation, from_frame,
                          success_callback=success_callback,
-                         error_callback=error_callback)
+                         error_callback=error_callback, product=product)
         self._prevent_playback = True
 
 

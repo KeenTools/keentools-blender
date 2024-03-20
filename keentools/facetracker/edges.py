@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Any, Tuple, List, Optional
-import numpy as np
 
 from bpy.types import SpaceView3D, Object
 from mathutils import Matrix, Vector
@@ -25,7 +24,6 @@ from mathutils import Matrix, Vector
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ft_settings
 from ..facebuilder.utils.edges import FBRasterEdgeShader3D
-# from ..facebuilder.fbloader import FBLoader
 from ..utils.fb_wireframe_image import create_edge_indices
 
 
@@ -40,6 +38,7 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
 
+        self.camera_pos: Vector = Vector((0, 0, 0))
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
@@ -58,11 +57,13 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         _log.output('set_lit_light_matrix')
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.lit_light_matrix = mat
+        self.camera_pos = mat @ Vector((0, 0, 0))
 
     def init_edge_indices(self) -> None:
         _log.blue('init_edge_indices')
-        geo = ft_settings().loader().geo()
-        self.edge_indices, self.edge_uvs = create_edge_indices(geo=geo)
+        geo = ft_settings().loader().get_geo()  # TODO: Fix this!!!
+        me = geo.mesh(0)
+        self.edge_indices, self.edge_uvs = create_edge_indices(vertex_count=me.points_count())
 
     def init_selection_from_mesh(self, obj: Object, mask_3d: str,
                                  inverted: bool) -> None:

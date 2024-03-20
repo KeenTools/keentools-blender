@@ -65,6 +65,7 @@ class FBConfig:
     fb_reset_image_rotation_idname = operators + '.reset_image_rotation'
 
     fb_reset_expression_idname = operators + '.reset_expression'
+
     fb_bake_tex_idname = operators + '.bake_tex'
     fb_show_tex_idname = operators + '.show_tex'
     fb_show_solid_idname = operators + '.show_solid'
@@ -89,7 +90,11 @@ class FBConfig:
     fb_noblenshapes_until_expression_warning_idname = operators + \
         '.no_blenshapes_until_expression_warning'
 
-    fb_tex_selector_idname = operators + '.tex_selector'
+    fb_image_info_idname = operators + '.image_info'
+    fb_texture_bake_options_idname = operators + '.texture_bake_options'
+    fb_reset_texture_resolution_idname = operators + '.reset_texture_resolution'
+    fb_reset_advanced_settings_idname = operators + '.reset_advanced_settings'
+
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
@@ -100,6 +105,10 @@ class FBConfig:
     fb_clear_animation_idname = operators + '.clear_animation'
     fb_update_blendshapes_idname = operators + '.update_blendshapes'
     fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
+
+    fb_rotate_head_forward_idname = operators + '.rotate_head_forward'
+    fb_rotate_head_backward_idname = operators + '.rotate_head_backward'
+    fb_reset_view_idname = operators + '.reset_view'
 
     fb_unhide_head_idname = operators + '.unhide_head'
     fb_reconstruct_head_idname = operators + '.reconstruct_head'
@@ -114,21 +123,21 @@ class FBConfig:
         operators + '.default_wireframe_settings'
     fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
+    fb_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
 
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
-    fb_camera_panel_idname = _PT + 'camera_panel'
-
     fb_views_panel_idname = _PT + 'views_panel'
-    fb_exif_panel_idname = _PT + 'exif_panel'
-    fb_texture_panel_idname = _PT + 'texture_panel'
+    fb_options_panel_idname = _PT + 'options_panel'
     fb_model_panel_idname = _PT + 'model_panel'
     fb_appearance_panel_idname = _PT + 'appearance_panel'
+    fb_texture_panel_idname = _PT + 'texture_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
     fb_export_panel_idname = _PT + 'export_panel'
+    fb_support_panel_idname = _PT + 'support_panel'
 
     # Help ids
     fb_help_camera_idname = operators + '.help_camera'
@@ -137,6 +146,7 @@ class FBConfig:
     fb_help_appearance_idname = operators + '.help_appearance'
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
+    fb_help_export_idname = operators + '.help_export'
 
     # Updater panels
     fb_update_panel_idname = _PT + 'update_panel'
@@ -201,20 +211,6 @@ class FBConfig:
     image_node_layout_coord = (-300, 0)
 
     # Colors
-    midline_color = (0.960784, 0.007843, 0.615686)
-    color_schemes = {
-        'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
-        'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
-        'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
-        'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
-        'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
-        'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
-        'black': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098)),
-        'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
-        'default': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098))
-    }
-    wireframe_opacity = 0.45
-
     pin_color = (1.0, 0.0, 0.0, 1.0)
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
     surface_point_color = (0.0, 1.0, 1.0, 0.5)

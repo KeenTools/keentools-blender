@@ -26,7 +26,7 @@ Button = namedtuple('Button', ['label', 'description'])
 buttons = {
     FBConfig.fb_add_head_operator_idname: Button(
         'FaceBuilder Head',
-        'Add FaceBuilder Head into scene'
+        'Add FaceBuilder Head to scene'
     ),
     FBConfig.fb_single_filebrowser_exec_idname: Button(
         'File Browser Execute',
@@ -37,16 +37,16 @@ buttons = {
         'Open single image file'
     ),
     FBConfig.fb_texture_file_export_idname: Button(
-        'Export texture',
-        'Export the created texture to a file'
+        'Export',
+        'Export texture to a file'
     ),
     FBConfig.fb_multiple_filebrowser_exec_idname: Button(
-        'Open Images',
-        'Load images and create views. You can select multiple images at once'
+        'Add more images',
+        'New cameras will be created according to number of views'
     ),
     FBConfig.fb_multiple_filebrowser_idname: Button(
         'Open Images',
-        'Load images and create views. You can select multiple images at once'
+        'New cameras will be created according to number of views'
     ),
     FBConfig.fb_animation_filebrowser_idname: Button(
         'Load animation',
@@ -68,9 +68,21 @@ buttons = {
         'Blendshapes can\'t be created',
         ''
     ),
-    FBConfig.fb_tex_selector_idname: Button(
-        'Select images:',
-        'Create texture using pinned views'
+    FBConfig.fb_image_info_idname: Button(
+        'Image info',
+        'Show image properties based on file EXIF'
+    ),
+    FBConfig.fb_texture_bake_options_idname: Button(
+        'Texture settings',
+        'Source images, size and other texture settings'
+    ),
+    FBConfig.fb_reset_texture_resolution_idname: Button(
+        'Reset',
+        'Reset texture resolution to default values'
+    ),
+    FBConfig.fb_reset_advanced_settings_idname: Button(
+        'Reset',
+        'Reset advanced texture baking settings'
     ),
     FBConfig.fb_pickmode_idname: Button(
         'FaceBuilder Pick Face mode',
@@ -78,7 +90,7 @@ buttons = {
     ),
     FBConfig.fb_pickmode_starter_idname: Button(
         'FaceBuilder Pick Face mode starter',
-        'Detect a face on the photo and pin the model to the selected face'
+        'Auto align mesh in current view'
     ),
     FBConfig.fb_pinmode_idname: Button(
         'FaceBuilder Pinmode',
@@ -95,15 +107,15 @@ buttons = {
     ),
     FBConfig.fb_delete_head_idname: Button(
         'Delete head',
-        'Delete the head and its cameras from the scene'
+        'Delete the head and related cameras from the scene'
     ),
     FBConfig.fb_select_camera_idname: Button(
-        'Pin Mode Select Camera',
-        'Switch to Pin mode for this view'
+        'Select Camera',
+        'Go to this view to align mesh'
     ),
     FBConfig.fb_center_geo_idname: Button(
         'Reset Camera',
-        'Place the camera so the model will be centred in the view'
+        'Reset camera position so the model is centered in the view'
     ),
     FBConfig.fb_unmorph_idname: Button(
         'Reset',
@@ -111,37 +123,36 @@ buttons = {
         'It will remove all pins as well'
     ),
     FBConfig.fb_remove_pins_idname: Button(
-        'Remove pins',
-        'Remove all pins on this view'
+        'Remove All Pins',
+        'Remove all pins in current view'
     ),
     FBConfig.fb_wireframe_color_idname: Button(
         'Wireframe color',
-        'Choose the wireframe coloring scheme'
+        'Wireframe colour scheme'
     ),
     FBConfig.fb_filter_cameras_idname: Button(
         'Camera Filter',
-        'Select cameras to use for texture baking'
+        'Modify selection'
     ),
     FBConfig.fb_delete_camera_idname: Button(
         'Delete View',
-        'Delete this view and its camera from the scene'
+        'Delete this view and related camera from the scene'
     ),
     FBConfig.fb_proper_view_menu_exec_idname: Button(
         'View operations',
-        'Delete the view or modify the image file path'
+        'Delete, rotate, change file path'
     ),
     FBConfig.fb_addon_setup_defaults_idname: Button(
         'Setup FaceBuilder defaults',
         'Open FaceBuilder Settings in Preferences window'
     ),
     FBConfig.fb_bake_tex_idname: Button(
-        'Bake Texture',
-        'Bake the texture using all selected cameras. '
-        'It can take a lot of time, be patient'
+        'Create Texture',
+        'Create texture using reference views'
     ),
     FBConfig.fb_delete_texture_idname: Button(
-        'Delete texture',
-        'Delete the created texture from the scene'
+        'Clear',
+        'Delete texture from the scene'
     ),
     FBConfig.fb_rotate_image_cw_idname: Button(
         'Rotate Image CW',
@@ -156,8 +167,8 @@ buttons = {
         'Reset Image Rotation'
     ),
     FBConfig.fb_reset_expression_idname: Button(
-        'Reset expression',
-        'Reset expression'
+        'Reset Expression',
+        'Reset expression in current view'
     ),
     FBConfig.fb_show_tex_idname: Button(
         'Show Texture',
@@ -168,7 +179,7 @@ buttons = {
         'Hide texture and go back to Solid mode'
     ),
     FBConfig.fb_exit_pinmode_idname: Button(
-        'Exit Pin mode',
+        'Back to 3D',
         'Exit Pin mode'
     ),
     FBConfig.fb_create_blendshapes_idname: Button(
@@ -222,12 +233,12 @@ buttons = {
         'Reconstruct head by KeenTools attributes on mesh'
     ),
     FBConfig.fb_default_pin_settings_idname: Button(
-        'Revert to defaults',
-        'Set pin size and active area as in the saved defaults'
+        'Reset',
+        'Reset all to default values'
     ),
     FBConfig.fb_default_wireframe_settings_idname: Button(
-        'Revert to defaults',
-        'Set the wireframe colours and opacity as in the saved defaults'
+        'Reset',
+        'Reset all to default values'
     ),
     FBConfig.fb_select_current_head_idname: Button(
         'Current head',
@@ -235,26 +246,39 @@ buttons = {
     ),
     FBConfig.fb_select_current_camera_idname: Button(
         'Current view',
-        'Current view. Press to exit from Pin mode'
+        'Current view. Press to go back to 3D'
     ),
     FBConfig.fb_reset_tone_exposure_idname: Button(
-        'Reset exposure',
-        'Reset exposure in tone mapping'
+        'Reset',
+        'Reset exposure to default value'
     ),
     FBConfig.fb_reset_tone_gamma_idname: Button(
-        'Reset gamma',
-        'Reset gamma in tone mapping'
+        'Reset',
+        'Reset gamma to default value'
+    ),
+    FBConfig.fb_reset_tone_mapping_idname: Button(
+        'Reset',
+        'Reset all to default values'
     ),
     FBConfig.fb_export_to_cc_idname: Button(
         'Character Creator',
         'Export to Character Creator. '
         'Requirements: Character Creator 4.0, Headshot 2.0'
     ),
-    # Help buttons
-    FBConfig.fb_help_camera_idname: Button(
-        'Camera settings',
-        'Show help information about Camera settings panel'
+    FBConfig.fb_rotate_head_forward_idname: Button(
+        'Rotate right',
+        '45 degree'
     ),
+    FBConfig.fb_rotate_head_backward_idname: Button(
+        'Rotate left',
+        '45 degree'
+    ),
+    FBConfig.fb_reset_view_idname: Button(
+        'Reset View',
+        'Remove all pins and reset camera position'
+    ),
+
+    # Help buttons
     FBConfig.fb_help_views_idname: Button(
         'Views',
         'Show help information about Views panel'
@@ -275,6 +299,10 @@ buttons = {
         'Blendshapes',
         'Show help information about Blendshapes panel'
     ),
+    FBConfig.fb_help_export_idname: Button(
+        'Export',
+        'Show help information about Export panel'
+    ),
 }
 
 
@@ -282,179 +310,123 @@ HelpText = namedtuple('HelpText', ['width', 'message'])
 _help_default_width = 500
 
 help_texts = {
-    FBConfig.fb_help_camera_idname: HelpText(_help_default_width, [
-        'To get a quality model you need to know one important thing about',
-        'your photos — the 35mm equivalent focal length the photos '
-        'were taken with.',
-        'Usually we can automatically get this data from EXIF of the '
-        'loaded pictures.',
-        ' ',
-        'Unfortunately it\'s not a rare case when this data is stripped '
-        'out of the photos.',
-        'In this case you still can get a quality model manually '
-        'setting up the focal',
-        'length if you know it. In all other cases we recommend using '
-        'focal length estimation.',
-        ' ',
-        'If you don\'t know the focal length, we recommend you to not '
-        'change anything. ',
-        'Please rely on automatic settings, that should provide you '
-        'the best possible results.',
-        ' ',
-        'If you know the focal length and want to check that '
-        'everything\'s correct,',
-        'you can open this panel and see the detected 35mm equiv. '
-        'focal length. ',
-        'You can change it if you switch into manual mode using '
-        'the advanced setting menu',
-        'in the header of the camera settings panel.',
-        ' ',
-        'When we detect similar 35mm equiv. focal length across a number '
-        'of photographs',
-        'we add them into one group, it helps our face morphing algorithm '
-        'in cases ',
-        'when there are more than one groups with different focal lengths. '
-        'You can also ',
-        'add different pictures with unknown focal length into one '
-        'group manually,',
-        'so the FL estimation algorithm will treat them all as if they '
-        'were taken with ',
-        'the same 35mm equiv. focal length, but we recommend to only do '
-        'so if you really ',
-        'know what you\'re doing.'
-    ]),
     FBConfig.fb_help_views_idname: HelpText(_help_default_width, [
-        'On this panel you can load and remove images '
-        'automatically creating ',
-        'and removing views, replace image files, set the Frame size '
-        'and go into Pin Mode ',
-        'for each of the Views.',
+        'Load reference images and align mesh to face. ',
         ' ',
-        'Please note that all images loaded into stack should have '
-        'the same dimensions,',
-        'they should be shot with the same camera settings (sensor '
-        'size and focal length),',
-        'should not be cropped (or the camera settings should be '
-        'modified accordingly),',
-        'should be shot in the same orientation (vertical or horizontal).'
+        'In order to get an accurate 3D head in the end, use photos '
+        'showing it ',
+        'from different angles. New cameras will be created according '
+        'to the number of views. ',
+        'Camera focal length is calculated automatically using the EXIF data. ',
+        'Turn \'Allow facial expressions\' on if there\'s a smile on the face, '
+        'raised eyebrows, ',
+        'open mouth or neck turn, i.e. if the facial expression is non-neutral. ',
+        ' ',
+        'Align mesh to image in each view. Use Auto Align first, '
+        'then drag pins ',
+        'on the mesh to match it with the image more accurately. ',
+        'Create new pins where necessary, delete pins whose positions ',
+        'are not immediately apparent.',
+        ' ',
+        'Use \'Options\' for manual adjustment of ',
+        'Focal length: use 35mm equivalent values ',
+        'Mesh rigidity: 0 - most flexible, 10 - most rigid'
     ]),
     FBConfig.fb_help_model_idname: HelpText(_help_default_width, [
-        'On this panel you can modify the 3D model of the '
-        'head in different ways: ',
-        'switch on and off different parts of the model (pins '
-        'created on the disabled parts ',
-        'remain intact), reset the model to the default state '
-        '(also removing all pins ',
-        'on all views), and finally you can modify the rigidity '
-        'of the model — ',
-        'the less is the number, the softer the model becomes '
-        'and the more pins ',
-        'affect its shape.'
+        'Turn model parts on/off. ',
+        ' ',
+        'Instantly switch between 3 topology resolutions: high, '
+        'mid or low poly. ',
+        ' ',
+        'Use \'Scale\' to change the absolute size of your model. ',
+        'If you need your 3D head to be close to the real-life size, ',
+        'set Scale to 0.1, which will make it around 22 cm high.'
     ]),
     FBConfig.fb_help_appearance_idname: HelpText(_help_default_width, [
-        'Here you can tweak how pins look and react to mouse and change ',
-        'the colours used for the wireframe of FaceBuilder '
-        'visible in pin mode.'
+        'Customise wireframe appearance, pins size and sensitivity. ',
+        ' ',
+        'Try different wireframe colour schemes and opacity if the mesh ',
+        'fades with the background image. ',
+        ' ',
+        'Adjust size of the pins and their sensitivity. '
     ]),
     FBConfig.fb_help_texture_idname: HelpText(_help_default_width, [
-        'This panel gives you access to an experimental functionality '
-        'of automatic texture ',
-        'grabbing and stitching. You can change the resolution '
-        'of the texture, its layout. ',
-        'You can choose which views to use in the grabbing process '
-        'after clicking ',
-        'the "Create Texture" button, also you can apply '
-        'the material created ',
-        'automatically from the grabbed texture to the head object. ',
+        'Create texture blended from the views using the selected UV layout ',
+        'and bake it onto the 3D model.',
         ' ',
-        'Finally you can tweak the grabbing and stitching algorithm: ',
-        '— Brightness equalisation is a highly experimental '
-        'feature that will try ',
-        'to normalise the brightness of different texture parts '
-        'across different views. ',
-        '— Colour equalisation is similar to Brightness equalisation '
-        'only it affects ',
-        'colour instead of brightness.',
-        '— Angle strictness determines how much the angle of view '
-        'of the polygon affects ',
-        'the weight of the colour information grabbed for each pixel. '
-        'The value range ',
-        'is 0-100. When you have multiple frames containing '
-        'the same pixel, 0 would mean ',
-        'that in the texture you’ll get an average colour of that pixel '
-        'between colours ',
-        'from all frames where the pixel was found. The larger '
-        'the number — the more ',
-        'the algorithm prefers frames where the angle '
-        'of view of the pixel ',
-        'is closer to 90°, still mixing colours from all frames '
-        'but with different strength.',
-        '— Expanding edges can help with hiding stitches on texture '
-        'edges visible when ',
-        'the texture is applied to the object. It basically takes '
-        'the colour of the last ',
-        'pixel on the edge and duplicates it on the next empty pixel.'
+        'Available UV maps:',
+        # \u2013 - en dash
+        '\u2013 Butterfly: reduced distortions, fewest possible number of seams',
+        '\u2013 Legacy UV: even less distortions but contains more seams',
+        '\u2013 Maxface: highest resolution possible',
+        '\u2013 Spherical: improved version of the popular \'cylindrical\' UV',
+        '\u2013 MH: MetaHuman compatible UV map.',
+        ' ',
+        'Customise texture settings by pressing the gear button next to it: ',
+        'select and deselect source images and set output texture size.',
+        ' ',
+        'Advanced texture settings',
+        '\u2013 Angle strictness: adjust the blending of colours between '
+        'different cameras: ',
+        '0 - average colour from all views, ',
+        '100 - colour from 90 degree views only.',
+        '\u2013 Expand edges: extend texture on the edges using '
+        'neighbouring colour.',
+        '\u2013 Equalise brightness and Equalise colour: get more consistent '
+        'texture colour ',
+        'in case of lighting issues in different photos.',
+        '\u2013 Autofill: automatically fills the gaps with the generated texture.'
     ]),
     FBConfig.fb_help_blendshapes_idname: HelpText(_help_default_width, [
-        'On this panel you can create FACS ARKit-compatible blendshapes '
-        'for the head ',
-        'you\'ve built, load animation from a CSV file and export the head '
-        'with all blendshapes ',
-        'and animation to a game engine.',
+        'Сreate ARKit-compatible FACS blendshapes, load animation '
+        'from a CSV file. ',
         ' ',
-        'Once you press "Create" button, 51 blendshapes will be created. '
-        'You can change ',
-        'how they affect the shape of the head here: '
-        'Object Data Properties > Shape Keys.',
-        'If you change the topology, the blendshapes will be recreated. '
-        'When you change ',
-        'the shape of the head using pins in Pin Mode, and also when you '
-        'change the scale ',
-        'of the model, you\'ll be asked if you want to update '
-        'the blendshapes, note that ',
-        'the old blendshapes become useless once you make such changes.',
+        'Press \'Create\' button to generate 51 ARKit-compatible blendshapes. ',
+        'Go to Object Data Properties > Shape Keys to control and manually '
+        'animate ',
+        'your blendshapes.',
         ' ',
-        'The blendshapes are fully compatible with the ARKit '
-        'specifications, which can found ',
-        'at Apple Developer portal.',
+        'Upload pre-recorded blendshape animation as a CSV file. '
+        'This can be created ',
+        'with the Live Link Face app or similar.'
+    ]),
+    FBConfig.fb_help_export_idname: HelpText(_help_default_width, [
+        'You can export your 3D head the usual way. Make sure it’s selected '
+        'in the viewport ',
+        'or Scene Collection, then go to File > Export, choose the file type '
+        'and save the model. ',
+        'We recommend using Wavefront (.obj) or Alembic (.abc) to prevent '
+        'important data loss.',
         ' ',
-        'You can animate the blendshapes manually creating keyframes '
-        'for each Shape Key.',
+        'Use \'FBX for games\' to save your 3D model along with all the '
+        'blendshapes and animation. ',
+        'It is pre-configured for importing into Unreal Engine and Unity, '
+        'though you may select ',
+        'different export options in the pop-up export window.',
         ' ',
-        'If you have LiveLinkFace (or similar) application, you can record '
-        'the facial animation ',
-        'using the iOS device with the True Depth sensor (iPhone X '
-        'and newer), ',
-        'export a CSV file and then import it here.',
-        ' ',
-        'To export the head with all its blendshapes and animation, '
-        'you need to know ',
-        'where you want to import this 3D model to. In most cases '
-        'the Export button ',
-        'presented here will work for Unreal Engine and Unity, it will '
-        'pre-setup the Blender ',
-        'export dialog for you. Your free to change the settings before '
-        'saving the file if you need.'
+        'Press \'Export to CC4\' (Windows only) to launch Reallusion '
+        'Character Creator 4 and transfer ',
+        'your head mesh and texture to CC4 in order to create look-alike '
+        '3D characters. ',
+        'This operation also requires the Headshot 2 plugin installed '
+        'to your computer.'
     ]),
 }
+
 
 Warning = namedtuple('Warning', ['content_red', 'content_white'])
 warnings = {
     FBConfig.fb_blendshapes_warning_idname: Warning([
-        'Your model has FaceBuilder FACS blendshapes attached to it.',
-        'Once you change the topology, the blendshapes will be recreated.',
-        'All modifications added to the standard blendshapes, ',
-        'as well as all custom blendshapes are going to be lost.',
+        'Your model contains FACS blendshapes. Once you change',
+        'topology, blendshapes will be recreated. All modifications',
+        'added to blendshapes as well as custom blendshapes will be lost.',
         ' '
     ], [
-        'If you have animated the model using old blendshapes, ',
-        'the new ones will be linked to the same Action track,',
-        'so you\'re not going to lose your animation.',
-        'If you have deleted some of the standard FaceBuilder '
-        'FACS blendshapes, ',
-        'they\'re not going to be recreated again.',
+        'New blendshapes will be linked to the same Action tracks,',
+        'so no animation will be lost, if you had any. Previously',
+        'deleted blendshapes will not be recreated.',
         ' ',
-        'We recommend saving a backup file before changing the topology.',
+        'Back up your project before continuing.',
         ' '
     ]),
     FBConfig.fb_noblenshapes_until_expression_warning_idname: Warning([

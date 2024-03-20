@@ -35,7 +35,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.3.1'  # (5/5)
+    addon_version = '2024.1.0'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -91,6 +91,8 @@ class Config:
     kt_open_url_idname = operators + '.open_url'
     kt_addon_search_idname = operators + '.addon_search'
     kt_exit_localview_idname = operators + '.exit_localview'
+    kt_share_feedback_idname = operators + '.share_feedback'
+    kt_report_bug_idname = operators + '.report_bug'
 
     kt_warning_idname = operators + '.common_addon_warning'
 
@@ -136,6 +138,21 @@ class Config:
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
 
+    # FaceBuilder Default Colors
+    fb_midline_color = (0.960784, 0.007843, 0.615686)
+    fb_color_schemes = {
+        'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
+        'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
+        'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
+        'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
+        'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
+        'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
+        'black': ((0.039, 0.04, 0.039), (0.0, 0.0, 0.85098)),
+        'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        'default': ((0.039, 0.04, 0.039), (0.0, 0.0, 0.85098))
+    }
+
+    # Default UserPreferences
     default_updater_preferences = {
         'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
         'latest_update_skip_version': {'value': '', 'type': 'string'},
@@ -149,9 +166,9 @@ class Config:
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
         'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
-        'fb_wireframe_color': {'value': (0.039, 0.04 , 0.039), 'type': 'color'},
-        'fb_wireframe_special_color': {'value': (0.0, 0.0, 0.85098), 'type': 'color'},
-        'fb_wireframe_midline_color': {'value': (0.960784, 0.007843, 0.615686), 'type': 'color'},
+        'fb_wireframe_color': {'value': fb_color_schemes['black'][0], 'type': 'color'},
+        'fb_wireframe_special_color': {'value': fb_color_schemes['black'][1], 'type': 'color'},
+        'fb_wireframe_midline_color': {'value': fb_midline_color, 'type': 'color'},
         'fb_wireframe_opacity': {'value': 0.5, 'type': 'float'},
         'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
         'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
@@ -162,6 +179,7 @@ class Config:
         'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
     }
 
+    # Mock settings
     mock_update_for_testing_flag: bool = False
     mock_update_version: Tuple[int, int, int] = (int(addon_version.partition('.')[0]), 6, 3)
     mock_update_addon_path: str = 'http://localhost/addon.zip'
@@ -271,6 +289,14 @@ def ft_pinmode() -> bool:
     return settings.pinmode
 
 
+def calculation_in_progress() -> bool:
+    gts = gt_settings()
+    fts = ft_settings()
+    if not gts or not fts:
+        return False
+    return gts.is_calculating() or fts.is_calculating()
+
+
 def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
@@ -358,6 +384,7 @@ class ProductType:
     FACEBUILDER: int = 0
     GEOTRACKER: int = 1
     FACETRACKER: int = 2
+    ADDON: int = 3
 
 
 def get_settings(product: int) -> Any:
@@ -371,12 +398,14 @@ def get_settings(product: int) -> Any:
 
 
 def product_name(product: int) -> str:
+    if product == ProductType.FACEBUILDER:
+        return 'FaceBuilder'
     if product == ProductType.GEOTRACKER:
         return 'GeoTracker'
     if product == ProductType.FACETRACKER:
         return 'FaceTracker'
-    if product == ProductType.FACEBUILDER:
-        return 'FaceBuilder'
+    if product == ProductType.ADDON:
+        return 'KeenTools'
     assert False, f'product_name: Improper product {product}'
 
 

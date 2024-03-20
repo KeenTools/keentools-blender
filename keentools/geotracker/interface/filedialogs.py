@@ -31,10 +31,12 @@ from bpy.path import ensure_ext
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              gt_settings,
+                             get_settings,
                              get_operator,
                              ProductType,
-                             get_settings)
+                             product_name)
 from ...geotracker_config import GTConfig
+from ...facetracker_config import FTConfig
 from ...utils.images import (get_sequence_file_number,
                              find_bpy_image_by_name)
 from ...utils.video import (convert_movieclip_to_frames,
@@ -115,7 +117,7 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    # Property fields cannot be inherited in old Blenders (< 2.93)
+    # Property fields of operators cannot be inherited in old Blenders (< 2.93)
     filter_folder: BoolProperty(
         name='Filter folders',
         default=True,
@@ -141,7 +143,7 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
         subtype='DIR_PATH',
     )
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def draw(self, context):
         layout = self.layout
@@ -151,7 +153,9 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
         col.label(text='or a movie file')
 
     def execute(self, context):
-        _log.error(self.directory)
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        _log.output(f'DIR: {self.directory}')
         settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -202,6 +206,8 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
         subtype='DIR_PATH',
     )
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
@@ -210,7 +216,9 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
         col.label(text='or a movie file')
 
     def execute(self, context):
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -252,7 +260,7 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         subtype='FILE_PATH'
     )
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def check(self, context):
         change_ext = False
@@ -279,6 +287,8 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         col.label(text='or enter new name')
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         _log.output('PRECALC PATH: {}'.format(self.filepath))
         settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
@@ -331,6 +341,8 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
                               items=_orientation_items(),
                               description='Change orientation')
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         layout = self.layout
         layout.label(text='Output files format:')
@@ -350,10 +362,12 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
         layout.prop(self, 'orientation', text='')
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -384,12 +398,15 @@ class GT_OT_SplitVideoExec(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         pass
 
     def execute(self, context):
-        _log.output('GT_OT_SplitVideoExec')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -397,7 +414,8 @@ class GT_OT_SplitVideoExec(Operator):
         op = get_operator(GTConfig.gt_split_video_to_frames_idname)
         op('INVOKE_DEFAULT', from_frame=1,
            to_frame=get_movieclip_duration(geotracker.movie_clip),
-           filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
+           filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''),
+           product=self.product)
         return {'FINISHED'}
 
 
@@ -432,7 +450,7 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def draw(self, context):
         layout = self.layout
@@ -446,10 +464,14 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
             layout.prop(bpy_image_settings(), 'exr_codec')
 
     def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
         self.filepath = str(bpy_current_frame()).zfill(self.digits)
         return super().invoke(context, event)
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
@@ -503,12 +525,14 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         layout = self.layout
         layout.label(text='Output files format:')
         layout.prop(self, 'file_format', expand=True)
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         layout.label(text='Texture size:')
         row = layout.row(align=True)
         row.prop(settings, 'tex_width', text='Width')
@@ -536,7 +560,10 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         col.label(text=file_pattern.format(str(self.to_frame).zfill(4)))
 
     def invoke(self, context, _event):
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True,
                                      geotracker=True, camera=True,
                                      geometry=True, movie_clip=True)
@@ -554,7 +581,10 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         return f'{self.filepath}' + '{}' + f'{_filename_ext(self.file_format)}'
 
     def execute(self, context):
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True,
                                      geotracker=True, camera=True,
                                      geometry=True, movie_clip=True)
@@ -565,7 +595,7 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT reproject filepath: {self.filepath}')
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -579,12 +609,17 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
             return {'CANCELLED'}
         frames = [x for x in range(self.from_frame, self.to_frame + 1)]
 
-        op = get_operator(GTConfig.gt_interrupt_modal_idname)
-        op('INVOKE_DEFAULT')
+        if self.product == ProductType.GEOTRACKER:
+            op = get_operator(GTConfig.gt_interrupt_modal_idname)
+            op('INVOKE_DEFAULT')
+        elif self.product == ProductType.FACETRACKER:
+            op = get_operator(FTConfig.ft_interrupt_modal_idname)
+            op('INVOKE_DEFAULT')
 
         bake_texture_sequence(context, geotracker, filepath_pattern,
                               frames=frames,
-                              file_format=self.file_format)
+                              file_format=self.file_format,
+                              product=self.product)
 
         return {'FINISHED'}
 
@@ -600,7 +635,7 @@ class GT_OT_AnalyzeCall(Operator):
     precalc_end: IntProperty(default=250, name='to',
                              description='End frame', min=0)
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def check_precalc_range(self) -> bool:
         scene_start = bpy_start_frame()
@@ -624,7 +659,8 @@ class GT_OT_AnalyzeCall(Operator):
         self._precalc_range_row(layout, geotracker)
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
         settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -638,10 +674,12 @@ class GT_OT_AnalyzeCall(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def cancel(self, context):
-        _log.output(f'{self.__class__.__name__} cancel')
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         _log.output('START ANALYZE')
         settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
@@ -675,7 +713,7 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def draw(self, context):
         layout = self.layout
@@ -690,9 +728,13 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
             col.label(text=txt)
 
     def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         try:
             op = get_operator(GTConfig.gt_create_precalc_idname)
             op('EXEC_DEFAULT', product=self.product)
@@ -741,6 +783,8 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         subtype='FILE_PATH'
     )
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def check(self, context):
         change_ext = False
 
@@ -771,8 +815,10 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
             layout.prop(bpy_image_settings(), 'exr_codec')
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         _log.output(f'START SAVE TEXTURE: {self.filepath}')
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -795,7 +841,9 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}

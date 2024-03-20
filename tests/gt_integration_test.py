@@ -13,7 +13,7 @@ from keentools.utils.materials import (get_mat_by_name,
                                        assign_material_to_object,
                                        get_shader_node,
                                        make_node_shader_matte)
-from keentools.addon_config import gt_settings, get_operator
+from keentools.addon_config import gt_settings, get_operator, ProductType
 from keentools.geotracker_config import GTConfig
 from keentools.utils.animation import create_locrot_keyframe
 from keentools.utils.bpy_common import (bpy_current_frame,
@@ -132,7 +132,8 @@ def gt_create_geotracker() -> None:
 
 def gt_load_movieclip(dir_path: str, filename: str) -> None:
     op = get_operator(GTConfig.gt_sequence_filebrowser_idname)
-    op('EXEC_DEFAULT', directory=dir_path, files=[{'name':filename}])
+    op('EXEC_DEFAULT', directory=dir_path, files=[{'name':filename}],
+       product=ProductType.GEOTRACKER)
 
 
 def fake_pinmode_on() -> None:
@@ -204,7 +205,8 @@ def prepare_gt_test_environment() -> None:
     try:
         op = get_operator(GTConfig.gt_choose_precalc_file_idname)
         op('EXEC_DEFAULT',
-           filepath=os.path.join(dir_path, GTTestConfig.cube_precalc_filename))
+           filepath=os.path.join(dir_path, GTTestConfig.cube_precalc_filename),
+           product=ProductType.GEOTRACKER)
     except Exception as err:
         _log.error(f'Choose precalc: {str(err)}')
 
@@ -218,7 +220,7 @@ def prepare_gt_test_environment() -> None:
 
     _log.output('Start precalc')
     op = get_operator(GTConfig.gt_create_precalc_idname)
-    op('EXEC_DEFAULT')
+    op('EXEC_DEFAULT', product=ProductType.GEOTRACKER)
     wait_for_precalc_end()
     test_utils.save_scene(filename=GTTestConfig.cube_precalc_scene_filename)
 

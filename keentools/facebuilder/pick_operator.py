@@ -19,7 +19,7 @@
 from typing import Any, Optional, List, Tuple, Set
 
 from bpy.types import Operator, Area
-from bpy.props import IntProperty
+from bpy.props import IntProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, fb_settings, get_operator, ErrorType
@@ -149,8 +149,10 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
 
 
 def _not_enough_face_features_warning() -> None:
-    error_message = 'Sorry, could not find enough facial features \n' \
-                    'to pin the model! Please try pinning the model manually.'
+    error_message = 'Sorry, can\'t find enough facial features for ' \
+                    'auto alignment. Try to align it manually\n' \
+                    'by creating pins and dragging them to match ' \
+                    'the mesh with the image'
     warn = get_operator(Config.kt_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=error_message)
@@ -320,6 +322,8 @@ class FB_OT_PickModeStarter(Operator):
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
+    auto_detect_single: BoolProperty(default=False)
+
     def _action(self, context: Any, event: Any, invoked: bool=True) -> Set:
         _log.output('PickModeStarter action call')
 
@@ -348,14 +352,7 @@ class FB_OT_PickModeStarter(Operator):
         rectangler = vp.rectangler()
         rectangler.clear_rectangles()
 
-        if len(rects) > 1:
-            for x1, y1, x2, y2, _ in rects:
-                rectangler.add_rectangle(x1, y1, x2, y2, w, h,
-                                         FBConfig.regular_rectangle_color)
-            if invoked:
-                op = get_operator(FBConfig.fb_pickmode_idname)
-                op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
-        elif len(rects) == 1:
+        if len(rects) == 1:
             result = _add_pins_to_face(self.headnum, self.camnum,
                                        rectangle_index=0, context=context)
             if result is None:
@@ -363,7 +360,8 @@ class FB_OT_PickModeStarter(Operator):
             if not result:
                 message = 'A face was detected but not pinned'
                 _log.output(message)
-                _not_enough_face_features_warning()
+                if not self.auto_detect_single:
+                    _not_enough_face_features_warning()
             else:
                 head = fb_settings().get_head(self.headnum)
                 head.mark_model_changed_by_pinmode()
@@ -371,6 +369,19 @@ class FB_OT_PickModeStarter(Operator):
                 message = 'A face was detected and pinned'
                 self.report({'INFO'}, message)
                 _log.output(message)
+
+            return {'FINISHED'}
+
+        if self.auto_detect_single:
+            return {'CANCELLED'}
+
+        if len(rects) > 1:
+            for x1, y1, x2, y2, _ in rects:
+                rectangler.add_rectangle(x1, y1, x2, y2, w, h,
+                                         FBConfig.regular_rectangle_color)
+            if invoked:
+                op = get_operator(FBConfig.fb_pickmode_idname)
+                op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         else:
             message = 'Could not detect a face'
             self.report({'ERROR'}, message)
@@ -379,7 +390,7 @@ class FB_OT_PickModeStarter(Operator):
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
-        _log.output('PickModeStarter invoke call')
+        _log.green(f'{self.__class__.__name__} invoke')
         settings = fb_settings()
         if not settings.pinmode:
             message = 'Not in pinmode call'
@@ -389,5 +400,5 @@ class FB_OT_PickModeStarter(Operator):
         return self._action(context, event, invoked=True)
 
     def execute(self, context: Any) -> Set:  # Used only for integration testing
-        _log.output('PickModeStarter execute call')
+        _log.green(f'{self.__class__.__name__} invoke')
         return self._action(context, event=None, invoked=False)

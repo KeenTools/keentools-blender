@@ -22,7 +22,7 @@ from typing import Any, List, Optional, Tuple
 from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import gt_settings
+from ...addon_config import gt_settings, get_settings, ProductType
 from ...utils.version import BVersion
 from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
@@ -68,7 +68,8 @@ def get_bad_frame():
     return _bad_frame
 
 
-def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
+def bake_texture(geotracker: Any, selected_frames: List[int],
+                 *, product: int) -> Any:
     def _empty_np_image() -> Any:
         w, h = bpy_render_frame()
         np_img = np.zeros((h, w, 4), dtype=np.float32)
@@ -110,7 +111,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
 
     progress_callBack = ProgressCallBack()
 
-    settings = gt_settings()
+    settings = get_settings(product)
     current_frame = bpy_current_frame()
     bpy_progress_begin(0, 1)
     _set_bad_frame()
@@ -154,10 +155,11 @@ _bake_generator_var: Optional[Any] = None
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                    *, file_format: str = 'PNG', frames: List[int],
-                   digits: int = 4) -> Any:
+                   digits: int = 4, product: int) -> Any:
     def _finish():
         settings.stop_calculating()
-        revert_default_screen_message(unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode,
+                                      product=product)
         if tex is not None:
             remove_bpy_image(tex)
         if not settings.pinmode:
@@ -166,10 +168,11 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
         settings.user_interrupts = True
 
     delta = 0.001
-    settings = gt_settings()
+    settings = get_settings(product)
     settings.calculating_mode = 'REPROJECT'
 
-    single_line_screen_message('Projecting and baking… Please wait')
+    single_line_screen_message('Projecting and baking… Please wait',
+                               product=product)
 
     tex = None
     total_frames = len(frames)
@@ -178,14 +181,14 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             _finish()
             return None
 
-        texture_projection_screen_message(num + 1, total_frames)
+        texture_projection_screen_message(num + 1, total_frames, product=product)
 
         settings.user_percent = 100 * num / total_frames
         bpy_set_current_frame(frame)
 
         yield delta
 
-        built_texture = bake_texture(geotracker, [frame])
+        built_texture = bake_texture(geotracker, [frame], product=product)
         if tex is None:
             tex = create_compatible_bpy_image(built_texture)
         tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
@@ -214,12 +217,13 @@ def _bake_caller() -> Optional[float]:
 
 def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
                           *, file_format: str = 'PNG', frames: List[int],
-                          digits: int = 4) -> None:
+                          digits: int = 4, product: int) -> None:
     global _bake_generator_var
     _bake_generator_var = bake_generator(context.area, geotracker,
                                          filepath_pattern,
                                          file_format=file_format,
-                                         frames=frames, digits=digits)
+                                         frames=frames, digits=digits,
+                                         product=product)
     prepare_camera(context.area)
     settings = gt_settings()
     if not settings.pinmode:

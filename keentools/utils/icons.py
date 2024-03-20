@@ -29,6 +29,10 @@ _log = KTLogger(__name__)
 
 _ICONS_DIR: str = 'icons'
 _ICONS: Dict = {
+    'align_face': ('align_face.png', 'SHADERFX'),
+    'rotate_head_forward': ('rotate_head_forward.png', 'TRIA_RIGHT'),
+    'rotate_head_backward': ('rotate_head_backward.png', 'TRIA_LEFT'),
+
     'track_backward': ('track_backward.png', 'TRACKING_BACKWARDS'),
     'track_forward': ('track_forward.png', 'TRACKING_FORWARDS'),
     'track_backward_single': ('track_backward_single.png',
@@ -60,13 +64,14 @@ class KTIcons:
         res = cls.icons.load(name, full_path, 'IMAGE')
         _log.output(f'ICON: {name} -- {full_path} -- {res}')
         if res.image_size[0] == 0:
-            _log.error(f'Cannot load icon: {name}')
+            _log.red(f'Cannot load icon: {name}')
             cls.icons.pop(name)
             return False
         return True
 
     @classmethod
     def load_icons(cls) -> None:
+        _log.yellow('load_icons')
         for name in _ICONS:
             cls.load_icon(name, _ICONS[name][0])
         _log.output(f'icons: {cls.icons.keys()}')
