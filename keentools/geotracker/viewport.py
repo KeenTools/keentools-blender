@@ -60,7 +60,7 @@ class GTViewport(KTViewport):
         self._points2d = KTPoints2D(SpaceView3D)
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
-        self._texter = KTScreenText(SpaceView3D)
+        self._texter = KTScreenText(SpaceView3D, 'GeoTracker')
         self._wireframer = KTLitEdgeShaderLocal3D(SpaceView3D, mask_color=(
             *UserPreferences.get_value_safe('gt_mask_3d_color',
                                             UserPreferences.type_color),
@@ -145,19 +145,20 @@ class GTViewport(KTViewport):
                 self._selector,
                 self._mask2d]
 
-    def load_all_shaders(self):
-        _log.output('GT load_all_shaders')
+    def load_all_shaders(self) -> bool:
+        _log.blue('GT load_all_shaders start')
         if bpy_background_mode():
+            _log.red('load_all_shaders bpy_background_mode True end >>>')
             return True
         tmp_log = '--- GT Shaders ---'
         show_tmp_log = False
-        _log.output(tmp_log)
+        _log.blue(tmp_log)
         try:
             for item in self.get_all_viewport_shader_objects():
                 item_type = f'* {item.__class__.__name__}'
                 tmp_log += '\n' + item_type + ' -- '
 
-                _log.output(item_type)
+                _log.blue(item_type)
                 res = item.init_shaders()
 
                 tmp_log += 'skipped' if res is None else f'{res}'
@@ -170,27 +171,29 @@ class GTViewport(KTViewport):
             warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
             return False
 
-        _log.output('--- End of GT Shaders ---')
+        _log.blue('--- End of GT Shaders ---')
         if show_tmp_log:
             _log.info(tmp_log)
+        _log.output('GT load_all_shaders end >>>')
         return True
 
-    def register_handlers(self, context):
+    def register_handlers(self, *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handlers start')
         self.unregister_handlers()
-        _log.output(f'{self.__class__.__name__}.register_handlers')
-        self.set_work_area(context.area)
-        self.mask2d().register_handler(context)
-        self.residuals().register_handler(context)
-        self.points3d().register_handler(context)
-        self.points2d().register_handler(context)
-        self.texter().register_handler(context)
-        self.wireframer().register_handler(context)
-        self.timeliner().register_handler(context)
-        self.selector().register_handler(context)
+        self.set_work_area(area)
+        self.mask2d().register_handler(area=area)
+        self.residuals().register_handler(area=area)
+        self.points3d().register_handler(area=area)
+        self.points2d().register_handler(area=area)
+        self.texter().register_handler(area=area)
+        self.wireframer().register_handler(area=area)
+        self.timeliner().register_handler()
+        self.selector().register_handler(area=area)
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
+        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
 
     def unregister_handlers(self):
-        _log.output(f'{self.__class__.__name__}.unregister_handlers')
+        _log.yellow(f'{self.__class__.__name__}.unregister_handlers start')
         self.unregister_draw_update_timer()
         self.selector().unregister_handler()
         self.timeliner().unregister_handler()
@@ -201,6 +204,7 @@ class GTViewport(KTViewport):
         self.residuals().unregister_handler()
         self.mask2d().unregister_handler()
         self.clear_work_area()
+        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
     def mask2d(self) -> KTRasterMask:
         return self._mask2d
@@ -366,16 +370,21 @@ class GTViewport(KTViewport):
         wire.create_batch()
 
     def hide_pins_and_residuals(self):
+        _log.yellow(f'{self.__class__.__name__}.hide_pins_and_residuals start')
         self.points2d().hide_shader()
         self.points3d().hide_shader()
         self.residuals().hide_shader()
+        _log.output(f'{self.__class__.__name__}.hide_pins_and_residuals end >>>')
 
     def unhide_pins_and_residuals(self):
+        _log.yellow(f'{self.__class__.__name__}.unhide_pins_and_residuals start')
         self.points2d().unhide_shader()
         self.points3d().unhide_shader()
         self.residuals().unhide_shader()
+        _log.output(f'{self.__class__.__name__}.unhide_pins_and_residuals end >>>')
 
     def unhide_all_shaders(self):
+        _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
         self.mask2d().unhide_shader()
         self.residuals().unhide_shader()
         self.points3d().unhide_shader()
@@ -384,6 +393,7 @@ class GTViewport(KTViewport):
         self.wireframer().unhide_shader()
         self.timeliner().unhide_shader()
         self.selector().unhide_shader()
+        _log.output(f'{self.__class__.__name__}.unhide_all_shaders end >>>')
 
     def needs_to_be_drawn(self):
         return self.points2d().needs_to_be_drawn() or \

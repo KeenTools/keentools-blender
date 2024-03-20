@@ -27,6 +27,7 @@ from .images import check_gl_image
 from .base_shaders import KTShaderBase
 from .gpu_shaders import raster_image_mask_shader
 from .gpu_control import (set_blend_alpha, set_shader_sampler)
+from ..utils.bpy_common import bpy_context
 
 
 _log = KTLogger(__name__)
@@ -67,7 +68,7 @@ class KTRasterMask(KTShaderBase):
             self.mask_shader, 'TRI_FAN', {'pos': self.vertices,
                                           'texCoord': self.uvs})
 
-    def draw_checks(self, context: Any) -> bool:
+    def draw_checks(self) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
             return False
@@ -75,7 +76,7 @@ class KTRasterMask(KTShaderBase):
         if self.mask_shader is None or self.mask_batch is None:
             return False
 
-        if self.work_area != context.area:
+        if not self.work_area or self.work_area != bpy_context().area:
             return False
 
         if not self.image:
@@ -87,7 +88,7 @@ class KTRasterMask(KTShaderBase):
             return False
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main(self) -> None:
         if not self.image:
             return
 
@@ -102,9 +103,10 @@ class KTRasterMask(KTShaderBase):
         shader.uniform_float('maskThreshold', self.mask_threshold)
         shader.uniform_int('channel', self.channel)
         set_shader_sampler(shader, self.image)
-        self.mask_batch.draw(shader)
+        if self.mask_batch:
+            self.mask_batch.draw(shader)
 
-    def register_handler(self, context: Any,
-                         post_type: str = 'POST_PIXEL') -> None:
-        _log.output(f'{self.__class__.__name__}.register_handler')
-        super().register_handler(context, post_type)
+    def register_handler(self, post_type: str = 'POST_PIXEL', *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handler')
+        _log.output('call super().register_handler')
+        super().register_handler(post_type, area=area)

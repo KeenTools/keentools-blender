@@ -28,7 +28,8 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType,
                             show_user_preferences,
-                            ProductType)
+                            ProductType,
+                            ActionStatus)
 from ..geotracker.viewport import GTViewport
 from ..utils.coords import (image_space_to_frame,
                             calc_bpy_camera_mat_relative_to_model,
@@ -53,6 +54,8 @@ from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.images import get_background_image_strict
+from ..geotracker.utils.prechecks import common_checks
+from ..utils.manipulate import switch_to_camera
 
 
 _log = KTLogger(__name__)
@@ -216,6 +219,7 @@ class Loader:
 
     @classmethod
     def init_handlers(cls):
+        _log.yellow(f'{cls.__name__}.init_handlers start')
         cls.frame_change_post_handler = frame_change_post_handler_wrapper(
             cls.get_settings, cls)
         cls.depsgraph_update_handler = depsgraph_update_handler_wrapper(
@@ -224,6 +228,7 @@ class Loader:
 
         cls.check_shader_timer = KTStopShaderTimer(cls.get_settings,
                                                    cls.force_stop_shaders)
+        _log.output(f'{cls.__name__}.init_handlers end >>>')
 
     @classmethod
     def force_stop_shaders(cls) -> None:
@@ -705,10 +710,14 @@ class Loader:
 
     @classmethod
     def stop_viewport_shaders(cls) -> None:
+        _log.yellow(f'{cls.__name__} stop_viewport_shaders start')
         cls.check_shader_timer.stop()
         vp = cls.viewport()
+        area = vp.get_work_area()
         vp.unregister_handlers()
-        _log.output('GT VIEWPORT SHADERS HAVE BEEN STOPPED')
+        if area:
+            area.tag_redraw()
+        _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 
     @classmethod
     def status_info(cls):
@@ -752,7 +761,7 @@ class Loader:
     @classmethod
     def out_pinmode(cls) -> None:
         settings = cls.get_settings()
-        _log.output(f'out_pinmode call')
+        _log.magenta(f'{cls.__name__} out_pinmode start')
         _log.output(f'\n--- Before out\n{cls.status_info()}')
         settings.pinmode = False
 
@@ -762,9 +771,7 @@ class Loader:
         try:
             exit_area_localview(area)
         except Exception as err:
-            _log.error(_log.color(
-                'magenta',
-                f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}'))
+            _log.red(f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}')
 
         settings.reset_pinmode_id()
         settings.viewport_state.show_ui_elements(area)
@@ -773,17 +780,18 @@ class Loader:
         if geotracker is None:
             geotracker = settings.get_current_geotracker_item()
         if geotracker is None:
-            _log.error(f'out_pinmode error: No geotracker')
+            _log.error(f'{cls.__name__} out_pinmode: No tracker >>>')
             return
 
         geotracker.reset_focal_length_estimation()
 
         cls.set_geotracker_item(None)
         _log.output(f'\n--- After out\n{cls.status_info()}')
+        _log.magenta(f'{cls.__name__} out_pinmode end >>>')
 
     @classmethod
     def register_undo_redo_handlers(cls):
-        _log.output('register_undo_redo_handlers start')
+        _log.yellow('register_undo_redo_handlers start')
         cls.unregister_undo_redo_handlers()
         register_app_handler(bpy.app.handlers.undo_post, cls.undo_redo_handler)
         register_app_handler(bpy.app.handlers.redo_post, cls.undo_redo_handler)
@@ -791,15 +799,58 @@ class Loader:
                              cls.depsgraph_update_handler)
         register_app_handler(bpy.app.handlers.frame_change_post,
                              cls.frame_change_post_handler)
-        _log.output('register_undo_redo_handlers end')
+        _log.output('register_undo_redo_handlers end >>>')
 
     @classmethod
     def unregister_undo_redo_handlers(cls):
-        _log.output('unregister_undo_redo_handlers start')
+        _log.yellow('unregister_undo_redo_handlers start')
         unregister_app_handler(bpy.app.handlers.frame_change_post,
                                cls.frame_change_post_handler)
         unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
                                cls.depsgraph_update_handler)
         unregister_app_handler(bpy.app.handlers.undo_post, cls.undo_redo_handler)
         unregister_app_handler(bpy.app.handlers.redo_post, cls.undo_redo_handler)
-        _log.output('unregister_undo_redo_handlers end')
+        _log.output('unregister_undo_redo_handlers end >>>')
+
+    @classmethod
+    def stop_viewport(cls) -> ActionStatus:
+        _log.green(f'{cls.__name__}.stop_viewport start')
+        cls.stop_viewport_shaders()
+        _log.output(f'{cls.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    @classmethod
+    def show_pinmode(cls) -> ActionStatus:
+        area = cls.get_work_area()
+        if not area:
+            return ActionStatus(False, 'No working area defined')
+
+        check_status = common_checks(object_mode=True,
+                                     is_calculating=True,
+                                     reload_geotracker=True,
+                                     stop_another_pinmode=True,
+                                     geotracker=True,
+                                     camera=True,
+                                     geometry=True,
+                                     product=cls.product_type())
+        if not check_status.success:
+            return check_status
+
+        settings = cls.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        switch_to_camera(area, geotracker.camobj,
+                         geotracker.animatable_object())
+
+        cls.load_pins_into_viewport()
+        cls.update_viewport_shaders(hash=True,
+                                    adaptive_opacity=True,
+                                    wireframe_colors=True,
+                                    geomobj_matrix=True,
+                                    edge_indices=True,
+                                    wireframe=True,
+                                    wireframe_data=True,
+                                    pins_and_residuals=True,
+                                    timeline=True,
+                                    mask=True)
+        return ActionStatus(True, 'ok')

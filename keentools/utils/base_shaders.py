@@ -21,7 +21,6 @@ from typing import Any, List, Callable, Tuple, Optional
 from bpy.types import Object, Area, Region, SpaceView3D
 
 from .kt_logging import KTLogger
-from .bpy_common import use_gpu_instead_of_bgl
 
 
 _log = KTLogger(__name__)
@@ -86,37 +85,38 @@ class KTShaderBase:
     def create_batch(self) -> None:
         self.increment_batch_counter()
 
-    def draw_callback(self, context: Any) -> None:
-        if self.draw_checks(context):
-            self.draw_main(context)
+    def draw_callback(self) -> None:
+        if self.draw_checks():
+            self.draw_main()
             self.count_draw_call()
 
-    def draw_checks(self, context: Any) -> bool:
+    def draw_checks(self) -> bool:
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main(self) -> None:
         pass
 
-    def register_handler(self, context: Any,
-                         post_type: str = 'POST_VIEW') -> None:
-        _log.output(f'{self.__class__.__name__}.register_handler')
+    def register_handler(self, post_type: str = 'POST_VIEW', *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handler start')
         if self.draw_handler is not None:
-            _log.output('draw_handler is not empty, call unregister')
+            _log.red('draw_handler is not empty, call unregister')
             self.unregister_handler()
             _log.output('continue register')
-        self.work_area = context.area
+        self.work_area = area
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', post_type)
+            self.draw_callback, (), 'WINDOW', post_type)
         self.add_handler_list(self.draw_handler)
+        _log.output(f'{self.__class__.__name__}.register_handler end >>>')
 
     def unregister_handler(self) -> None:
-        _log.output(f'{self.__class__.__name__}.unregister_handler')
+        _log.yellow(f'{self.__class__.__name__}.unregister_handler start')
         if self.draw_handler is not None:
             self.get_target_class().draw_handler_remove(
                 self.draw_handler, 'WINDOW')
             self.remove_handler_list(self.draw_handler)
         self.draw_handler = None
         self.work_area = None
+        _log.output(f'{self.__class__.__name__}.unregister_handler end >>>')
 
     def hide_shader(self) -> None:
         _log.output(f'{self.__class__.__name__}.hide_shader')

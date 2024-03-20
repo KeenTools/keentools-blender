@@ -37,6 +37,7 @@ _log = KTLogger(__name__)
 
 def push_head_in_undo_history(head: Any,
                               msg: str = 'KeenTools operation') -> None:
+    _log.magenta(f'push_head_in_undo_history: {msg}')
     head.need_update = True
     inc_fb_operation()
     force_undo_push(msg)

@@ -82,7 +82,7 @@ class MovePin(bpy.types.Operator):
             _log.output(f'_new_pin ADD PIN pins: {pins.arr()}')
             return True
 
-    def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
+    def init_action(self, area: Any, mouse_x: float, mouse_y: float) -> bool:
         def _enable_pin_safe(gt, keyframe, pin_index):
             pin = gt.pin(keyframe, pin_index)
             if pin and not pin.enabled:
@@ -97,12 +97,12 @@ class MovePin(bpy.types.Operator):
 
         loader = settings.loader()
         vp = loader.viewport()
-        vp.update_view_relative_pixel_size(context.area)
+        vp.update_view_relative_pixel_size(area)
         pins = vp.pins()
 
         loader.load_pins_into_viewport()
 
-        x, y = get_image_space_coord(mouse_x, mouse_y, context.area,
+        x, y = get_image_space_coord(mouse_x, mouse_y, area,
                                      *get_scene_camera_shift())
         pins.set_current_pin((x, y))
 
@@ -118,7 +118,7 @@ class MovePin(bpy.types.Operator):
             for i in pins.get_selected_pins():
                 _enable_pin_safe(gt, keyframe, i)
         else:
-            self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
+            self.new_pin_flag = self._new_pin(area, mouse_x, mouse_y)
             if not self.new_pin_flag:
                 _log.output('GT MISS MODEL CLICK')
                 pins.clear_selected_pins()
@@ -127,8 +127,8 @@ class MovePin(bpy.types.Operator):
             pins.set_selected_pins([pins.current_pin_num()])
             _log.output('GT NEW PIN CREATED')
 
-        vp.create_batch_2d(context.area)
-        vp.register_handlers(context)
+        vp.create_batch_2d(area)
+        vp.register_handlers(area=area)
         return True
 
     def update_focal_length_in_all_keyframes(self) -> None:
@@ -279,22 +279,25 @@ class MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
-        _log.output('GT MOVEPIN invoke')
+        _log.green(f'{self.__class__.__name__} invoke start')
         self.dragged = False
         settings = self.get_settings()
         loader = settings.loader()
-        area = loader.get_work_area()
+        area = context.area
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
-        if not point_is_in_area(context.area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y):
             _log.output(f'OUT OF AREA: {mouse_x}, {mouse_y}')
+            _log.output(f'{self.__class__.__name__} invoke 1 cancel >>>')
             return {'CANCELLED'}
         if point_is_in_service_region(area, mouse_x, mouse_y):
             _log.output(f'OUT OF SAFE REGION: {mouse_x}, {mouse_y}')
+            _log.output(f'{self.__class__.__name__} invoke 2 cancel >>>')
             return {'CANCELLED'}
 
-        if not self.init_action(context, mouse_x, mouse_y):
+        if not self.init_action(area, mouse_x, mouse_y):
             settings.start_selection(mouse_x, mouse_y)
             _log.output(f'START SELECTION: {mouse_x}, {mouse_y}')
+            _log.output(f'{self.__class__.__name__} invoke 3 cancel >>>')
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
@@ -310,6 +313,7 @@ class MovePin(bpy.types.Operator):
 
         context.window_manager.modal_handler_add(self)
         _log.output('GT START PIN MOVING')
+        _log.output(f'{self.__class__.__name__} invoke end >>>')
         return {'RUNNING_MODAL'}
 
     def modal(self, context: Any, event: Any) -> Set:

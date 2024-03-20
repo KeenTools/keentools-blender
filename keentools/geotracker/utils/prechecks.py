@@ -25,6 +25,11 @@ from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              get_settings,
                              get_operator,
+                             calculation_in_progress,
+                             tool_pinmode,
+                             stop_fb_pinmode,
+                             stop_gt_pinmode,
+                             stop_ft_pinmode,
                              ErrorType,
                              ActionStatus,
                              ProductType)
@@ -122,6 +127,7 @@ def show_unlicensed_warning() -> None:
 def common_checks(*, object_mode: bool = False,
                   pinmode: bool = False,
                   pinmode_out: bool = False,
+                  stop_another_pinmode: bool = False,
                   is_calculating: bool = False,
                   reload_geotracker: bool = False,
                   geotracker: bool = False,
@@ -142,10 +148,11 @@ def common_checks(*, object_mode: bool = False,
             return ActionStatus(False, msg)
 
     settings = get_settings(product)
-    if is_calculating and settings.is_calculating():
-        msg = 'Calculation in progress'
-        _log.error(msg)
-        return ActionStatus(False, msg)
+    if is_calculating:
+        calc_status = calculation_in_progress()
+        if not calc_status.success:
+            _log.error(calc_status.error_message)
+            return calc_status
     if pinmode and not settings.pinmode:
         msg = 'This operation works only in Pin mode'
         _log.error(msg)
@@ -154,6 +161,29 @@ def common_checks(*, object_mode: bool = False,
         msg = 'This operation does not work in Pin mode'
         _log.error(msg)
         return ActionStatus(False, msg)
+
+    if stop_another_pinmode:
+        pm = tool_pinmode(facebuilder=True, geotracker=True, facetracker=True)
+        if pm is not None:
+            if pm == ProductType.FACEBUILDER:
+                stop_fb_pinmode()
+                msg = 'FaceBuilder interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+            elif pm == ProductType.GEOTRACKER and pm != product:
+                stop_gt_pinmode()
+                msg = 'GeoTracker interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+            elif pm == ProductType.FACETRACKER and pm != product:
+                stop_ft_pinmode()
+                msg = 'FaceTracker interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+
+            msg = f'Unknown product type in common check {pm}'
+            _log.error(msg)
+            return ActionStatus(False, msg)
 
     if reload_geotracker:
         if not settings.reload_current_geotracker():

@@ -24,6 +24,7 @@ import blf
 from .kt_logging import KTLogger
 from .version import BVersion
 from .base_shaders import KTShaderBase
+from ..utils.bpy_common import bpy_context
 
 
 _log = KTLogger(__name__)
@@ -33,7 +34,8 @@ _text_opacity: float = 1.0
 
 
 class KTScreenText(KTShaderBase):
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D,
+                 main_text: str = 'Pin Mode'):
         super().__init__(target_class)
         self.defaults: Dict = {'color': (1., 1., 1., _text_opacity),
                                'size': 24,
@@ -43,8 +45,8 @@ class KTScreenText(KTShaderBase):
                                'y': 60}
         self.message: List[Dict] = []
         self.default_text: List[Dict] = [
-            {'text': 'Pin Mode ',
-             'color': (1., 1., 1., _text_opacity),
+            {'text': main_text,
+             'color': (0.871, 0.107, 0.001, _text_opacity),
              'size': 24,
              'y': 60},  # line 1
             {'text': 'ESC: Exit | LEFT CLICK: Create Pin '
@@ -71,20 +73,19 @@ class KTScreenText(KTShaderBase):
     def set_message(self, msg: List[Dict]) -> None:
         self.message = self._fill_all_fields(msg)
 
-    def draw_callback(self, context: Any) -> None:
+    def draw_callback(self) -> None:
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
             return
 
-        area = context.area
-        if self.work_area != area:
+        if not self.work_area or self.work_area != bpy_context().area:
             return
 
         if len(self.message) == 0:
             return
 
-        region = area.regions[-1]
+        region = self.work_area.regions[-1]
         assert region.type == 'WINDOW'
 
         xc = int(region.width * 0.5)  # horizontal center
@@ -110,7 +111,7 @@ class KTScreenText(KTShaderBase):
             blf.position(font_id, xp, yp, 0)
             blf.draw(font_id, row['text'])
 
-    def register_handler(self, context: Any,
-                         post_type: str = 'POST_PIXEL') -> None:
-        _log.output(f'{self.__class__.__name__}.register_handler')
-        super().register_handler(context, post_type)
+    def register_handler(self, post_type: str = 'POST_PIXEL', *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handler')
+        _log.output('call super().register_handler')
+        super().register_handler(post_type, area=area)

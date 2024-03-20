@@ -50,7 +50,7 @@ class FBViewport(KTViewport):
         self._points2d: Any = KTPoints2D(SpaceView3D)
         self._points3d: Any = KTPoints3D(SpaceView3D)
         self._residuals: Any = KTEdgeShader2D(SpaceView3D)
-        self._texter: Any = KTScreenText(SpaceView3D)
+        self._texter: Any = KTScreenText(SpaceView3D, 'FaceBuilder')
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
         self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
@@ -64,18 +64,19 @@ class FBViewport(KTViewport):
                 self._rectangler]
 
     def load_all_shaders(self) -> bool:
-        _log.output('FB load_all_shaders')
+        _log.yellow('FB load_all_shaders start')
         if bpy_background_mode():
+            _log.red('load_all_shaders bpy_background_mode True end >>>')
             return True
         tmp_log = '--- FB Shaders ---'
         show_tmp_log = False
-        _log.output(tmp_log)
+        _log.blue(tmp_log)
         try:
             for item in self.get_all_viewport_shader_objects():
                 item_type = f'* {item.__class__.__name__}'
                 tmp_log += '\n' + item_type + ' -- '
 
-                _log.output(item_type)
+                _log.blue(item_type)
                 res = item.init_shaders()
 
                 tmp_log += 'skipped' if res is None else f'{res}'
@@ -88,25 +89,27 @@ class FBViewport(KTViewport):
             warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
             return False
 
-        _log.output('--- End of FB Shaders ---')
+        _log.blue('--- End of FB Shaders ---')
         if show_tmp_log:
             _log.info(tmp_log)
+        _log.output('FB load_all_shaders end >>>')
         return True
 
-    def register_handlers(self, context: Any) -> None:
+    def register_handlers(self, *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handlers start')
         self.unregister_handlers()
-        _log.output(f'{self.__class__.__name__}.register_handlers')
-        self.set_work_area(context.area)
-        self.residuals().register_handler(context)
-        self.rectangler().register_handler(context)
-        self.points3d().register_handler(context)
-        self.points2d().register_handler(context)
-        self.texter().register_handler(context)
-        self.wireframer().register_handler(context)
+        self.set_work_area(area=area)
+        self.residuals().register_handler(area=area)
+        self.rectangler().register_handler(area=area)
+        self.points3d().register_handler(area=area)
+        self.points2d().register_handler(area=area)
+        self.texter().register_handler(area=area)
+        self.wireframer().register_handler(area=area)
         self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
+        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
 
     def unregister_handlers(self) -> None:
-        _log.output(f'{self.__class__.__name__}.unregister_handlers')
+        _log.yellow(f'{self.__class__.__name__}.unregister_handlers start')
         self.unregister_draw_update_timer()
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()
@@ -115,6 +118,7 @@ class FBViewport(KTViewport):
         self.rectangler().unregister_handler()
         self.residuals().unregister_handler()
         self.clear_work_area()
+        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
     def update_surface_points(
             self, fb: Any, headobj: Object, keyframe: int=-1,
@@ -243,9 +247,11 @@ class FBViewport(KTViewport):
         wire.create_batch()
 
     def unhide_all_shaders(self):
+        _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
         self.residuals().unhide_shader()
         self.points3d().unhide_shader()
         self.points2d().unhide_shader()
         self.texter().unhide_shader()
         self.wireframer().unhide_shader()
         self.rectangler().unhide_shader()
+        _log.output(f'{self.__class__.__name__}.unhide_all_shaders end >>>')

@@ -289,14 +289,6 @@ def ft_pinmode() -> bool:
     return settings.pinmode
 
 
-def calculation_in_progress() -> bool:
-    gts = gt_settings()
-    fts = ft_settings()
-    if not gts or not fts:
-        return False
-    return gts.is_calculating() or fts.is_calculating()
-
-
 def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
@@ -412,3 +404,57 @@ def product_name(product: int) -> str:
 def output_import_statistics() -> None:
     names = "\n".join(_log.module_names())
     _log.output('import sequence:\n' + _log.color('green', f'{names}'))
+
+
+def tool_pinmode(facebuilder: bool = True, geotracker: bool = True,
+                 facetracker: bool = True) -> Optional[int]:
+    if facebuilder and fb_pinmode():
+        return ProductType.FACEBUILDER
+    if geotracker and gt_pinmode():
+        return ProductType.GEOTRACKER
+    if facetracker and ft_pinmode():
+        return ProductType.FACETRACKER
+    return None
+
+
+def stop_fb_pinmode():
+    settings = fb_settings()
+    if settings:
+        headnum = settings.current_headnum
+        loader = settings.loader()
+        if not settings.is_proper_headnum(headnum):
+            loader.out_pinmode(headnum)
+        settings.viewport_state.show_ui_elements(loader.get_work_area())
+        settings.reset_pinmode_id()
+
+
+def stop_gt_pinmode():
+    settings = gt_settings()
+    if settings and settings.pinmode:
+        settings.loader().out_pinmode()
+
+
+def stop_ft_pinmode():
+    settings = ft_settings()
+    if settings and settings.pinmode:
+        settings.loader().out_pinmode()
+
+
+def calculation_in_progress(facebuilder: bool = True,
+                            geotracker: bool = True,
+                            facetracker: bool = True) -> ActionStatus:
+    if geotracker:
+        gts = gt_settings()
+        if gts and gts.is_calculating():
+            return ActionStatus(False, 'GeoTracker calculation is in progress')
+
+    if facetracker:
+        fts = ft_settings()
+        if fts and fts.is_calculating():
+            return ActionStatus(False, 'FaceTracker calculation is in progress')
+
+    if facebuilder:
+        fbs = fb_settings()
+        if fbs and fbs.is_calculating():
+            return ActionStatus(False, 'FaceBuilder calculation is in progress')
+    return ActionStatus(True, 'No calculation is in progress')

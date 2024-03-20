@@ -29,6 +29,7 @@ from .gpu_shaders import (circular_dot_2d_shader,
 from ..preferences.user_preferences import UserPreferences
 from .base_shaders import KTShaderBase
 from .gpu_control import set_blend_alpha, set_point_size
+from ..utils.bpy_common import bpy_context
 
 
 _log = KTLogger(__name__)
@@ -182,7 +183,7 @@ class KTShaderPoints(KTShaderBase):
         self.vertices = []
         self.vertices_colors = []
 
-    def draw_checks(self, context: Any) -> bool:
+    def draw_checks(self) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
             return False
@@ -190,14 +191,14 @@ class KTShaderPoints(KTShaderBase):
         if not self.is_visible():
             return False
 
-        if self.work_area != context.area:
+        if not self.work_area or self.work_area != bpy_context().area:
             return False
 
         if not self.shader or not self.batch:
             return False
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main(self) -> None:
         set_point_size(self.get_point_size())
         set_blend_alpha()
         self.shader.bind()
@@ -226,10 +227,10 @@ class KTPoints2D(KTShaderPoints):
             indices=None)
         self.increment_batch_counter()
 
-    def register_handler(self, context: Any,
-                         post_type: str = 'POST_PIXEL') -> None:
-        _log.output(f'{self.__class__.__name__}.register_handler')
-        super().register_handler(context, post_type)
+    def register_handler(self, post_type: str = 'POST_PIXEL', *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handler')
+        _log.output('call super().register_handler')
+        super().register_handler(post_type, area=area)
 
 
 class KTPoints3D(KTShaderPoints):
