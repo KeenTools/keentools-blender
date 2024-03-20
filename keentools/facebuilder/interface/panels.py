@@ -320,9 +320,6 @@ class FB_PT_HeaderPanel(Common, Panel):
                 row.operator(FBConfig.fb_unhide_head_idname, icon='HIDE_OFF')
                 _start_pinmode_escaper(context)
 
-            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
-            op.product = ProductType.FACEBUILDER
-
             col = layout.column(align=True)
             self._draw_many_heads(col, active=False)
             self._create_head_button(col, active=False)
@@ -341,9 +338,6 @@ class FB_PT_HeaderPanel(Common, Panel):
             return
 
         else:
-            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
-            op.product = ProductType.FACEBUILDER
-
             col = layout.column(align=True)
             self._draw_many_heads(col)
             self._create_head_button(col)
@@ -410,7 +404,7 @@ class FB_PT_OptionsPanel(AllVisible, Panel):
             _draw_camera_info(layout)
 
         col = layout.column(align=True)
-        col.label(text='Mesh Rigidity')
+        col.label(text='Mesh rigidity')
 
         row = col.row(align=True)
         row.enabled = settings.pinmode
@@ -418,7 +412,7 @@ class FB_PT_OptionsPanel(AllVisible, Panel):
 
         if head.should_use_emotions():
             row = col.row(align=True)
-            row.prop(settings, 'expression_rigidity', text='Expression')
+            row.prop(settings, 'expression_rigidity', text='Expressions')
             row.enabled = head.should_use_emotions()
 
         if not head.lock_blinking and head.should_use_emotions():
@@ -816,7 +810,7 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         row = layout.row()
         row.active = False
         row.operator(
-            FBConfig.fb_help_blendshapes_idname,
+            FBConfig.fb_help_export_idname,
             text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
@@ -830,6 +824,22 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
             col.operator(FBConfig.fb_export_to_cc_idname)
 
 
+class FB_PT_SupportPanel(AllVisible, Panel):
+    bl_idname = FBConfig.fb_support_panel_idname
+    bl_label = 'Support'
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(Config.kt_report_bug_idname, icon='ERROR')
+        op.product = ProductType.FACEBUILDER
+        op = col.operator(Config.kt_share_feedback_idname,
+                          icon='OUTLINER_OB_LIGHT')
+        op.product = ProductType.FACEBUILDER
+
+
 CLASSES_TO_REGISTER = (FB_PT_HeaderPanel,
                        FB_PT_UpdatePanel,
                        FB_PT_DownloadNotification,
@@ -841,4 +851,5 @@ CLASSES_TO_REGISTER = (FB_PT_HeaderPanel,
                        FB_PT_AppearancePanel,
                        FB_PT_TexturePanel,
                        FB_PT_BlendShapesPanel,
-                       FB_PT_ExportPanel)
+                       FB_PT_ExportPanel,
+                       FB_PT_SupportPanel)

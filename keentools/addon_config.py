@@ -35,7 +35,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.3.1'  # (5/5)
+    addon_version = '2024.1.0'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -92,6 +92,7 @@ class Config:
     kt_addon_search_idname = operators + '.addon_search'
     kt_exit_localview_idname = operators + '.exit_localview'
     kt_share_feedback_idname = operators + '.share_feedback'
+    kt_report_bug_idname = operators + '.report_bug'
 
     kt_warning_idname = operators + '.common_addon_warning'
 

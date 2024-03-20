@@ -151,7 +151,7 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
 def _not_enough_face_features_warning() -> None:
     error_message = 'Sorry, can\'t find enough facial features for ' \
                     'auto alignment. Try to align it manually\n' \
-                    'by creating pins and dragging them to match '\
+                    'by creating pins and dragging them to match ' \
                     'the mesh with the image'
     warn = get_operator(Config.kt_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,

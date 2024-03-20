@@ -148,6 +148,7 @@ class FTConfig:
     ft_texture_panel_idname = _PT + 'texture_panel'
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
+    ft_support_panel_idname = _PT + 'support_panel'
 
     # Help ids
     ft_help_inputs_idname = operators + '.help_inputs'
