@@ -738,7 +738,6 @@ def remove_pins_action(*, product: int) -> ActionStatus:
             selected_pins.remove(i)
         if gt.is_key_at(bpy_current_frame()) and not loader.solve():
             return ActionStatus(False, 'Could not remove selected pins')
-        loader.load_pins_into_viewport()
 
     pins.reset_current_pin()
     loader.save_geotracker()

@@ -342,6 +342,7 @@ class Loader:
 
     @classmethod
     def load_pins_into_viewport(cls) -> None:
+        _log.red('load_pins_into_viewport')
         keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
@@ -441,7 +442,7 @@ class Loader:
 
     @classmethod
     def solve(cls) -> bool:
-        _log.output('Loader.solve called')
+        _log.magenta(f'{cls.__name__}.solve')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
@@ -467,7 +468,7 @@ class Loader:
         except Exception as err:
             _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')
             return False
-        _log.output('Loader.solve finished')
+        _log.magenta(f'{cls.__name__}.solve end >>>')
         return True
 
     @classmethod
@@ -599,8 +600,9 @@ class Loader:
                                 wireframe_data: bool = False,
                                 pins_and_residuals: bool = False,
                                 timeline: bool = False,
-                                mask: bool = False) -> None:
-        _log.output(_log.color('blue', f'update_viewport_shaders'
+                                mask: bool = False,
+                                tag_redraw: bool = False) -> None:
+        _log.blue(f'update_viewport_shaders'
             f'\nhash: {hash}'
             f' -- adaptive_opacity: {adaptive_opacity}'
             f' -- geomobj_matrix: {geomobj_matrix}'
@@ -608,7 +610,7 @@ class Loader:
             f' -- wireframe_data: {wireframe_data}'
             f'\npins_and_residuals: {pins_and_residuals}'
             f' -- timeline: {timeline}'
-            f' -- mask: {mask}'))
+            f' -- mask: {mask} -- tag_redraw: {tag_redraw}')
         if hash:
             cls.increment_geo_hash()
         if area is None:
@@ -673,6 +675,9 @@ class Loader:
             cls._update_viewport_pins_and_residuals(area)
         if timeline:
             cls.update_timeline()
+        if tag_redraw:
+            area.tag_redraw()
+        _log.blue('update_viewport_shaders end >>>')
 
     @classmethod
     def update_all_timelines(cls) -> None:

@@ -53,6 +53,7 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                        clipping_changed_screen_message)
 from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
                                     subscribe_movie_clip_color_space_watcher)
+from .tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -176,7 +177,7 @@ class PinMode(Operator):
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.output('_delete_found_pin call')
+        _log.yellow('_delete_found_pin')
         settings = self.get_settings()
         loader = settings.loader()
         gt = loader.kt_geotracker()
@@ -191,29 +192,23 @@ class PinMode(Operator):
         kid = bpy_current_frame()
         loader.safe_keyframe_add(kid)
 
-        _log.output(_log.color('red', '_delete_found_pin before solve'))
         if not loader.solve():
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
-        _log.output(_log.color('red', '_delete_found_pin after solve'))
-
-        loader.load_pins_into_viewport()
-        loader.place_object_or_camera()
-
-        vp = loader.viewport()
-        vp.update_surface_points(gt, geotracker.geomobj, kid)
-
-        if not geotracker.camera_mode():
-            wf = vp.wireframer()
-            wf.init_geom_data_from_mesh(geotracker.geomobj)
-            wf.create_batches()
-
-        vp.create_batch_2d(area)
-        vp.update_residuals(gt, area, kid)
-        vp.tag_redraw()
 
         loader.save_geotracker()
+
+        loader.place_object_or_camera()
+        loader.update_viewport_shaders(area, wireframe_data=True,
+                                       geomobj_matrix=True, wireframe=True,
+                                       pins_and_residuals=True, timeline=True,
+                                       tag_redraw=True)
+
+        if loader.product_type() == ProductType.FACETRACKER:
+            create_relative_shape_keyframe(kid)
+
         force_undo_push('Delete GeoTracker pin')
+        _log.output('_delete_found_pin end >>>')
         return {'RUNNING_MODAL'}
 
     def _new_pinmode_id(self) -> None:

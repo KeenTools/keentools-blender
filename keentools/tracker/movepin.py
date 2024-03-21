@@ -165,6 +165,7 @@ class MovePin(bpy.types.Operator):
             else:
                 force_undo_push('Drag GeoTracker pin')
 
+        _log.yellow('on_left_mouse_release')
         settings = self.get_settings()
         loader = settings.loader()
         loader.viewport().pins().reset_current_pin()
@@ -185,14 +186,14 @@ class MovePin(bpy.types.Operator):
         loader.update_viewport_shaders(area, wireframe=True,
                                        geomobj_matrix=True,
                                        pins_and_residuals=True,
-                                       timeline=True)
-        loader.viewport_area_redraw()
-
+                                       timeline=True,
+                                       tag_redraw=True)
         _push_action_in_undo_history()
+        _log.output('on_left_mouse_release end >>>')
         return {'FINISHED'}
 
     def update_on_left_mouse_release(self) -> None:
-        pass
+        _log.output('update_on_left_mouse_release empty')
 
     def _pin_drag(self, kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int,
