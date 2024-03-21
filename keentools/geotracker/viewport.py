@@ -28,8 +28,10 @@ from ..utils.coords import (get_camera_border,
                             image_space_to_region,
                             frame_to_image_space,
                             multiply_verts_on_matrix_4x4,
+                            xy_to_xz_rotation_matrix_3x3,
                             to_homogeneous,
                             pin_to_xyz_from_mesh,
+                            pin_to_xyz_from_geo_mesh,
                             get_area_region,
                             get_area_region_3d,
                             calc_camera_zoom_and_offset,
@@ -212,7 +214,7 @@ class GTViewport(KTViewport):
     def update_surface_points(self, gt: Any, obj: Object, keyframe: int,
                               color: Tuple=GTConfig.surface_point_color) -> None:
         if obj:
-            verts = self.surface_points_from_mesh(gt, obj, keyframe)
+            verts = self.surface_points_from_gt(gt, keyframe)
         else:
             verts = []
 
@@ -256,6 +258,18 @@ class GTViewport(KTViewport):
                 if p is not None:
                     verts.append(p)
         return verts
+
+    def surface_points_from_gt(self, gt: Any, keyframe: int) -> List:
+        geo = gt.applied_args_model_at(keyframe)
+        geo_mesh = geo.mesh(0)
+        pins_count = gt.pins_count()
+        verts = np.empty((pins_count, 3), dtype=np.float32)
+        for i in range(pins_count):
+            pin = gt.pin(keyframe, i)
+            p = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+            verts[i] = p
+        # tolist() is needed by shader batch on Mac
+        return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()
 
     def create_batch_2d(self, area: Area) -> None:
         def _add_markers_at_camera_corners(points: List,
