@@ -99,7 +99,7 @@ class FaceTrackerItem(TrackerItem):
         default=False, update=update_solve_for_camera)
     reduce_pins: BoolProperty(name='Reduce pins', default=False)
     spring_pins_back: BoolProperty(
-        name='Spring pins back', default=True,
+        name='Spring pins back', default=False,
         update=update_spring_pins_back)
 
     focal_length_estimation: BoolProperty(
