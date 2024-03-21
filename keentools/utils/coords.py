@@ -656,7 +656,7 @@ def make_indices_for_wide_edges(numb: int) -> Tuple[Any, Any]:
 def bound_box_center(obj: Object) -> Vector:
     if BVersion.bound_box_has_foreach_get:
         verts = np.empty((8, 3), dtype=np.float32)
-        obj.bound_box.foreach_get(verts)
+        obj.bound_box.foreach_get(verts.ravel())
     else:
         verts = np.array([obj.bound_box[i] for i in range(8)], dtype=np.float32)
     return Vector(np.mean(verts, axis=0))
