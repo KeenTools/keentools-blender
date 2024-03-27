@@ -120,7 +120,6 @@ class FB_OT_MovePin(Operator):
         vp.create_batch_2d(area)
 
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
-        vp.pins().set_current_pin((x, y))
 
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
 
@@ -140,7 +139,7 @@ class FB_OT_MovePin(Operator):
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
         vp = FBLoader.viewport()
         pins = vp.pins()
-        if pins.current_pin() is not None:
+        if pins.current_pin():
             # Move current 2D-pin
             pins.arr()[pins.current_pin_num()] = (x, y)
 
@@ -171,7 +170,6 @@ class FB_OT_MovePin(Operator):
         fb = FBLoader.get_builder()
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
         pins = FBLoader.viewport().pins()
-        pins.set_current_pin((x, y))
         pin_idx = pins.current_pin_num()
         pins.arr()[pin_idx] = (x, y)
         fb.move_pin(kid, pin_idx, image_space_to_frame(x, y))
@@ -214,7 +212,7 @@ class FB_OT_MovePin(Operator):
 
     @staticmethod
     def on_default_modal():
-        if FBLoader.viewport().pins().current_pin() is not None:
+        if FBLoader.viewport().pins().current_pin():
             return {'RUNNING_MODAL'}
 
         _log.output('MOVE PIN FINISH')
@@ -257,7 +255,7 @@ class FB_OT_MovePin(Operator):
             return self.on_left_mouse_release(context.area, mouse_x, mouse_y)
 
         if event.type == 'MOUSEMOVE' \
-                and FBLoader.viewport().pins().current_pin() is not None:
+                and FBLoader.viewport().pins().current_pin():
             _log.output(f'MOUSEMOVE {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 

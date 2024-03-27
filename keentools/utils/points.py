@@ -39,7 +39,6 @@ class KTScreenPins:
     ''' Pins are stored in image space coordinates '''
     def __init__(self):
         self._pins: List[Tuple[float, float]] = []
-        self._current_pin: Optional[Tuple[float, float]] = None
         self._current_pin_num: int = -1
         self._disabled_pins: List[int] = []
         self._selected_pins: List[int] = []
@@ -64,14 +63,10 @@ class KTScreenPins:
     def set_current_pin_num_to_last(self) -> None:
         self._current_pin_num = len(self.arr()) - 1
 
-    def current_pin(self) -> Optional[Tuple[float, float]]:
-        return self._current_pin
-
-    def set_current_pin(self, value: Tuple[float, float]) -> None:
-        self._current_pin = value
+    def current_pin(self) -> bool:
+        return self._current_pin_num >= 0
 
     def reset_current_pin(self) -> None:
-        self._current_pin = None
         self._current_pin_num = -1
 
     def get_selected_pins(self, pins_count: Optional[int]=None) -> List[int]:

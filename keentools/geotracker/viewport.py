@@ -298,7 +298,7 @@ class GTViewport(KTViewport):
             vertex_colors[i] = GTConfig.selected_pin_color
 
         pin_num = pins.current_pin_num()
-        if pins.current_pin() and pin_num >= 0 and pin_num < points_count:
+        if pins.current_pin() and pin_num < points_count:
             vertex_colors[pin_num] = GTConfig.current_pin_color
 
         if GTConfig.show_markers_at_camera_corners:
