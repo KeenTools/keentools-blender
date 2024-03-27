@@ -22,7 +22,11 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, gt_settings, get_operator, ErrorType
+from ..addon_config import (Config,
+                            gt_settings,
+                            get_operator,
+                            ErrorType,
+                            ProductType)
 from ..geotracker_config import GTConfig
 from ..utils.coords import (get_camera_border,
                             image_space_to_region,
@@ -77,6 +81,9 @@ class GTViewport(KTViewport):
         self._draw_update_timer_handler: Optional[Callable] = None
 
         self.stabilization_region_point: Optional[Tuple[float, float]] = None
+
+    def product_type(self) -> int:
+        return ProductType.GEOTRACKER
 
     def clear_stabilization_point(self):
         _log.output(_log.color('yellow', 'clear_stabilization_point'))

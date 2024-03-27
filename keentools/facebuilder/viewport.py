@@ -22,7 +22,11 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..addon_config import (Config,
+                            fb_settings,
+                            get_operator,
+                            ErrorType,
+                            ProductType)
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import bpy_render_frame, bpy_background_mode
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
@@ -54,6 +58,9 @@ class FBViewport(KTViewport):
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
         self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
+
+    def product_type(self) -> int:
+        return ProductType.FACEBUILDER
 
     def get_all_viewport_shader_objects(self) -> List:
         return [self._texter,

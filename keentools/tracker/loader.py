@@ -441,7 +441,7 @@ class Loader:
 
     @classmethod
     def solve(cls) -> bool:
-        _log.output('Loader.solve called')
+        _log.magenta(f'{cls.__name__}.solve')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
@@ -467,7 +467,7 @@ class Loader:
         except Exception as err:
             _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')
             return False
-        _log.output('Loader.solve finished')
+        _log.magenta(f'{cls.__name__}.solve end >>>')
         return True
 
     @classmethod

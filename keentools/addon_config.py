@@ -202,6 +202,15 @@ class Config:
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
+    # Colors
+    pin_color = (1.0, 0.0, 0.0, 1.0)
+    disabled_pin_color = (1.0, 1.0, 0.0, 1.0)
+    selected_pin_color = (0.0, 1.0, 1.0, 1.0)
+    current_pin_color = (0.0, 1.0, 0.0, 1.0)
+    surface_point_color = (0.0, 1.0, 1.0, 0.5)
+    residual_color = (0.0, 1.0, 1.0, 0.5)
+    timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
+
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
                                 ver: Optional[Tuple]=None,
@@ -419,25 +428,29 @@ def tool_pinmode(facebuilder: bool = True, geotracker: bool = True,
 
 def stop_fb_pinmode():
     settings = fb_settings()
-    if settings:
-        headnum = settings.current_headnum
-        loader = settings.loader()
-        if not settings.is_proper_headnum(headnum):
-            loader.out_pinmode(headnum)
-        settings.viewport_state.show_ui_elements(loader.get_work_area())
-        settings.reset_pinmode_id()
+    if not settings:
+        return
+    headnum = settings.current_headnum
+    loader = settings.loader()
+    if not settings.is_proper_headnum(headnum):
+        loader.out_pinmode(headnum)
+    settings.viewport_state.show_ui_elements(loader.get_work_area())
+    settings.reset_pinmode_id()
+    settings.pinmode = False
 
 
 def stop_gt_pinmode():
     settings = gt_settings()
     if settings and settings.pinmode:
         settings.loader().out_pinmode()
+    settings.pinmode = False
 
 
 def stop_ft_pinmode():
     settings = ft_settings()
     if settings and settings.pinmode:
         settings.loader().out_pinmode()
+    settings.pinmode = False
 
 
 def calculation_in_progress(facebuilder: bool = True,
