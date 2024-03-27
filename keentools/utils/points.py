@@ -223,7 +223,8 @@ class KTPoints2D(KTShaderPoints):
 
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
-            {'pos': self.vertices, 'color': self.vertices_colors},
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors)},
             indices=None)
         self.increment_batch_counter()
 
@@ -250,7 +251,8 @@ class KTPoints3D(KTShaderPoints):
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
-            {'pos': self.vertices, 'color': self.vertices_colors},
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors)},
             indices=None)
         self.increment_batch_counter()
 

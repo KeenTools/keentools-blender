@@ -153,7 +153,8 @@ class FBRectangleShader2D(KTEdgeShader2D):
             return
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self.vertices, 'color': self.vertices_colors}
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors)}
         )
 
 
@@ -332,7 +333,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if self.fill_shader is not None:
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.triangle_vertices}
+                {'pos': self.list_for_batch(self.triangle_vertices)}
             )
         else:
             _log.error(f'{self.__class__.__name__}.fill_shader: is empty')

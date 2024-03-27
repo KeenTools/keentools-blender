@@ -164,8 +164,9 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self.vertices, 'color': self.vertices_colors,
-             'lineLength': self.edge_lengths}
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors),
+             'lineLength': self.list_for_batch(self.edge_lengths)}
         )
         self.increment_batch_counter()
 
@@ -224,7 +225,8 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edge_vertices, 'color': self.edge_vertices_colors}
+                {'pos': self.list_for_batch(self.edge_vertices),
+                 'color': self.list_for_batch(self.edge_vertices_colors)}
             )
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
@@ -232,7 +234,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.fill_shader is not None:
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.edge_vertices},
+                {'pos': self.list_for_batch(self.edge_vertices)},
                 indices=self.fill_indices if len(self.edge_vertices) == 8 else []
             )
         else:
@@ -281,15 +283,16 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edge_vertices, 'color': self.edge_vertices_colors,
-                 'lineLength': self.edge_lengths})
+                {'pos': self.list_for_batch(self.edge_vertices),
+                 'color': self.list_for_batch(self.edge_vertices_colors),
+                 'lineLength': self.list_for_batch(self.edge_lengths)})
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
 
         if self.fill_shader is not None:
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.edge_vertices},
+                {'pos': self.list_for_batch(self.edge_vertices)},
                 indices=self.fill_indices if len(self.edge_vertices) == 8 else [])
         else:
             _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
@@ -516,8 +519,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
                     indices = self.selection_triangle_indices
 
             self.selection_fill_batch = batch_for_shader(
-                self.selection_fill_shader, 'TRIS', {'pos': verts},
-                indices=indices)
+                self.selection_fill_shader, 'TRIS',
+                {'pos': self.list_for_batch(verts)}, indices=indices)
         else:
             _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 
