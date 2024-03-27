@@ -184,6 +184,9 @@ class KTShaderPoints(KTShaderBase):
         self.vertices = []
         self.vertices_colors = []
 
+    def clear_all(self) -> None:
+        self.clear_vertices()
+
     def draw_checks(self) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()

@@ -589,6 +589,23 @@ class Loader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
+    def clear_viewport_pins_and_residuals(cls) -> None:
+        _log.yellow('clear_viewport_pins_and_residuals start')
+        vp = cls.viewport()
+        pins = vp.pins()
+        pins.clear_all()
+        p2d = vp.points2d()
+        p2d.clear_all()
+        p2d.create_batch()
+        p3d = vp.points3d()
+        p3d.clear_all()
+        p3d.create_batch()
+        residuals = vp.residuals()
+        residuals.clear_all()
+        residuals.create_batch()
+        _log.output('clear_viewport_pins_and_residuals end >>>')
+
+    @classmethod
     def update_viewport_shaders(cls, area: Optional[Area] = None, *,
                                 hash: bool = False,
                                 adaptive_opacity: bool = False,

@@ -125,6 +125,16 @@ class KTEdgeShaderBase(KTShaderBase):
         self.edge_colors = []
         self.vertices_colors = []
 
+        self.triangle_vertices = []
+        self.edge_vertex_normals = []
+
+        self.wide_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
+        self.wide_opposite_edge_vertices = np.empty(shape=(0, 3),
+                                                    dtype=np.float32)
+        self.wide_vertex_pos_indices = np.empty(shape=(0, 3), dtype=np.int32)
+        self.wide_vertex_opp_indices = np.empty(shape=(0, 3), dtype=np.int32)
+        self.wide_edge_vertex_normals = np.empty(shape=(0, 3), dtype=np.float32)
+
 
 class KTEdgeShader2D(KTEdgeShaderBase):
     def __init__(self, target_class: Any):
@@ -182,6 +192,10 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         _log.yellow(f'{self.__class__.__name__}.register_handler')
         _log.output('call super().register_handler')
         super().register_handler(post_type, area=area)
+
+    def clear_all(self) -> None:
+        super().clear_all()
+        self.edge_lengths = []
 
 
 class KTScreenRectangleShader2D(KTEdgeShader2D):
@@ -252,6 +266,10 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         self.edge_vertices = []
         self.edge_vertices_colors = []
         self.edge_lengths = []
+
+    def clear_all(self) -> None:
+        super().clear_all()
+        self.clear_rectangle()
 
     def add_rectangle(self, x1: int, y1: int, x2: int, y2: int) -> None:
         self.edge_vertices = [(x1, y1), (x1, y2),
