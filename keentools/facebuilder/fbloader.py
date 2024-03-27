@@ -709,9 +709,10 @@ class FBLoader:
             wf.init_wireframe_image(settings.show_specials)
         if camera_pos:
             cam = head.get_camera(cnum)
-            if cam:
+            if cam and cam.camobj and head.headobj:
                 wf = cls.wireframer()
-                wf.set_camera_pos(cam.camobj, head.headobj)
+                wf.set_camera_pos(head.headobj.matrix_world,
+                                  cam.camobj.matrix_world)
         if wireframe:
             cls._update_wireframe(head.headobj, kid)
         if load_pins:

@@ -576,7 +576,7 @@ class FB_OT_PinMode(Operator):
         vp.create_batch_2d(context.area)
         vp.update_residuals(FBLoader.get_builder(), kid, context.area)
 
-        if vp.pins().current_pin() is not None:
+        if vp.pins().current_pin():
             return {'RUNNING_MODAL'}
         else:
             return {'PASS_THROUGH'}

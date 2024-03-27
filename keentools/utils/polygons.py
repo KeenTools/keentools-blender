@@ -65,8 +65,9 @@ class KTRasterMask(KTShaderBase):
             _log.error(f'{self.__class__.__name__}.mask_shader: is empty')
             return
         self.mask_batch = batch_for_shader(
-            self.mask_shader, 'TRI_FAN', {'pos': self.vertices,
-                                          'texCoord': self.uvs})
+            self.mask_shader, 'TRI_FAN',
+            {'pos': self.list_for_batch(self.vertices),
+             'texCoord': self.list_for_batch(self.uvs)})
 
     def draw_checks(self) -> bool:
         if self.is_handler_list_empty():

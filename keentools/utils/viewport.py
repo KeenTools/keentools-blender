@@ -23,6 +23,7 @@ import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
+from ..addon_config import ProductType
 from ..preferences.user_preferences import UserPreferences
 from .points import KTScreenPins
 from .coords import get_pixel_relative_size
@@ -65,6 +66,9 @@ class KTViewport:
         self._work_area: Optional[Area] = None
         self._prev_camera_state: Tuple = ()
         self._prev_area_state: Tuple = ()
+
+    def product_type(self) -> int:
+        return ProductType.UNDEFINED
 
     def get_work_area(self) -> Optional[Area]:
         return self._work_area

@@ -104,7 +104,6 @@ class MovePin(bpy.types.Operator):
 
         x, y = get_image_space_coord(mouse_x, mouse_y, area,
                                      *get_scene_camera_shift())
-        pins.set_current_pin((x, y))
 
         nearest, dist2 = nearest_point(x, y, pins.arr())
 
@@ -211,7 +210,6 @@ class MovePin(bpy.types.Operator):
         shift_x, shift_y = get_scene_camera_shift()
         x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
         pins = loader.viewport().pins()
-        pins.set_current_pin((x, y))
         pin_index = pins.current_pin_num()
         pins.arr()[pin_index] = (x, y)
         selected_pins = pins.get_selected_pins()
@@ -261,8 +259,8 @@ class MovePin(bpy.types.Operator):
 
         wf = vp.wireframer()
         wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
-        wf.set_lit_light_matrix(geotracker.geomobj.matrix_world,
-                                geotracker.camobj.matrix_world)
+        wf.set_camera_pos(geotracker.geomobj.matrix_world,
+                          geotracker.camobj.matrix_world)
 
         vp.create_batch_2d(area)
         vp.update_residuals(gt, area, frame)
@@ -271,7 +269,7 @@ class MovePin(bpy.types.Operator):
 
     def on_default_modal(self) -> Set:
         settings = self.get_settings()
-        if settings.loader().viewport().pins().current_pin() is not None:
+        if settings.loader().viewport().pins().current_pin():
             return {'RUNNING_MODAL'}
         else:
             _log.output('MOVE PIN FINISH')
@@ -326,7 +324,7 @@ class MovePin(bpy.types.Operator):
 
         settings = self.get_settings()
         if event.type == 'MOUSEMOVE' \
-                and settings.loader().viewport().pins().current_pin() is not None:
+                and settings.loader().viewport().pins().current_pin():
             _log.output(f'MOVEPIN MOUSEMOVE: {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 

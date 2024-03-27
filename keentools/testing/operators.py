@@ -120,7 +120,7 @@ def test_wireframe(wireframer: Any, *, obj: Any=None,
     camera = bpy_scene_camera()
     wireframer.init_geom_data_from_mesh(obj)
     wireframer.set_object_world_matrix(obj.matrix_world)
-    wireframer.set_lit_light_matrix(obj.matrix_world, camera.matrix_world)
+    wireframer.set_camera_pos(obj.matrix_world, camera.matrix_world)
     if normals:
         geo = build_geo(obj, get_uv=True)
         wireframer.init_geom_data_from_core(*GTLoader.get_geo_shader_data(

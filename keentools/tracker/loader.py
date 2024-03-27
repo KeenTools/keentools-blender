@@ -441,7 +441,7 @@ class Loader:
 
     @classmethod
     def solve(cls) -> bool:
-        _log.output('Loader.solve called')
+        _log.magenta(f'{cls.__name__}.solve')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
@@ -467,7 +467,7 @@ class Loader:
         except Exception as err:
             _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')
             return False
-        _log.output('Loader.solve finished')
+        _log.magenta(f'{cls.__name__}.solve end >>>')
         return True
 
     @classmethod
@@ -589,6 +589,23 @@ class Loader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
+    def clear_viewport_pins_and_residuals(cls) -> None:
+        _log.yellow('clear_viewport_pins_and_residuals start')
+        vp = cls.viewport()
+        pins = vp.pins()
+        pins.clear_all()
+        p2d = vp.points2d()
+        p2d.clear_all()
+        p2d.create_batch()
+        p3d = vp.points3d()
+        p3d.clear_all()
+        p3d.create_batch()
+        residuals = vp.residuals()
+        residuals.clear_all()
+        residuals.create_batch()
+        _log.output('clear_viewport_pins_and_residuals end >>>')
+
+    @classmethod
     def update_viewport_shaders(cls, area: Optional[Area] = None, *,
                                 hash: bool = False,
                                 adaptive_opacity: bool = False,
@@ -599,7 +616,8 @@ class Loader:
                                 wireframe_data: bool = False,
                                 pins_and_residuals: bool = False,
                                 timeline: bool = False,
-                                mask: bool = False) -> None:
+                                mask: bool = False,
+                                tag_redraw: bool = False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
             f'\nhash: {hash}'
             f' -- adaptive_opacity: {adaptive_opacity}'
@@ -651,7 +669,7 @@ class Loader:
                 cam_mat = geotracker.camobj.matrix_world if \
                     geotracker.camobj else Matrix.Identity(4)
                 wf.set_object_world_matrix(geom_mat)
-                wf.set_lit_light_matrix(geom_mat, cam_mat)
+                wf.set_camera_pos(geom_mat, cam_mat)
         if mask:
             geotracker = settings.get_current_geotracker_item()
             mask_source = geotracker.get_2d_mask_source()
@@ -673,6 +691,8 @@ class Loader:
             cls._update_viewport_pins_and_residuals(area)
         if timeline:
             cls.update_timeline()
+        if tag_redraw:
+            area.tag_redraw()
 
     @classmethod
     def update_all_timelines(cls) -> None:
