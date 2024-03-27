@@ -22,7 +22,7 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..addon_config import Config, fb_settings, get_operator, ErrorType, ProductType
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import bpy_render_frame, bpy_background_mode
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
@@ -54,6 +54,9 @@ class FBViewport(KTViewport):
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
         self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
+
+    def product_type(self) -> int:
+        return ProductType.FACEBUILDER
 
     def get_all_viewport_shader_objects(self) -> List:
         return [self._texter,
@@ -203,7 +206,7 @@ class FBViewport(KTViewport):
         for i, p in enumerate(points):
             points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
 
-        vertex_colors = [FBConfig.pin_color for _ in range(len(points))]
+        vertex_colors = [FBConfig.pin_color] * len(points)
 
         pins = self.pins()
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):

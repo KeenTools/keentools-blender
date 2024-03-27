@@ -147,7 +147,7 @@ class FB_OT_PinMode(Operator):
             vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.yellow('_delete_found_pin call')
+        _log.yellow(f'_delete_found_pin: {nearest}')
         settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -576,7 +576,7 @@ class FB_OT_PinMode(Operator):
         vp.create_batch_2d(context.area)
         vp.update_residuals(FBLoader.get_builder(), kid, context.area)
 
-        if vp.pins().current_pin() is not None:
+        if vp.pins().current_pin():
             return {'RUNNING_MODAL'}
         else:
             return {'PASS_THROUGH'}

@@ -32,14 +32,17 @@ from ..addon_config import (Config,
                             ActionStatus)
 from ..geotracker.viewport import GTViewport
 from ..utils.coords import (image_space_to_frame,
+                            get_camera_border,
                             calc_bpy_camera_mat_relative_to_model,
                             calc_bpy_model_mat_relative_to_camera,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
+                            image_space_to_region,
                             camera_sensor_width,
                             xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3,
+                            multiply_verts_on_matrix_4x4,
                             InvScaleMatrix,
                             ScaleMatrix)
 from ..utils.bpy_common import (bpy_render_frame,
@@ -342,7 +345,7 @@ class Loader:
 
     @classmethod
     def load_pins_into_viewport(cls) -> None:
-        _log.red('load_pins_into_viewport')
+        _log.red('** load_pins_into_viewport')
         keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
@@ -574,10 +577,10 @@ class Loader:
         wf.create_batches()
 
     @classmethod
-    def _update_viewport_pins_and_residuals(cls, area: Area) -> None:
+    def _update_viewport_pins_and_residuals_old(cls, area: Area) -> None:
         vp = cls.viewport()
         cls.load_pins_into_viewport()
-        vp.create_batch_2d(area)
+        # vp.create_batch_2d(area)
         gt = cls.kt_geotracker()
 
         settings = cls.get_settings()
@@ -588,6 +591,117 @@ class Loader:
         kid = bpy_current_frame()
         vp.update_surface_points(gt, geotracker.geomobj, kid)
         vp.update_residuals(gt, area, kid)
+
+    @classmethod
+    def _clear_viewport_pins_and_residuals(cls) -> None:
+        _log.yellow('_clear_viewport_pins_and_residuals start')
+        vp = cls.viewport()
+        pins = vp.pins()
+        pins.clear_all()
+        p2d = vp.points2d()
+        p2d.clear_all()
+        p2d.create_batch()
+        p3d = vp.points3d()
+        p3d.clear_all()
+        p3d.create_batch()
+        residuals = vp.residuals()
+        residuals.clear_all()
+        residuals.create_batch()
+        _log.output('_clear_viewport_pins_and_residuals end >>>')
+
+    @classmethod
+    def _update_viewport_pins_and_residuals(cls, area: Area) -> None:
+        _log.red('_update_viewport_pins_and_residuals start')
+        current_frame = bpy_current_frame()
+        gt = cls.kt_geotracker()
+        vp = cls.viewport()
+
+        settings = cls.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return
+
+        x1, y1, x2, y2 = get_camera_border(area)
+        pins_count = gt.pins_count()
+
+        if pins_count == 0:
+            cls._clear_viewport_pins_and_residuals()
+            _log.output('_update_viewport_pins_and_residuals empty end >>>')
+            return
+
+        kt_pins = gt.projected_pins(current_frame)
+
+        new_pins = np.empty((pins_count, 2), dtype=np.float32)
+        new_p2d = np.empty((pins_count, 2), dtype=np.float32)
+        new_p3d = np.empty((pins_count, 3), dtype=np.float32)
+        new_residuals = np.empty((pins_count * 2, 2), dtype=np.float32)
+
+        shift_x, shift_y = get_scene_camera_shift()
+        w, h = bpy_render_frame()
+        for i, pin in enumerate(kt_pins):
+            new_pins[i] = frame_to_image_space(*pin.img_pos, w, h,
+                                               shift_x, shift_y)
+            new_p2d[i] = image_space_to_region(*new_pins[i], x1, y1, x2, y2,
+                                               shift_x, shift_y)
+            new_p3d[i] = pin.object_point
+            new_residuals[2 * i] = new_p2d[i]
+            new_residuals[2 * i + 1] = image_space_to_region(
+                *frame_to_image_space(*pin.surface_point, w, h,
+                                      shift_x, shift_y), x1, y1, x2, y2)
+
+        pins = vp.pins()
+        pins.set_pins(new_pins)
+        disabled_pins = [i for i, pin in enumerate(kt_pins) if not pin.enabled]
+        pins.set_disabled_pins(disabled_pins)
+
+        p2d = vp.points2d()
+        points_count = pins_count
+        vertex_colors = [Config.pin_color] * points_count
+
+        color = (*Config.disabled_pin_color[:3], 0.0) \
+            if pins.move_pin_mode() else Config.disabled_pin_color
+        for i in [x for x in disabled_pins if x < points_count]:
+            vertex_colors[i] = color
+
+        for i in [x for x in pins.get_selected_pins() if x < points_count]:
+            vertex_colors[i] = Config.selected_pin_color
+
+        pin_num = pins.current_pin_num()
+        if pins.current_pin() and pin_num < points_count:
+            vertex_colors[pin_num] = Config.current_pin_color
+
+        p2d.set_vertices_colors(new_p2d, vertex_colors)
+        p2d.create_batch()
+        # vp.create_batch_2d(area)
+
+        # ----
+        colors = [Config.surface_point_color] * points_count
+        if pins.move_pin_mode():
+            hidden_color = (*color[:3], 0.0)
+            for i in [x for x in pins.get_disabled_pins() if x < points_count]:
+                colors[i] = hidden_color
+
+        m = np.array(geotracker.geomobj.matrix_world, dtype=np.float32).transpose()
+        verts = multiply_verts_on_matrix_4x4(new_p3d @ xy_to_xz_rotation_matrix_3x3(), m)
+
+        p3d = vp.points3d()
+        p3d.set_vertices_colors(verts, colors)
+        p3d.create_batch()
+
+        # ----
+        residuals = vp.residuals()
+        residual_points_count = len(new_residuals)
+        residuals.set_vertices_colors(new_residuals,
+                                      [Config.residual_color] * residual_points_count)
+        residuals.edge_lengths = [0.0, Config.residual_dashed_line_length] * points_count
+        if pins.move_pin_mode():
+            color = (*Config.residual_color[:3], 0.0)
+            for i in [x for x in pins.get_disabled_pins() if
+                      2 * x < residual_points_count]:
+                residuals.vertices_colors[i * 2] = color
+                residuals.vertices_colors[i * 2 + 1] = color
+        residuals.create_batch()
+        _log.output('_update_viewport_pins_and_residuals end >>>')
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area] = None, *,
@@ -613,14 +727,16 @@ class Loader:
             f' -- mask: {mask} -- tag_redraw: {tag_redraw}')
         if hash:
             cls.increment_geo_hash()
+
+        vp = cls.viewport()
+
         if area is None:
-            vp = cls.viewport()
             area = vp.get_work_area()
             if not area:
                 return
 
         settings = cls.get_settings()
-        wf = cls.viewport().wireframer()
+        wf = vp.wireframer()
 
         if adaptive_opacity:
             settings.calc_adaptive_opacity(area)
@@ -653,17 +769,17 @@ class Loader:
                 cam_mat = geotracker.camobj.matrix_world if \
                     geotracker.camobj else Matrix.Identity(4)
                 wf.set_object_world_matrix(geom_mat)
-                wf.set_lit_light_matrix(geom_mat, cam_mat)
+                wf.set_camera_pos(geom_mat, cam_mat)
         if mask:
             geotracker = settings.get_current_geotracker_item()
             mask_source = geotracker.get_2d_mask_source()
             if mask_source == 'COMP_MASK':
                 geotracker.update_compositing_mask()
             elif mask_source == 'MASK_2D':
-                vp = cls.viewport()
                 mask2d = vp.mask2d()
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
+            vp.update_mask(area)
         if edge_indices:
             if settings.product_type() == ProductType.FACETRACKER:
                 wf.init_edge_indices()

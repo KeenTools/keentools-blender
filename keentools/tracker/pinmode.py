@@ -177,7 +177,7 @@ class PinMode(Operator):
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.yellow('_delete_found_pin')
+        _log.yellow(f'_delete_found_pin: {nearest}')
         settings = self.get_settings()
         loader = settings.loader()
         gt = loader.kt_geotracker()
@@ -216,7 +216,7 @@ class PinMode(Operator):
         self.pinmode_id = str(uuid4())
         settings.pinmode_id = self.pinmode_id
 
-    def _init_pinmode(self, area: Area, context: Optional[Any]=None) -> None:
+    def _init_pinmode(self, area: Area) -> None:
         _log.yellow(f'{self.__class__.__name__} _init_pinmode')
         settings = self.get_settings()
         product = settings.product_type()
@@ -231,25 +231,16 @@ class PinMode(Operator):
         geotracker.check_pins_on_geometry(loader.kt_geotracker())
 
         _log.output('GT START SHADERS')
-        loader.load_pins_into_viewport()
+        # loader.load_pins_into_viewport()
 
         settings.reload_mask_2d()
-        self._calc_adaptive_opacity(area)
-
-        vp = loader.viewport()
-        vp.create_batch_2d(area)
-        _log.output('GT REGISTER SHADER HANDLERS')
         loader.update_viewport_shaders(area, wireframe_colors=True,
+                                       adaptive_opacity=True,
                                        wireframe_data=True,
                                        edge_indices=True,
                                        geomobj_matrix=True, wireframe=True,
-                                       pins_and_residuals=True, timeline=True)
-
-        # TODO: Make this part more common for FaceTracker and GeoTracker
-        if product == ProductType.FACETRACKER:
-            wf = loader.viewport().wireframer()
-            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
-            wf.init_wireframe_image(settings.show_specials)
+                                       pins_and_residuals=True, mask=True,
+                                       timeline=True, tag_redraw=True)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
@@ -261,9 +252,8 @@ class PinMode(Operator):
             far = geotracker.camobj.data.clip_end
             clipping_changed_screen_message(near, far, product=product)
 
-        if context is not None:
-            vp.register_handlers(area=area)
-        vp.tag_redraw()
+        vp = loader.viewport()
+        vp.register_handlers(area=area)
         _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 
     def _start_new_pinmode(self, context: Any) -> None:
@@ -274,7 +264,7 @@ class PinMode(Operator):
         _log.output(f'_new_pinmode_id: {settings.pinmode_id}')
 
         self._set_new_geotracker(context.area)
-        self._init_pinmode(context.area, context)
+        self._init_pinmode(context.area)
         _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 
     def _set_new_geotracker(self, area: Area, num: Optional[int]=None) -> None:
@@ -498,9 +488,10 @@ class PinMode(Operator):
             _log.green('RETURNED TO OBJECT_MODE')
             self._change_wireframe_visibility(toggle=False, value=True)
             loader.load_geotracker()
-            loader.load_pins_into_viewport()
+            # loader.load_pins_into_viewport()
             loader.update_viewport_shaders(wireframe_data=True,
                                            wireframe=True,
+                                           adaptive_opacity=True,
                                            geomobj_matrix=True,
                                            pins_and_residuals=True)
 
@@ -508,18 +499,21 @@ class PinMode(Operator):
                 or vp.check_area_state_changed(loader.get_work_area()):
             _log.output('VIEWPORT ZOOM/OFFSET')
 
-            self._calc_adaptive_opacity(context.area)
-            vp.create_batch_2d(context.area)
-            vp.update_residuals(loader.kt_geotracker(), context.area,
-                                bpy_current_frame())
+            loader.update_viewport_shaders(adaptive_opacity=True,
+                                           pins_and_residuals=True,
+                                           tag_redraw=True)
+            # self._calc_adaptive_opacity(context.area)
+            # vp.create_batch_2d(context.area)
+            # vp.update_residuals(loader.kt_geotracker(), context.area,
+            #                     bpy_current_frame())
 
             if not bpy_is_animation_playing() \
                     and not settings.is_calculating():
                 settings.stabilize_viewport(reset=True)
 
-            if vp.needs_to_be_drawn():
-                _log.output('TAG REDRAW')
-                vp.tag_redraw()
+            # if vp.needs_to_be_drawn():
+            #     _log.output('TAG REDRAW')
+            #     vp.tag_redraw()
 
         if event.type == 'TIMER' and loader.get_stored_geomobj_mode() == 'EDIT':
             _log.output('TIMER IN EDIT_MODE')

@@ -22,7 +22,7 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, gt_settings, get_operator, ErrorType
+from ..addon_config import Config, gt_settings, get_operator, ErrorType, ProductType
 from ..geotracker_config import GTConfig
 from ..utils.coords import (get_camera_border,
                             image_space_to_region,
@@ -79,6 +79,9 @@ class GTViewport(KTViewport):
         self._draw_update_timer_handler: Optional[Callable] = None
 
         self.stabilization_region_point: Optional[Tuple[float, float]] = None
+
+    def product_type(self) -> int:
+        return ProductType.GEOTRACKER
 
     def clear_stabilization_point(self):
         _log.output(_log.color('yellow', 'clear_stabilization_point'))
@@ -182,6 +185,9 @@ class GTViewport(KTViewport):
     def register_handlers(self, *, area: Any) -> None:
         _log.yellow(f'{self.__class__.__name__}.register_handlers start')
         self.unregister_handlers()
+        if not area:
+            _log.error(f'No area: {area}')
+            return
         self.set_work_area(area)
         self.mask2d().register_handler(area=area)
         self.residuals().register_handler(area=area)
@@ -213,8 +219,10 @@ class GTViewport(KTViewport):
 
     def update_surface_points(self, gt: Any, obj: Object, keyframe: int,
                               color: Tuple=GTConfig.surface_point_color) -> None:
+        _log.red('*** update_surface_points')
         if obj:
             verts = self.surface_points_from_gt(gt, keyframe)
+            # verts = self.surface_points_from_mesh(gt, obj, keyframe)
         else:
             verts = []
 
@@ -244,6 +252,7 @@ class GTViewport(KTViewport):
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)
 
+    # TODO: Remove as not used
     def surface_points_from_mesh(self, gt: Any, geomobj: Object,
                                  keyframe: int) -> List:
         verts = []
@@ -260,7 +269,10 @@ class GTViewport(KTViewport):
         return verts
 
     def surface_points_from_gt(self, gt: Any, keyframe: int) -> List:
-        geo = gt.applied_args_model_at(keyframe)
+        if self.product_type() == ProductType.FACETRACKER:
+            geo = gt.applied_args_model_at(keyframe)
+        else:  # ProductType.GEOTRACKER
+            geo = gt.geo()
         geo_mesh = geo.mesh(0)
         pins_count = gt.pins_count()
         verts = np.empty((pins_count, 3), dtype=np.float32)
@@ -270,6 +282,19 @@ class GTViewport(KTViewport):
             verts[i] = p
         # tolist() is needed by shader batch on Mac
         return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()
+
+    def projected_pins_from_gt(self, gt: Any,
+                               keyframe: int) -> Tuple[Any, Any, Any]:
+        pins_count = gt.pins_count()
+        img_poses = np.empty((pins_count, 2), dtype=np.float32)
+        object_points = np.empty((pins_count, 3), dtype=np.float32)
+        surface_points = np.empty((pins_count, 2), dtype=np.float32)
+        for i in range(pins_count):
+            pin = gt.pin(keyframe, i)
+            img_poses[i] = pin.img_pos
+            object_points[i] = pin.object_point
+            surface_points[i] = pin.surface_point
+        return img_poses, object_points, surface_points
 
     def create_batch_2d(self, area: Area) -> None:
         def _add_markers_at_camera_corners(points: List,
@@ -283,6 +308,7 @@ class GTViewport(KTViewport):
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # right camera corner
 
+        _log.yellow('create_batch_2d')
         rx, ry = bpy_render_frame()
         asp = ry / rx
         x1, y1, x2, y2 = get_camera_border(area)
@@ -305,7 +331,7 @@ class GTViewport(KTViewport):
             vertex_colors[i] = GTConfig.selected_pin_color
 
         pin_num = pins.current_pin_num()
-        if pins.current_pin() and pin_num >= 0 and pin_num < points_count:
+        if pins.current_pin() and pin_num < points_count:
             vertex_colors[pin_num] = GTConfig.current_pin_color
 
         if GTConfig.show_markers_at_camera_corners:
@@ -323,7 +349,22 @@ class GTViewport(KTViewport):
                 *frame_to_image_space(w, h, rx, ry), x1, y1, x2, y2)
             mask.create_batch()
 
+    def update_mask(self, area: Any) -> None:
+        mask = self.mask2d()
+        if mask.image:
+            _log.output(f'create_batch_2d mask.image: {mask.image}')
+            rx, ry = bpy_render_frame()
+            asp = ry / rx
+            x1, y1, x2, y2 = get_camera_border(area)
+
+            mask.left = image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2)
+            w, h = mask.image.size[:]
+            mask.right = image_space_to_region(
+                *frame_to_image_space(w, h, rx, ry), x1, y1, x2, y2)
+            mask.create_batch()
+
     def update_residuals(self, gt: Any, area: Area, keyframe: int) -> None:
+        _log.red('update_residuals start')
         rx, ry = bpy_render_frame()
         x1, y1, x2, y2 = get_camera_border(area)
 
@@ -338,10 +379,12 @@ class GTViewport(KTViewport):
         wire.vertices_colors = []
 
         if len(p2d) != len(p3d):
+            _log.red('update_residuals end 1 >>>')
             return
 
         if len(p3d) == 0:
             wire.create_batch()  # Empty shader
+            _log.red('update_residuals end 2 >>>')
             return
 
         camobj = bpy_scene_camera()
@@ -382,6 +425,7 @@ class GTViewport(KTViewport):
                 wire.vertices_colors[i * 2] = color
                 wire.vertices_colors[i * 2 + 1] = color
         wire.create_batch()
+        _log.red('update_residuals end >>>')
 
     def hide_pins_and_residuals(self):
         _log.yellow(f'{self.__class__.__name__}.hide_pins_and_residuals start')

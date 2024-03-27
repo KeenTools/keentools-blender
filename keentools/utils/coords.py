@@ -199,6 +199,18 @@ def image_space_to_region(x: float, y: float, x1: float, y1: float,
            (y1 + y2) * 0.5 + y * sc + 2 * shift_y * h
 
 
+def frame_to_region(frame_x: float, frame_y: float,
+                    frame_w: float, frame_h: float,
+                    x1: float, y1: float,
+                    x2: float, y2: float,
+                    shift_x: float = 0.0,
+                    shift_y: float = 0.0) -> Tuple[float, float]:
+    asp = 1.0 if frame_w >= frame_h else frame_h / frame_w
+
+    return x1 + (frame_x / frame_w + (2 - asp) * shift_x) * (x2 - x1), \
+           (y1 + y2) * 0.5 + ((frame_y - 0.5 * frame_h) / frame_w - shift_y * asp) * (x2 - x1) + 2 * shift_y * (y2 - y1)
+
+
 def get_image_space_coord(px: float, py: float, area: Area,
                           shift_x: float = 0.0,
                           shift_y: float = 0.0) -> Tuple[float, float]:

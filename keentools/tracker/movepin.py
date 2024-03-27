@@ -18,10 +18,10 @@
 
 from typing import Any, Set, Tuple, List
 
-import bpy
-from bpy.types import Area
+from bpy.types import Area, Operator
 
 from ..utils.kt_logging import KTLogger
+from ..addon_config import ProductType
 from ..geotracker_config import GTConfig
 from ..utils.coords import (get_image_space_coord,
                             image_space_to_frame,
@@ -45,7 +45,7 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
 _log = KTLogger(__name__)
 
 
-class MovePin(bpy.types.Operator):
+class MovePin(Operator):
     @classmethod
     def get_settings(cls) -> Any:
         assert False, 'MovePin: get_settings'
@@ -88,6 +88,7 @@ class MovePin(bpy.types.Operator):
             if pin and not pin.enabled:
                 gt.pin_enable(keyframe, pin_index, True)
 
+        _log.yellow('init_action start')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
@@ -104,7 +105,6 @@ class MovePin(bpy.types.Operator):
 
         x, y = get_image_space_coord(mouse_x, mouse_y, area,
                                      *get_scene_camera_shift())
-        pins.set_current_pin((x, y))
 
         nearest, dist2 = nearest_point(x, y, pins.arr())
 
@@ -127,8 +127,9 @@ class MovePin(bpy.types.Operator):
             pins.set_selected_pins([pins.current_pin_num()])
             _log.output('GT NEW PIN CREATED')
 
-        vp.create_batch_2d(area)
-        vp.register_handlers(area=area)
+        # vp.create_batch_2d(area)
+        # vp.register_handlers(area=area)
+        _log.output('init_action end >>>')
         return True
 
     def update_focal_length_in_all_keyframes(self) -> None:
@@ -212,7 +213,6 @@ class MovePin(bpy.types.Operator):
         shift_x, shift_y = get_scene_camera_shift()
         x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
         pins = loader.viewport().pins()
-        pins.set_current_pin((x, y))
         pin_index = pins.current_pin_num()
         pins.arr()[pin_index] = (x, y)
         selected_pins = pins.get_selected_pins()
@@ -230,7 +230,9 @@ class MovePin(bpy.types.Operator):
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
-            return self.on_default_modal()
+            _log.error('on_mouse_move: no geotracker')
+            self._before_operator_finish()
+            return {'CANCELLED'}
 
         product = settings.product_type()
         frame = bpy_current_frame()
@@ -257,22 +259,17 @@ class MovePin(bpy.types.Operator):
 
         self.update_wireframe()
 
-        gt = loader.kt_geotracker()
-        vp.update_surface_points(gt, geotracker.geomobj, frame)
-
-        wf = vp.wireframer()
-        wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
-        wf.set_lit_light_matrix(geotracker.geomobj.matrix_world,
-                                geotracker.camobj.matrix_world)
-
-        vp.create_batch_2d(area)
-        vp.update_residuals(gt, area, frame)
-        vp.tag_redraw()
+        loader.update_viewport_shaders(
+            wireframe_data=loader.product_type() == ProductType.FACETRACKER,
+            geomobj_matrix=True,
+            wireframe=True,
+            pins_and_residuals=True,
+            tag_redraw=True)
         return self.on_default_modal()
 
     def on_default_modal(self) -> Set:
         settings = self.get_settings()
-        if settings.loader().viewport().pins().current_pin() is not None:
+        if settings.loader().viewport().pins().current_pin():
             return {'RUNNING_MODAL'}
         else:
             _log.output('MOVE PIN FINISH')
@@ -327,7 +324,7 @@ class MovePin(bpy.types.Operator):
 
         settings = self.get_settings()
         if event.type == 'MOUSEMOVE' \
-                and settings.loader().viewport().pins().current_pin() is not None:
+                and settings.loader().viewport().pins().current_pin():
             _log.output(f'MOVEPIN MOUSEMOVE: {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 
