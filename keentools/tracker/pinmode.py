@@ -261,7 +261,9 @@ class PinMode(Operator):
         # TODO: Make this part more common for FaceTracker and GeoTracker
         if product == ProductType.FACETRACKER:
             wf = loader.viewport().wireframer()
-            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
+            if geotracker.geomobj and geotracker.camobj:
+                wf.set_camera_pos(geotracker.geomobj.matrix_world,
+                                  geotracker.camobj.matrix_world)
             wf.init_wireframe_image(settings.show_specials)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start

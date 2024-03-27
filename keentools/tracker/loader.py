@@ -599,7 +599,8 @@ class Loader:
                                 wireframe_data: bool = False,
                                 pins_and_residuals: bool = False,
                                 timeline: bool = False,
-                                mask: bool = False) -> None:
+                                mask: bool = False,
+                                tag_redraw: bool = False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
             f'\nhash: {hash}'
             f' -- adaptive_opacity: {adaptive_opacity}'
@@ -651,7 +652,7 @@ class Loader:
                 cam_mat = geotracker.camobj.matrix_world if \
                     geotracker.camobj else Matrix.Identity(4)
                 wf.set_object_world_matrix(geom_mat)
-                wf.set_lit_light_matrix(geom_mat, cam_mat)
+                wf.set_camera_pos(geom_mat, cam_mat)
         if mask:
             geotracker = settings.get_current_geotracker_item()
             mask_source = geotracker.get_2d_mask_source()
@@ -673,6 +674,8 @@ class Loader:
             cls._update_viewport_pins_and_residuals(area)
         if timeline:
             cls.update_timeline()
+        if tag_redraw:
+            area.tag_redraw()
 
     @classmethod
     def update_all_timelines(cls) -> None:

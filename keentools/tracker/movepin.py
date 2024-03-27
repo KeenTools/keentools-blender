@@ -261,8 +261,8 @@ class MovePin(bpy.types.Operator):
 
         wf = vp.wireframer()
         wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
-        wf.set_lit_light_matrix(geotracker.geomobj.matrix_world,
-                                geotracker.camobj.matrix_world)
+        wf.set_camera_pos(geotracker.geomobj.matrix_world,
+                          geotracker.camobj.matrix_world)
 
         vp.create_batch_2d(area)
         vp.update_residuals(gt, area, frame)

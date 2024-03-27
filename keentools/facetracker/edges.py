@@ -38,7 +38,6 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
 
-        self.camera_pos: Vector = Vector((0, 0, 0))
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
@@ -49,15 +48,7 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.lit_light_matrix: Matrix = Matrix.Identity(4)
         self.wireframe_offset = Config.wireframe_offset_constant
-
-    def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
-                             camobj_matrix_world: Matrix) -> None:
-        _log.output('set_lit_light_matrix')
-        mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
-        self.lit_light_matrix = mat
-        self.camera_pos = mat @ Vector((0, 0, 0))
 
     def init_edge_indices(self) -> None:
         _log.blue('init_edge_indices')

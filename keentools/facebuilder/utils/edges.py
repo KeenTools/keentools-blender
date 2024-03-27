@@ -166,7 +166,6 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.wide_edge_uvs: Any = np.empty(shape=(0, 2), dtype=np.float32)
 
         self.viewport_size: Tuple[float, float] = (1920, 1080)
-        self.camera_pos: Vector = Vector((0, 0, 0))
 
         self.texture_colors: List = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
         self.opacity: float = 0.5
@@ -194,14 +193,6 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if w <= 0 or h <=0:
             return
         self.viewport_size = (w, h)
-
-    def set_camera_pos(self, camobj: Optional[Object],
-                       geomobj: Optional[Object]) -> None:
-        _log.red('set_camera_pos')
-        if not geomobj or not camobj:
-            return
-        mat = geomobj.matrix_world.inverted() @ camobj.matrix_world
-        self.camera_pos = mat @ Vector((0, 0, 0))
 
     def init_colors(self, colors: List, opacity: float) -> None:
         self.texture_colors = [inverse_gamma_color(color[:3]) for color in colors]

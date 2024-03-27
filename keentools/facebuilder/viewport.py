@@ -210,7 +210,7 @@ class FBViewport(KTViewport):
         for i, p in enumerate(points):
             points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
 
-        vertex_colors = [FBConfig.pin_color for _ in range(len(points))]
+        vertex_colors = [FBConfig.pin_color] * len(points)
 
         pins = self.pins()
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):

@@ -133,8 +133,14 @@ class KTScreenPins:
 
     def on_start(self) -> None:
         self.set_add_selection_mode(False)
+        self.set_move_pin_mode(False)
+        self.reset_current_pin()
         self.clear_selected_pins()
         self.clear_disabled_pins()
+
+    def clear_all(self) -> None:
+        self.on_start()
+        self.set_pins([])
 
     def remove_pin(self, index: int) -> None:
         if index in self._selected_pins:

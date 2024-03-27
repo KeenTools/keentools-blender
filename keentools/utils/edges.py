@@ -85,10 +85,18 @@ class KTEdgeShaderBase(KTShaderBase):
                                                      dtype=np.int32)
         self.wide_edge_vertex_normals: Any = np.empty(shape=(0, 3),
                                                       dtype=np.float32)
+        self.camera_pos: Vector = Vector((0, 0, 0))
+        self.lit_light_matrix: Matrix = Matrix.Identity(4)
 
     def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
         self.object_world_matrix = np.array(bpy_matrix_world,
                                             dtype=np.float32).transpose()
+
+    def set_camera_pos(self, geomobj_matrix_world: Matrix,
+                       camobj_matrix_world: Matrix) -> None:
+        mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
+        self.camera_pos = mat @ Vector((0, 0, 0))
+        self.lit_light_matrix = mat
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
         self.edge_colors = [color] * len(self.edge_vertices)
@@ -381,7 +389,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
 
-        self.camera_pos: Vector = Vector((0, 0, 0))
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
@@ -392,18 +399,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.lit_light_matrix: Matrix = Matrix.Identity(4)
         self.wireframe_offset = Config.wireframe_offset_constant
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
-
-    def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
-                             camobj_matrix_world: Matrix) -> None:
-        _log.output('set_lit_light_matrix')
-        mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
-        self.lit_light_matrix = mat
-        self.camera_pos = mat @ Vector((0, 0, 0))
 
     def set_viewport_size(self, region: Any):
         if not region or not region.width or not region.height:
