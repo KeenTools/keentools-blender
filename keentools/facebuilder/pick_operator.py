@@ -28,11 +28,11 @@ from ..addon_config import (Config,
                             ErrorType,
                             ProductType)
 from ..facebuilder_config import FBConfig
-from ..utils.coords import update_head_mesh_non_neutral, get_image_space_coord
+from ..utils.coords import update_head_mesh_non_neutral, get_image_space_coord, get_area_region
 from ..utils.focal_length import configure_focal_mode_and_fixes
 from .utils.manipulate import push_head_in_undo_history
 from ..utils.images import load_rgba
-from ..utils.bpy_common import bpy_view_camera
+from ..utils.bpy_common import bpy_view_camera, operator_with_context
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .ui_strings import buttons
 from ..utils.detect_faces import (get_detected_faces,
@@ -46,7 +46,7 @@ _log = KTLogger(__name__)
 
 def _init_fb_detected_faces(fb: Any, headnum: int, camnum: int) -> Optional[Any]:
     _log.yellow('_init_fb_detected_faces start')
-    settings = fb_settings()
+    settings = _get_settings()
     head = settings.get_head(headnum)
     if head is None:
         return None
@@ -81,12 +81,15 @@ def _get_viewport() -> Any:
     return _get_loader().viewport()
 
 
+def _get_work_area() -> Any:
+    return _get_viewport().get_work_area()
+
+
 def _get_rectangler() -> Any:
     return _get_viewport().rectangler()
 
 
-def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
-                      area: Any) -> Optional[bool]:
+def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int) -> Optional[bool]:
     _log.yellow(f'_add_pins_to_face start: r={rectangle_index}')
     faces = get_detected_faces()
 
@@ -124,8 +127,7 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
     loader.load_pins_into_viewport(headnum, camnum)
     loader.update_all_camera_positions(headnum)
     loader.update_all_camera_focals(headnum)
-    loader.update_fb_viewport_shaders(area=area,
-                                      headnum=headnum, camnum=camnum,
+    loader.update_fb_viewport_shaders(headnum=headnum, camnum=camnum,
                                       camera_pos=True, wireframe=True,
                                       pins_and_residuals=True)
     loader.save_fb_serial_and_image_pathes(headnum)
@@ -146,8 +148,11 @@ class FB_OT_PickMode(Operator):
     camnum: IntProperty(default=0)
     selected: IntProperty(default=-1)
 
-    def _init_rectangler(self, area: Area) -> None:
+    def _init_rectangler(self) -> None:
         _log.yellow('_init_rectangler start')
+        area = _get_work_area()
+        if not area:
+            return
         rectangler = _get_rectangler()
         rectangler.prepare_shader_data(area)
         rectangler.create_batch()
@@ -155,23 +160,25 @@ class FB_OT_PickMode(Operator):
         vp.create_batch_2d(area)
         _log.output('_init_rectangler end >>>')
 
-    def _update_rectangler_shader(self, area: Area) -> None:
-        _log.yellow('_update_rectangler_shader start')
+    def _update_rectangler_shader(self) -> None:
+        area = _get_work_area()
+        if not area:
+            return
         rectangler = _get_rectangler()
         rectangler.prepare_shader_data(area)
         rectangler.create_batch()
         area.tag_redraw()
-        _log.output('_update_rectangler_shader end >>>')
 
-    def _before_operator_stop(self, area: Area) -> None:
+    def _before_operator_stop(self) -> None:
         _log.yellow('_before_operator_stop start')
         rectangler = _get_rectangler()
         rectangler.clear_rectangles()
-        self._update_rectangler_shader(area)
+        self._update_rectangler_shader()
         self._show_wireframe()
         _log.output('_before_operator_stop end >>>')
 
-    def _selected_rectangle(self, area: Area, event: Any) -> int:
+    def _selected_rectangle(self, event: Any) -> int:
+        area = _get_work_area()
         rectangler = _get_rectangler()
         mouse_x, mouse_y = get_image_space_coord(event.mouse_region_x,
                                                  event.mouse_region_y, area)
@@ -198,12 +205,17 @@ class FB_OT_PickMode(Operator):
     def invoke(self, context: Any, event: Any) -> Set:
         _log.green(f'{self.__class__.__name__}.invoke start')
 
-        settings = fb_settings()
+        settings = _get_settings()
         if not settings.pinmode:
             self.report({'INFO'}, 'Not in pinmode')
             return {'FINISHED'}
 
-        self._init_rectangler(context.area)
+        area = _get_work_area()
+        if not area:
+            self.report({'INFO'}, 'No proper area found')
+            return {'FINISHED'}
+
+        self._init_rectangler()
         self._hide_wireframe()
 
         context.window_manager.modal_handler_add(self)
@@ -217,7 +229,7 @@ class FB_OT_PickMode(Operator):
             self.report({'ERROR'}, message)
             _log.error(message)
             return {'CANCELLED'}
-        result = _add_pins_to_face(self.headnum, self.camnum, self.selected, context)
+        result = _add_pins_to_face(self.headnum, self.camnum, self.selected)
         if result is None:
             return {'CANCELLED'}
         if not result:
@@ -234,18 +246,18 @@ class FB_OT_PickMode(Operator):
 
     def modal(self, context: Any, event: Any) -> Set:
         rectangler = _get_rectangler()
-        area = context.area
+        area = _get_work_area()
 
         if event.type == 'WINDOW_DEACTIVATE':
             message = 'Face detection was aborted by context changing'
             self.report({'INFO'}, message)
-            _log.output(message)
+            _log.red(message)
 
-            self._before_operator_stop(area)
+            self._before_operator_stop()
             return {'FINISHED'}
 
         if event.type in {'WHEELDOWNMOUSE', 'WHEELUPMOUSE', 'MIDDLEMOUSE'}:
-            self._update_rectangler_shader(area)
+            self._update_rectangler_shader()
             return {'PASS_THROUGH'}
 
         if event.type == 'MOUSEMOVE':
@@ -254,13 +266,12 @@ class FB_OT_PickMode(Operator):
             index = rectangler.active_rectangle_index(mouse_x, mouse_y)
             rectangler.highlight_rectangle(index,
                                            FBConfig.selected_rectangle_color)
-            self._update_rectangler_shader(area)
+            self._update_rectangler_shader()
 
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
-            index = self._selected_rectangle(area, event)
+            index = self._selected_rectangle(event)
             if index >= 0:
-                result = _add_pins_to_face(self.headnum, self.camnum,
-                                           index, area)
+                result = _add_pins_to_face(self.headnum, self.camnum, index)
                 if result is None:
                     return {'CANCELLED'}
                 if not result:
@@ -268,7 +279,7 @@ class FB_OT_PickMode(Operator):
                     _log.output(message)
                     not_enough_face_features_warning()
                 else:
-                    head = fb_settings().get_head(self.headnum)
+                    head = _get_settings().get_head(self.headnum)
                     head.mark_model_changed_by_pinmode()
 
                     message = 'A face was chosen and pinned'
@@ -279,7 +290,7 @@ class FB_OT_PickMode(Operator):
                 self.report({'INFO'}, message)
                 _log.output(message)
 
-            self._before_operator_stop(context.area)
+            self._before_operator_stop()
             return {'FINISHED'}
 
         if event.type == 'ESC' and event.value == 'RELEASE':
@@ -287,7 +298,7 @@ class FB_OT_PickMode(Operator):
             self.report({'INFO'}, message)
             _log.output(message)
 
-            self._before_operator_stop(context.area)
+            self._before_operator_stop()
             return {'FINISHED'}
 
         # Prevent camera rotation by user
@@ -309,7 +320,7 @@ class FB_OT_PickModeStarter(Operator):
     auto_detect_single: BoolProperty(default=False)
     product: IntProperty(default=ProductType.FACEBUILDER)
 
-    def _action(self, context: Any, event: Any, invoked: bool=True) -> Set:
+    def _action(self, invoked: bool=True) -> Set:
         _log.yellow(f'{self.__class__.__name__} _action start')
 
         loader = _get_loader()
@@ -341,7 +352,7 @@ class FB_OT_PickModeStarter(Operator):
 
         if len(rects) == 1:
             result = _add_pins_to_face(self.headnum, self.camnum,
-                                       rectangle_index=0, area=context.area)
+                                       rectangle_index=0)
             if result is None:
                 _log.output(f'{self.__class__.__name__} _action 3 cancelled >>>')
                 return {'CANCELLED'}
@@ -351,7 +362,7 @@ class FB_OT_PickModeStarter(Operator):
                 if not self.auto_detect_single:
                     not_enough_face_features_warning()
             else:
-                head = fb_settings().get_head(self.headnum)
+                head = _get_settings().get_head(self.headnum)
                 head.mark_model_changed_by_pinmode()
 
                 message = 'A face was detected and pinned'
@@ -370,8 +381,12 @@ class FB_OT_PickModeStarter(Operator):
                 rectangler.add_rectangle(x1, y1, x2, y2, w, h,
                                          FBConfig.regular_rectangle_color)
             if invoked:
-                op = get_operator(FBConfig.fb_pickmode_idname)
-                op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+                area = _get_work_area()
+                operator_with_context(get_operator(FBConfig.fb_pickmode_idname),
+                                      {'area': area,
+                                       'region': get_area_region(area)},
+                                      'INVOKE_DEFAULT',
+                                      headnum=self.headnum, camnum=self.camnum)
         else:
             message = 'Could not detect a face'
             self.report({'ERROR'}, message)
@@ -382,14 +397,14 @@ class FB_OT_PickModeStarter(Operator):
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.green(f'{self.__class__.__name__} invoke')
-        settings = fb_settings()
+        settings = _get_settings()
         if not settings.pinmode:
             message = 'Not in pinmode call'
             self.report({'ERROR'}, message)
             _log.error(message)
             return {'CANCELLED'}
-        return self._action(context, event, invoked=True)
+        return self._action(invoked=True)
 
-    def execute(self, context: Any) -> Set:  # Used only for integration testing
+    def execute(self, context: Any) -> Set:  # only for integration testing
         _log.green(f'{self.__class__.__name__} execute')
-        return self._action(context, event=None, invoked=False)
+        return self._action(invoked=False)
