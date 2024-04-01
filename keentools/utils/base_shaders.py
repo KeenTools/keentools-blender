@@ -126,7 +126,7 @@ class KTShaderBase:
         _log.output(f'{self.__class__.__name__}.unhide_shader')
         self.set_visible(True)
 
-    def get_statistics(self) -> None:
+    def get_statistics(self) -> str:
         return 'No statistics defined'
 
     def clear_all(self) -> None:
