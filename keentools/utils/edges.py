@@ -85,10 +85,18 @@ class KTEdgeShaderBase(KTShaderBase):
                                                      dtype=np.int32)
         self.wide_edge_vertex_normals: Any = np.empty(shape=(0, 3),
                                                       dtype=np.float32)
+        self.camera_pos: Vector = Vector((0, 0, 0))
+        self.lit_light_matrix: Matrix = Matrix.Identity(4)
 
     def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
         self.object_world_matrix = np.array(bpy_matrix_world,
                                             dtype=np.float32).transpose()
+
+    def set_camera_pos(self, geomobj_matrix_world: Matrix,
+                       camobj_matrix_world: Matrix) -> None:
+        mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
+        self.camera_pos = mat @ Vector((0, 0, 0))
+        self.lit_light_matrix = mat
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
         self.edge_colors = [color] * len(self.edge_vertices)
@@ -116,6 +124,16 @@ class KTEdgeShaderBase(KTShaderBase):
         self.edge_vertices = []
         self.edge_colors = []
         self.vertices_colors = []
+
+        self.triangle_vertices = []
+        self.edge_vertex_normals = []
+
+        self.wide_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
+        self.wide_opposite_edge_vertices = np.empty(shape=(0, 3),
+                                                    dtype=np.float32)
+        self.wide_vertex_pos_indices = np.empty(shape=(0, 3), dtype=np.int32)
+        self.wide_vertex_opp_indices = np.empty(shape=(0, 3), dtype=np.int32)
+        self.wide_edge_vertex_normals = np.empty(shape=(0, 3), dtype=np.float32)
 
 
 class KTEdgeShader2D(KTEdgeShaderBase):
@@ -164,8 +182,9 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self.vertices, 'color': self.vertices_colors,
-             'lineLength': self.edge_lengths}
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors),
+             'lineLength': self.list_for_batch(self.edge_lengths)}
         )
         self.increment_batch_counter()
 
@@ -173,6 +192,10 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         _log.yellow(f'{self.__class__.__name__}.register_handler')
         _log.output('call super().register_handler')
         super().register_handler(post_type, area=area)
+
+    def clear_all(self) -> None:
+        super().clear_all()
+        self.edge_lengths = []
 
 
 class KTScreenRectangleShader2D(KTEdgeShader2D):
@@ -224,7 +247,8 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edge_vertices, 'color': self.edge_vertices_colors}
+                {'pos': self.list_for_batch(self.edge_vertices),
+                 'color': self.list_for_batch(self.edge_vertices_colors)}
             )
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
@@ -232,7 +256,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.fill_shader is not None:
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.edge_vertices},
+                {'pos': self.list_for_batch(self.edge_vertices)},
                 indices=self.fill_indices if len(self.edge_vertices) == 8 else []
             )
         else:
@@ -242,6 +266,10 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         self.edge_vertices = []
         self.edge_vertices_colors = []
         self.edge_lengths = []
+
+    def clear_all(self) -> None:
+        super().clear_all()
+        self.clear_rectangle()
 
     def add_rectangle(self, x1: int, y1: int, x2: int, y2: int) -> None:
         self.edge_vertices = [(x1, y1), (x1, y2),
@@ -281,15 +309,16 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edge_vertices, 'color': self.edge_vertices_colors,
-                 'lineLength': self.edge_lengths})
+                {'pos': self.list_for_batch(self.edge_vertices),
+                 'color': self.list_for_batch(self.edge_vertices_colors),
+                 'lineLength': self.list_for_batch(self.edge_lengths)})
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
 
         if self.fill_shader is not None:
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.edge_vertices},
+                {'pos': self.list_for_batch(self.edge_vertices)},
                 indices=self.fill_indices if len(self.edge_vertices) == 8 else [])
         else:
             _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
@@ -378,7 +407,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
 
-        self.camera_pos: Vector = Vector((0, 0, 0))
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
@@ -389,18 +417,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.lit_light_matrix: Matrix = Matrix.Identity(4)
         self.wireframe_offset = Config.wireframe_offset_constant
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
-
-    def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
-                             camobj_matrix_world: Matrix) -> None:
-        _log.output('set_lit_light_matrix')
-        mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
-        self.lit_light_matrix = mat
-        self.camera_pos = mat @ Vector((0, 0, 0))
 
     def set_viewport_size(self, region: Any):
         if not region or not region.width or not region.height:
@@ -516,8 +536,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
                     indices = self.selection_triangle_indices
 
             self.selection_fill_batch = batch_for_shader(
-                self.selection_fill_shader, 'TRIS', {'pos': verts},
-                indices=indices)
+                self.selection_fill_shader, 'TRIS',
+                {'pos': self.list_for_batch(verts)}, indices=indices)
         else:
             _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 

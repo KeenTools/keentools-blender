@@ -53,6 +53,7 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                        clipping_changed_screen_message)
 from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
                                     subscribe_movie_clip_color_space_watcher)
+from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -191,16 +192,23 @@ class PinMode(Operator):
         kid = bpy_current_frame()
         loader.safe_keyframe_add(kid)
 
-        _log.output(_log.color('red', '_delete_found_pin before solve'))
         if not loader.solve():
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
-        _log.output(_log.color('red', '_delete_found_pin after solve'))
+
+        vp = loader.viewport()
+
+        if loader.product_type() == ProductType.FACETRACKER:
+            wf = vp.wireframer()
+            geo = gt.applied_args_model_at(kid)
+            wf.init_geom_data_from_core(*loader.get_geo_shader_data(geo,
+                                        geotracker.geomobj.matrix_world))
+            wf.create_batches()
+            create_relative_shape_keyframe(kid)
 
         loader.load_pins_into_viewport()
         loader.place_object_or_camera()
 
-        vp = loader.viewport()
         vp.update_surface_points(gt, geotracker.geomobj, kid)
 
         if not geotracker.camera_mode():
@@ -253,7 +261,9 @@ class PinMode(Operator):
         # TODO: Make this part more common for FaceTracker and GeoTracker
         if product == ProductType.FACETRACKER:
             wf = loader.viewport().wireframer()
-            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
+            if geotracker.geomobj and geotracker.camobj:
+                wf.set_camera_pos(geotracker.geomobj.matrix_world,
+                                  geotracker.camobj.matrix_world)
             wf.init_wireframe_image(settings.show_specials)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start

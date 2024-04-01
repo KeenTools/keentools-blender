@@ -39,7 +39,6 @@ class KTScreenPins:
     ''' Pins are stored in image space coordinates '''
     def __init__(self):
         self._pins: List[Tuple[float, float]] = []
-        self._current_pin: Optional[Tuple[float, float]] = None
         self._current_pin_num: int = -1
         self._disabled_pins: List[int] = []
         self._selected_pins: List[int] = []
@@ -64,14 +63,10 @@ class KTScreenPins:
     def set_current_pin_num_to_last(self) -> None:
         self._current_pin_num = len(self.arr()) - 1
 
-    def current_pin(self) -> Optional[Tuple[float, float]]:
-        return self._current_pin
-
-    def set_current_pin(self, value: Tuple[float, float]) -> None:
-        self._current_pin = value
+    def current_pin(self) -> bool:
+        return self._current_pin_num >= 0
 
     def reset_current_pin(self) -> None:
-        self._current_pin = None
         self._current_pin_num = -1
 
     def get_selected_pins(self, pins_count: Optional[int]=None) -> List[int]:
@@ -133,8 +128,14 @@ class KTScreenPins:
 
     def on_start(self) -> None:
         self.set_add_selection_mode(False)
+        self.set_move_pin_mode(False)
+        self.reset_current_pin()
         self.clear_selected_pins()
         self.clear_disabled_pins()
+
+    def clear_all(self) -> None:
+        self.on_start()
+        self.set_pins([])
 
     def remove_pin(self, index: int) -> None:
         if index in self._selected_pins:
@@ -183,6 +184,9 @@ class KTShaderPoints(KTShaderBase):
         self.vertices = []
         self.vertices_colors = []
 
+    def clear_all(self) -> None:
+        self.clear_vertices()
+
     def draw_checks(self) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -223,7 +227,8 @@ class KTPoints2D(KTShaderPoints):
 
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
-            {'pos': self.vertices, 'color': self.vertices_colors},
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors)},
             indices=None)
         self.increment_batch_counter()
 
@@ -250,7 +255,8 @@ class KTPoints3D(KTShaderPoints):
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
-            {'pos': self.vertices, 'color': self.vertices_colors},
+            {'pos': self.list_for_batch(self.vertices),
+             'color': self.list_for_batch(self.vertices_colors)},
             indices=None)
         self.increment_batch_counter()
 
