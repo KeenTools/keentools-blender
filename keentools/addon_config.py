@@ -211,6 +211,11 @@ class Config:
     residual_color = (0.0, 1.0, 1.0, 0.5)
     timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
 
+    selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
+    regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
+
+    face_selection_frame_width = 3.0
+
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
                                 ver: Optional[Tuple]=None,

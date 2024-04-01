@@ -39,6 +39,7 @@ from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
+from ...utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
@@ -577,6 +578,10 @@ class FT_PT_TrackingPanel(AllVisible):
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
             layout.prop(geotracker, 'spring_pins_back')
+            col = layout.column()
+            col.scale_y = Config.btn_scale_y
+            col.operator(FTConfig.ft_pickmode_starter_idname,
+                         **KTIcons.key_value('align_face'))
 
 
 class FT_PT_MasksPanel(AllVisible):

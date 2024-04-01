@@ -30,6 +30,7 @@ from ..facetracker_config import FTConfig
 from .settings import FaceTrackerItem, FTSceneSettings
 from .pinmode import FT_OT_PinMode
 from .movepin import FT_OT_MovePin
+from .pick_operator import FT_OT_PickMode, FT_OT_PickModeStarter
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
 
@@ -40,6 +41,8 @@ _log = KTLogger(__name__)
 CLASSES_TO_REGISTER = (FaceTrackerItem,
                        FT_OT_PinMode,
                        FT_OT_MovePin,
+                       FT_OT_PickMode,
+                       FT_OT_PickModeStarter,
                        FTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 

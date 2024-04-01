@@ -27,7 +27,7 @@ from ..geotracker.viewport import GTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
 from ..utils.edges import (KTEdgeShader2D,
-                           KTLitEdgeShaderLocal3D,
+                           KTRectangleShader2D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
@@ -46,6 +46,7 @@ class FTViewport(GTViewport):
         self._residuals = KTEdgeShader2D(SpaceView3D)
         self._texter = KTScreenText(SpaceView3D, 'FaceTracker')
         self._wireframer = FTRasterEdgeShader3D(SpaceView3D)
+        self._rectangler = KTRectangleShader2D(SpaceView3D)
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
