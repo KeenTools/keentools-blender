@@ -692,17 +692,12 @@ class FT_PT_AppearancePanel(AllVisible):
         row.active = False
         row.operator(
             FTConfig.ft_addon_setup_defaults_idname,
-            text='', icon='PREFERENCES')
+            text='', icon='PREFERENCES', emboss=False)
         row.operator(
             FTConfig.ft_help_appearance_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
-    def draw(self, context):
-        layout = self.layout
-        settings = ft_settings()
-        if settings is None:
-            return
-
+    def _appearance_pin_settings(self, settings, layout) -> None:
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
@@ -710,12 +705,12 @@ class FT_PT_AppearancePanel(AllVisible):
         btn = row.column(align=True)
         btn.active = False
         btn.scale_y = 0.75
-        btn.operator(
-            FTConfig.ft_default_pin_settings_idname,
-            text='', icon='LOOP_BACK', emboss=False, depress=False)
+        btn.operator(FTConfig.ft_default_pin_settings_idname, text='',
+                     icon='LOOP_BACK', emboss=False, depress=False)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
 
+    def _appearance_wireframe_settings(self, settings, layout) -> None:
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
@@ -727,11 +722,12 @@ class FT_PT_AppearancePanel(AllVisible):
             FTConfig.ft_default_wireframe_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
 
-        split = col.split(factor=0.625)
-        row = split.row(align=True)
-        row.prop(settings, 'wireframe_color', text='')
-        row.prop(settings, 'wireframe_special_color', text='')
-        row.prop(settings, 'wireframe_midline_color', text='')
+        split = col.split(factor=0.375, align=True)
+        split2 = split.split(factor=0.34, align=True)
+        split2.prop(settings, 'wireframe_color', text='')
+        split3 = split2.split(factor=0.5, align=True)
+        split3.prop(settings, 'wireframe_special_color', text='')
+        split3.prop(settings, 'wireframe_midline_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = layout.row(align=True)
@@ -753,9 +749,18 @@ class FT_PT_AppearancePanel(AllVisible):
         op.action = 'wireframe_white'
 
         col = layout.column(align=True)
-        col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'show_specials')
         col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
+
+    def draw(self, context):
+        layout = self.layout
+        settings = ft_settings()
+        if settings is None:
+            return
+
+        self._appearance_wireframe_settings(settings, layout)
+        self._appearance_pin_settings(settings, layout)
 
 
 class FT_PT_SmoothingPanel(AllVisible):
