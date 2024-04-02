@@ -149,16 +149,15 @@ class GT_PT_GeotrackersPanel(View3DPanel):
                           text='', icon='PREFERENCES', emboss=False)
         op.show = 'geotracker'
 
-    def _geotracker_creation_offer(self, layout: Any) -> None:
+    def _geotracker_creation_button(self, layout: Any,
+                                    active: bool = True) -> None:
         settings = gt_settings()
-        row = layout.row()
+        row = layout.row(align=True)
+        row.scale_y = 2.0 if len(settings.trackers()) == 0 else Config.btn_scale_y
         if settings.is_calculating():
-            row.scale_y = Config.btn_scale_y
             row.operator(GTConfig.gt_stop_calculating_idname, icon='X')
         else:
-            row.active = not settings.pinmode
-            row.enabled = not settings.pinmode
-            row.scale_y = 2.0 if len(settings.trackers()) == 0 else Config.btn_scale_y
+            row.enabled = active
             row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
@@ -225,8 +224,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             self._pkt_install_offer(layout)
             return
 
-        self._output_geotrackers_list(layout)
-        self._geotracker_creation_offer(layout)
+        col = layout.column(align=True)
+        self._output_geotrackers_list(col)
+        self._geotracker_creation_button(col)
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
         _gt_grace_timer.start()
