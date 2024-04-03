@@ -38,6 +38,8 @@ class FTConfig:
     ft_actor_idname = operators + '.actor'
     ft_pinmode_idname = operators + '.pinmode'
     ft_movepin_idname = operators + '.movepin'
+    ft_pickmode_idname = operators + '.pickmode'
+    ft_pickmode_starter_idname = operators + '.pickmode_starter'
     ft_switch_to_camera_mode_idname = operators + '.switch_to_camera_mode'
     ft_switch_to_geometry_mode_idname = operators + '.switch_to_geometry_mode'
     ft_create_precalc_idname = operators + '.create_precalc'

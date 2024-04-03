@@ -67,7 +67,7 @@ class GTShaderTestingPanel(Panel):
     def draw(self, context):
         layout = self.layout
         for action in ['all', 'stop', 'points2d', 'points3d',
-                       'residuals', 'wireframer', 'selector',
+                       'residuals', 'wireframer', 'rectangler', 'selector',
                        'mask2d', 'timeliner', 'texter']:
             op = layout.operator(Config.kt_gt_shader_testing_idname,
                                  text=action)

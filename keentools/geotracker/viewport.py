@@ -48,6 +48,7 @@ from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
 from ..utils.edges import (KTEdgeShader2D,
+                           KTRectangleShader2D,
                            KTLitEdgeShaderLocal3D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
@@ -70,6 +71,7 @@ class GTViewport(KTViewport):
                                             UserPreferences.type_color),
             UserPreferences.get_value_safe('gt_mask_3d_opacity',
                                            UserPreferences.type_float)))
+        self._rectangler: Any = KTRectangleShader2D(SpaceView3D)
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
@@ -148,6 +150,7 @@ class GTViewport(KTViewport):
                 self._points3d,
                 self._residuals,
                 self._wireframer,
+                self._rectangler,
                 self._timeliner,
                 self._selector,
                 self._mask2d]
@@ -194,6 +197,7 @@ class GTViewport(KTViewport):
         self.points2d().register_handler(area=area)
         self.texter().register_handler(area=area)
         self.wireframer().register_handler(area=area)
+        self.rectangler().register_handler(area=area)
         self.timeliner().register_handler()
         self.selector().register_handler(area=area)
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
@@ -205,6 +209,7 @@ class GTViewport(KTViewport):
         self.selector().unregister_handler()
         self.timeliner().unregister_handler()
         self.wireframer().unregister_handler()
+        self.rectangler().unregister_handler()
         self.texter().unregister_handler()
         self.points2d().unregister_handler()
         self.points3d().unregister_handler()

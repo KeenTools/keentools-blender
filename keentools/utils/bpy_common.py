@@ -173,16 +173,18 @@ def bpy_poll_is_camera(self: Any, obj: Optional[Object]) -> bool:
 
 
 def _operator_with_context_old(operator: Operator,
-                               context_override_dict: Dict, **kwargs) -> None:
+                               context_override_dict: Dict,
+                               *args, **kwargs) -> None:
     _log.output(f'_operator_with_context_old: {operator}')
-    return operator(context_override_dict, **kwargs)
+    return operator(context_override_dict, *args, **kwargs)
 
 
 def _operator_with_context_new(operator: Operator,
-                               context_override_dict: Dict, **kwargs) -> None:
+                               context_override_dict: Dict,
+                               *args, **kwargs) -> None:
     _log.output(f'_operator_with_context_new: {operator}')
     with bpy.context.temp_override(**context_override_dict):
-        return operator(**kwargs)
+        return operator(*args, **kwargs)
 
 
 operator_with_context: Callable = _operator_with_context_new \

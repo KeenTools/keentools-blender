@@ -276,6 +276,16 @@ def fb_rectangler(area: Any) -> None:
     rectangler.create_batch()
 
 
+def gt_rectangler(area: Any) -> None:
+    vp = GTLoader.viewport()
+    rectangler = vp.rectangler()
+    rectangler.clear_rectangles()
+    rectangler.register_handler(area=area)
+    rectangler.add_rectangle(0, 0, 160, 110, 300, 200, (1, 0, 1, 1))
+    rectangler.prepare_shader_data(area)
+    rectangler.create_batch()
+
+
 def gt_texter(area: Any, *, text: str='Test GT shaders',
               description: str='Description for current operation') -> None:
     vp = GTLoader.viewport()
@@ -322,6 +332,7 @@ def gt_stop_all() -> None:
     vp.points3d().unregister_handler()
     vp.residuals().unregister_handler()
     vp.wireframer().unregister_handler()
+    vp.rectangler().unregister_handler()
     vp.selector().unregister_handler()
     vp.mask2d().unregister_handler()
     vp.timeliner().unregister_handler()
@@ -371,6 +382,8 @@ class GTShaderTestOperator(Operator):
             gt_residuals(area=area)
         elif self.action == 'wireframer':
             gt_wireframer(area=area)
+        elif self.action == 'rectangler':
+            gt_rectangler(area=area)
         elif self.action == 'selector':
             gt_selector(area=area)
         elif self.action == 'mask2d':
@@ -384,6 +397,7 @@ class GTShaderTestOperator(Operator):
             gt_points3d(area=area)
             gt_residuals(area=area)
             gt_wireframer(area=area)
+            gt_rectangler(area=area)
             gt_selector(area=area)
             gt_mask2d(area=area)
             gt_timeliner()

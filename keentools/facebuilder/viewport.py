@@ -39,10 +39,10 @@ from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             get_area_region_3d,
                             to_homogeneous)
 from ..utils.viewport import KTViewport
-from ..utils.edges import KTEdgeShader2D
+from ..utils.edges import KTEdgeShader2D, KTRectangleShader2D
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
-from .utils.edges import FBRasterEdgeShader3D, FBRectangleShader2D
+from .utils.edges import FBRasterEdgeShader3D
 
 
 _log = KTLogger(__name__)
@@ -56,7 +56,7 @@ class FBViewport(KTViewport):
         self._residuals: Any = KTEdgeShader2D(SpaceView3D)
         self._texter: Any = KTScreenText(SpaceView3D, 'FaceBuilder')
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
-        self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
+        self._rectangler: Any = KTRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
 
     def product_type(self) -> int:

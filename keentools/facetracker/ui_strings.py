@@ -32,6 +32,14 @@ buttons = {
         'FaceTracker MovePin',
         'FaceTracker MovePin operator'
     ),
+    FTConfig.ft_pickmode_idname: Button(
+        'FaceTracker Pick Face mode',
+        'Modal Operator for Pick Face mode'
+    ),
+    FTConfig.ft_pickmode_starter_idname: Button(
+        'Align Face (FT)',
+        'Auto align mesh in current view'
+    ),
     FTConfig.ft_switch_to_camera_mode_idname: Button(
         'Camera',
         'Track Camera'
