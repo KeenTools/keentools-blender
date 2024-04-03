@@ -24,7 +24,8 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             ft_settings,
                             get_operator,
-                            ErrorType)
+                            ErrorType,
+                            check_all_headobj_in_facetrackers)
 from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
 from ..utils.images import (get_background_image_object,
@@ -220,6 +221,8 @@ def update_geomobj(geotracker, context: Any) -> None:
     settings = ft_settings()
     loader = settings.loader()
     product = settings.product_type()
+
+    check_all_headobj_in_facetrackers()
 
     if not geotracker.geomobj:
         if settings.pinmode:

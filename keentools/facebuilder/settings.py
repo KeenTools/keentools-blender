@@ -443,6 +443,8 @@ class FBHeadItem(PropertyGroup):
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)
+    ft_connected: IntProperty(default=-1)
+
     blendshapes_control_panel: PointerProperty(name='Blendshapes Control Panel',
                                                type=Object)
     cameras: CollectionProperty(name='Cameras', type=FBCameraItem)
