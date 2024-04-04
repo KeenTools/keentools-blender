@@ -287,7 +287,6 @@ class KTRectangleShader2D(KTEdgeShader2D):
             self.line_batch.draw(self.line_shader)
 
     def create_batch(self) -> None:
-        _log.blue('create_batch')
         if self.line_shader is None:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
             return
