@@ -30,7 +30,7 @@ from ...addon_config import (ActionStatus,
                              ProductType,
                              get_settings,
                              product_name,
-                             check_all_headobj_in_facetrackers)
+                             mark_all_facebuilders_connected_to_facetrackers)
 from ...geotracker_config import GTConfig
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
@@ -174,7 +174,7 @@ def create_facetracker_action() -> ActionStatus:
     select_objects_only(selected_objects)
     bpy_active_object(active_object)
 
-    check_all_headobj_in_facetrackers()
+    mark_all_facebuilders_connected_to_facetrackers()
     _log.output('create_facetracker_action end >>>')
     return ActionStatus(True, f'FaceTracker has been added')
 
@@ -195,7 +195,7 @@ def delete_tracker_action(geotracker_num: int, *, product: int) -> ActionStatus:
         return ActionStatus(False, msg)
     settings.reload_current_geotracker()
 
-    check_all_headobj_in_facetrackers()
+    mark_all_facebuilders_connected_to_facetrackers()
     _log.output('delete_tracker_action end >>>')
     return ActionStatus(True, f'{product_name(product)} has been removed')
 

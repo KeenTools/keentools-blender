@@ -473,7 +473,7 @@ def calculation_in_progress(facebuilder: bool = True,
     return ActionStatus(True, 'No calculation is in progress')
 
 
-def _check_headobj_in_facetrackers(headnum: int) -> int:
+def _find_headobj_in_facetrackers(headnum: int) -> int:
     head = fb_settings().get_head(headnum)
     if not head:
         return -1
@@ -486,15 +486,16 @@ def _check_headobj_in_facetrackers(headnum: int) -> int:
     return -1
 
 
-def check_all_headobj_in_facetrackers() -> bool:
-    _log.yellow('check_all_headobj_in_facetrackers start')
+def mark_all_facebuilders_connected_to_facetrackers() -> bool:
+    _log.yellow('mark_all_facebuilders_connected_to_facetrackers start')
     changes = False
     settings = fb_settings()
     for i in range(len(settings.heads)):
-        res = _check_headobj_in_facetrackers(i)
+        res = _find_headobj_in_facetrackers(i)
         settings.heads[i].ft_connected = res
         if res >=0:
-            _log.red(f'check_all_headobj_in_facetrackers: fb={i} -> ft={res}')
+            _log.red(f'mark_all_facebuilders_connected_to_facetrackers: '
+                     f'fb={i} -> ft={res}')
             changes = True
-    _log.output('check_all_headobj_in_facetrackers end >>>')
+    _log.output('mark_all_facebuilders_connected_to_facetrackers end >>>')
     return changes

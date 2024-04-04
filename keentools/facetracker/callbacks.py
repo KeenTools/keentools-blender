@@ -25,7 +25,7 @@ from ..addon_config import (Config,
                             ft_settings,
                             get_operator,
                             ErrorType,
-                            check_all_headobj_in_facetrackers)
+                            mark_all_facebuilders_connected_to_facetrackers)
 from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
 from ..utils.images import (get_background_image_object,
@@ -222,7 +222,7 @@ def update_geomobj(geotracker, context: Any) -> None:
     loader = settings.loader()
     product = settings.product_type()
 
-    check_all_headobj_in_facetrackers()
+    mark_all_facebuilders_connected_to_facetrackers()
 
     if not geotracker.geomobj:
         if settings.pinmode:

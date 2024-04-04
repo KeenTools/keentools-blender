@@ -26,7 +26,7 @@ from ..addon_config import (fb_settings,
                             stop_ft_pinmode,
                             ProductType,
                             ActionStatus,
-                            check_all_headobj_in_facetrackers)
+                            mark_all_facebuilders_connected_to_facetrackers)
 from ..utils.bpy_common import bpy_context
 from ..facebuilder.utils.manipulate import check_facs_available
 
@@ -97,7 +97,7 @@ def common_fb_checks(*, object_mode: bool = False,
     if fix_facebuilders:
         if not settings.check_heads_and_cams():
             heads_deleted, cams_deleted = settings.fix_heads()
-            check_all_headobj_in_facetrackers()
+            mark_all_facebuilders_connected_to_facetrackers()
             if heads_deleted > 0 or cams_deleted > 0:
                 msg = 'FaceBuilder structures have been fixed. Try again'
                 _log.warning(msg)
