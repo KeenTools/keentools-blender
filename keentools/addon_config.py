@@ -476,3 +476,31 @@ def calculation_in_progress(facebuilder: bool = True,
         if fbs and fbs.is_calculating():
             return ActionStatus(False, 'FaceBuilder calculation is in progress')
     return ActionStatus(True, 'No calculation is in progress')
+
+
+def _find_headobj_in_facetrackers(headnum: int) -> int:
+    head = fb_settings().get_head(headnum)
+    if not head:
+        return -1
+    if not head.headobj:
+        return -1
+
+    for i, tracker_item in enumerate(ft_settings().trackers()):
+         if tracker_item.geomobj == head.headobj:
+             return i
+    return -1
+
+
+def mark_all_facebuilders_connected_to_facetrackers() -> bool:
+    _log.yellow('mark_all_facebuilders_connected_to_facetrackers start')
+    changes = False
+    settings = fb_settings()
+    for i in range(len(settings.heads)):
+        res = _find_headobj_in_facetrackers(i)
+        settings.heads[i].ft_connected = res
+        if res >=0:
+            _log.red(f'mark_all_facebuilders_connected_to_facetrackers: '
+                     f'fb={i} -> ft={res}')
+            changes = True
+    _log.output('mark_all_facebuilders_connected_to_facetrackers end >>>')
+    return changes

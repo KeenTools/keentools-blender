@@ -340,7 +340,7 @@ class FTSceneSettings(TRSceneSetting):
     show_specials: BoolProperty(
         description='Use different colors for important head parts '
                     'on the mesh',
-        name='Special face parts', default=True, update=update_wireframe_image)
+        name='Highlight facial features', default=True, update=update_wireframe_image)
 
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',
