@@ -75,13 +75,21 @@ def xz_to_xy_rotation_matrix_4x4() -> Any:
                      [0., 0., 0., 1.]], dtype=np.float32)
 
 
+def geom_to_npbuffer(geom: Any) -> Any:
+    return geom @ xy_to_xz_rotation_matrix_3x3()
+
+
 def update_head_mesh_geom(obj: Object, geom: Any) -> None:
     mesh = obj.data
     assert(len(geom) == len(mesh.vertices))
-    npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
+    npbuffer = geom_to_npbuffer(geom)
     mesh.vertices.foreach_set('co', npbuffer.ravel())
+
     if mesh.shape_keys:
-        mesh.shape_keys.key_blocks[0].data.foreach_set('co', npbuffer.ravel())
+        index = obj.data.shape_keys.key_blocks.find('Basis')
+        if index >= 0:
+            mesh.shape_keys.key_blocks[index].data.foreach_set('co',
+                                                               npbuffer.ravel())
     mesh.update()
 
 
@@ -402,12 +410,12 @@ def get_pixel_relative_size(area: Area) -> float:
 
 def get_mesh_verts(mesh: Any) -> Any:
     verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
-    mesh.vertices.foreach_get(
-        'co', np.reshape(verts, len(mesh.vertices) * 3))
+    mesh.vertices.foreach_get('co', verts.ravel())
     return verts
 
 
 def get_obj_verts(obj: Any) -> Any:
+    assert obj.type == 'MESH'
     return get_mesh_verts(obj.data)
 
 

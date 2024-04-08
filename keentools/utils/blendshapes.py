@@ -31,7 +31,8 @@ from ..utils.bpy_common import operator_with_context, extend_scene_timeline_end
 from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
-                            xz_to_xy_rotation_matrix_3x3)
+                            xz_to_xy_rotation_matrix_3x3,
+                            get_obj_verts)
 from ..utils.manipulate import deselect_all
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -128,16 +129,8 @@ def zero_all_blendshape_weights(obj: Object) -> int:
     return counter
 
 
-def _get_obj_verts(obj: Object) -> Any:
-    assert obj.type == 'MESH'
-    mesh = obj.data
-    verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
-    mesh.vertices.foreach_get('co', np.reshape(verts, len(mesh.vertices) * 3))
-    return verts @ xz_to_xy_rotation_matrix_3x3()
-
-
 def _get_facs_executor(obj: Object, scale: float) -> Optional[Any]:
-    verts = _get_obj_verts(obj)
+    verts = get_obj_verts(obj) @ xz_to_xy_rotation_matrix_3x3()
 
     try:
         fe = pkt_module().FacsExecutor(verts, scale)
