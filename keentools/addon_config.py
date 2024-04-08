@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Callable, Optional, Tuple, Set, Dict
+from typing import Any, Callable, Optional, Tuple, Set, Dict, List
 from dataclasses import dataclass
 import os
 
@@ -199,6 +199,8 @@ class Config:
 
     integration_enabled: bool = True
     show_facetracker: bool = 'KEENTOOLS_ENABLE_BLENDER_FACETRACKER' in os.environ
+
+    lock_connected_facebuilder: bool = True
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
@@ -491,9 +493,9 @@ def _find_headobj_in_facetrackers(headnum: int) -> int:
     return -1
 
 
-def mark_all_facebuilders_connected_to_facetrackers() -> bool:
+def mark_all_facebuilders_connected_to_facetrackers() -> List:
     _log.yellow('mark_all_facebuilders_connected_to_facetrackers start')
-    changes = False
+    connections = []
     settings = fb_settings()
     for i in range(len(settings.heads)):
         res = _find_headobj_in_facetrackers(i)
@@ -501,6 +503,6 @@ def mark_all_facebuilders_connected_to_facetrackers() -> bool:
         if res >=0:
             _log.red(f'mark_all_facebuilders_connected_to_facetrackers: '
                      f'fb={i} -> ft={res}')
-            changes = True
+            connections.append((i, res))
     _log.output('mark_all_facebuilders_connected_to_facetrackers end >>>')
-    return changes
+    return connections

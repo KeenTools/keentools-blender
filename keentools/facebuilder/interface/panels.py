@@ -72,7 +72,9 @@ def _show_all_panels_no_facetracker():
     settings = fb_settings()
     if settings.pinmode:
         return True
-    return not settings.heads[headnum].ft_connected >= 0
+
+    return (not Config.lock_connected_facebuilder or
+            not settings.heads[headnum].ft_connected >= 0)
 
 
 def _show_all_panels_no_blendshapes():
@@ -300,7 +302,8 @@ class FB_PT_HeaderPanel(Common, Panel):
                                   text=h.headobj.name, icon='USER',
                                   depress=True)
                 op.headnum = i
-                if settings.heads[i].ft_connected != -1:
+                if (Config.lock_connected_facebuilder and
+                        settings.heads[i].ft_connected != -1):
                     box = layout.box()
                     box.alert = True
                     col = box.column(align=True)
