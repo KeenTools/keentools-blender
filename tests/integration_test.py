@@ -20,7 +20,8 @@ from keentools.utils import coords, materials
 from keentools.addon_config import fb_settings, get_operator
 from keentools.facebuilder_config import FBConfig
 from keentools.facebuilder.fbloader import FBLoader
-from keentools.facebuilder.pick_operator import reset_detected_faces, get_detected_faces
+from keentools.facebuilder.pick_operator import get_detected_faces
+from keentools.utils.detect_faces import reset_detected_faces
 
 
 _log = KTLogger(__name__)
