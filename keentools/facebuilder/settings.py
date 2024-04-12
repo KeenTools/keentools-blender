@@ -446,7 +446,6 @@ class FBHeadItem(PropertyGroup):
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)
-    ft_connected: IntProperty(default=-1)
 
     blendshapes_control_panel: PointerProperty(name='Blendshapes Control Panel',
                                                type=Object)
@@ -495,11 +494,6 @@ class FBHeadItem(PropertyGroup):
 
     model_changed_by_scale: BoolProperty(default=False)
 
-    model_changed_by_pinmode: BoolProperty(
-        name="Blendshapes status",
-        description="When turned on then the blendshapes have actual state",
-        default=False)
-
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Selected topology',
                              update=update_mesh_with_dialog)
@@ -516,16 +510,10 @@ class FBHeadItem(PropertyGroup):
     def blenshapes_are_relevant(self) -> bool:
         if self.has_no_blendshapes():
             return True
-        return not self.model_changed_by_pinmode and \
-               not self.model_changed_by_scale
+        return not self.model_changed_by_scale
 
     def clear_model_changed_status(self) -> None:
-        self.model_changed_by_pinmode = False
         self.model_changed_by_scale = False
-
-    def mark_model_changed_by_pinmode(self):
-        if not self.has_no_blendshapes():
-            self.model_changed_by_pinmode = True
 
     def mark_model_changed_by_scale(self):
         if not self.has_no_blendshapes():
