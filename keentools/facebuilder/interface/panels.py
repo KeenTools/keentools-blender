@@ -61,22 +61,6 @@ def _show_all_panels():
     return _state_valid_to_show(state)
 
 
-def _show_all_panels_no_facetracker():
-    state, headnum = what_is_state()
-    if not _state_valid_to_show(state):
-        return False
-
-    if headnum < 0:
-        return True
-
-    settings = fb_settings()
-    if settings.pinmode:
-        return True
-
-    return (not Config.lock_connected_facebuilder or
-            not settings.heads[headnum].ft_connected >= 0)
-
-
 def _show_all_panels_no_blendshapes():
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
@@ -229,7 +213,7 @@ class AllVisible(Common):
             return False
         if not pkt_is_installed():
             return False
-        return _show_all_panels_no_facetracker()
+        return _show_all_panels()
 
 
 class AllVisibleClosed(AllVisible):
@@ -302,15 +286,6 @@ class FB_PT_HeaderPanel(Common, Panel):
                                   text=h.headobj.name, icon='USER',
                                   depress=True)
                 op.headnum = i
-                if (Config.lock_connected_facebuilder and
-                        settings.heads[i].ft_connected != -1):
-                    box = layout.box()
-                    box.alert = True
-                    col = box.column(align=True)
-                    col.scale_y = Config.text_scale_y
-                    col.label(text='You cannot change this Head')
-                    col.label(text='while Head mesh is used')
-                    col.label(text='by FaceTracker')
             else:
                 op = row.operator(FBConfig.fb_select_head_idname,
                                   text=h.headobj.name, icon='USER')
@@ -521,7 +496,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             return
 
         head = settings.get_head(headnum)
-        if not head.blenshapes_are_relevant() and head.model_changed_by_pinmode:
+        if not head.blenshapes_are_relevant():
             _draw_update_blendshapes_panel(layout)
         self._draw_camera_list(headnum, layout)
 

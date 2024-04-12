@@ -117,7 +117,6 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int) -> Option
     if result_flag:
         fb.remove_pins(kid)
         fb.add_preset_pins_and_solve(kid)
-        head.mark_model_changed_by_pinmode()
         update_head_mesh_non_neutral(fb, head)
         _log.output(f'auto_pins_added kid: {kid}')
     else:
