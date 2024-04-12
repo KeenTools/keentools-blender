@@ -200,7 +200,7 @@ class Config:
     integration_enabled: bool = True
     show_facetracker: bool = 'KEENTOOLS_ENABLE_BLENDER_FACETRACKER' in os.environ
 
-    lock_connected_facebuilder: bool = True
+    lock_connected_facebuilder: bool = False
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
@@ -493,7 +493,8 @@ def _find_headobj_in_facetrackers(headnum: int) -> int:
     return -1
 
 
-def mark_all_facebuilders_connected_to_facetrackers() -> List:
+def mark_all_facebuilders_connected_to_facetrackers(
+        *, fb_num: Optional[int] = None, ft_num: Optional[int] = None) -> List:
     _log.yellow('mark_all_facebuilders_connected_to_facetrackers start')
     connections = []
     settings = fb_settings()
@@ -505,4 +506,8 @@ def mark_all_facebuilders_connected_to_facetrackers() -> List:
                      f'fb={i} -> ft={res}')
             connections.append((i, res))
     _log.output('mark_all_facebuilders_connected_to_facetrackers end >>>')
+    if fb_num is not None:
+        return [x for x in connections if x[0] == fb_num]
+    if ft_num is not None:
+        return [x for x in connections if x[1] == ft_num]
     return connections

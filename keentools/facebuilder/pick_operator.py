@@ -117,6 +117,7 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int) -> Option
     if result_flag:
         fb.remove_pins(kid)
         fb.add_preset_pins_and_solve(kid)
+        head.mark_model_changed_by_pinmode()
         update_head_mesh_non_neutral(fb, head)
         _log.output(f'auto_pins_added kid: {kid}')
     else:
@@ -269,9 +270,6 @@ class FB_OT_PickMode(Operator):
                     _log.output(message)
                     not_enough_face_features_warning()
                 else:
-                    head = _get_settings().get_head(self.headnum)
-                    head.mark_model_changed_by_pinmode()
-
                     message = 'A face was chosen and pinned'
                     self.report({'INFO'}, message)
                     _log.output(message)
@@ -359,9 +357,6 @@ class FB_OT_PickModeStarter(Operator):
                 if not self.auto_detect_single:
                     not_enough_face_features_warning()
             else:
-                head = _get_settings().get_head(self.headnum)
-                head.mark_model_changed_by_pinmode()
-
                 message = 'A face was detected and pinned'
                 self.report({'INFO'}, message)
                 _log.output(message)

@@ -147,6 +147,7 @@ class FB_OT_MovePin(Operator):
 
         fb = FBLoader.get_builder()
 
+        head.mark_model_changed_by_pinmode()
         update_head_mesh_non_neutral(fb, head)
 
         FBLoader.update_all_camera_positions(headnum)
@@ -157,7 +158,6 @@ class FB_OT_MovePin(Operator):
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
         vp.update_residuals(fb, kid, area)
-        head.mark_model_changed_by_pinmode()
 
         pins.reset_current_pin()
 
