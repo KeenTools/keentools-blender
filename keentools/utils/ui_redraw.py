@@ -127,12 +127,14 @@ def total_redraw_ui_overriding_window() -> None:
 
 
 def timeline_view_all() -> None:
-    _log.output('timeline_view_all')
+    _log.yellow('timeline_view_all start')
     pairs = get_areas_by_type('DOPESHEET_EDITOR')
-    for area, _ in pairs:
+    for area, window in pairs:
         region = get_area_region(area)
         if not region:
             continue
         _log.output(f'area: {area}')
         operator_with_context(bpy.ops.action.view_all,
-                              {'area': area, 'region': region})
+                              {'area': area, 'region': region,
+                               'window': window})
+    _log.output('timeline_view_all end >>>')
