@@ -201,12 +201,12 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
         return ActionStatus(False, 'Precalc start should be lower than precalc end')
 
     _log.output('precalc_with_runner_act start')
+    area = context.area
     vp = settings.loader().viewport()
     if not settings.pinmode:
-        vp.texter().register_handler(context)
+        vp.texter().register_handler(area=area)
 
     rw, rh = bpy_render_frame()
-    area = context.area
     runner = KTClassLoader.PrecalcRunner_class()(
         precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,

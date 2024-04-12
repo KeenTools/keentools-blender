@@ -154,7 +154,7 @@ class KTViewport:
                           context: Optional[Any]=None) -> None:
         texter = self.texter()
         if register and context is not None:
-            texter.register_handler(context)
+            texter.register_handler(area=context.area)
         texter.set_message(msg)
 
     def revert_default_screen_message(self, unregister=False) -> None:

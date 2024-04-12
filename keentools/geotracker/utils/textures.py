@@ -224,9 +224,10 @@ def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
                                          file_format=file_format,
                                          frames=frames, digits=digits,
                                          product=product)
-    prepare_camera(context.area)
+    area = context.area
+    prepare_camera(area)
     settings = gt_settings()
     if not settings.pinmode:
         vp = GTLoader.viewport()
-        vp.texter().register_handler(context)
+        vp.texter().register_handler(area=area)
     bpy_timer_register(_bake_caller, first_interval=0.0)
