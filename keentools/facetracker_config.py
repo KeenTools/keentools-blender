@@ -165,6 +165,3 @@ class FTConfig:
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
     ft_action_name = 'ftAction'
-
-    ft_geomobj_cache_attr_name = 'kt_facetracker_cache'
-    ft_geomobj_cache_mesh_name_pat = 'cache_{}'
