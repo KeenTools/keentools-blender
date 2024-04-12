@@ -86,10 +86,8 @@ def update_head_mesh_geom(obj: Object, geom: Any) -> None:
     mesh.vertices.foreach_set('co', npbuffer.ravel())
 
     if mesh.shape_keys:
-        index = obj.data.shape_keys.key_blocks.find('Basis')
-        if index >= 0:
-            mesh.shape_keys.key_blocks[index].data.foreach_set('co',
-                                                               npbuffer.ravel())
+        apply_mesh_changes_to_all_shapes(obj)
+
     mesh.update()
 
 
@@ -681,3 +679,56 @@ def model_mat_by_bpy_model_and_camera(model_matrix_world: Matrix,
                                       camera_matrix_world: Matrix) -> Any:
     return np.array(camera_matrix_world.inverted() @ model_matrix_world,
                     dtype=np.float32) @ xz_to_xy_rotation_matrix_4x4()
+
+
+def get_shape_verts(shape: Any) -> Any:
+    verts = np.empty((len(shape.data), 3), dtype=np.float32)
+    shape.data.foreach_get('co', verts.ravel())
+    return verts
+
+
+def set_shape_verts(shape: Any, verts: Any) -> Any:
+    shape.data.foreach_set('co', verts.ravel())
+
+
+def apply_diff_to_shapes(diff: Any, shapes: List[Any]) -> None:
+    for shape in shapes:
+        verts = get_shape_verts(shape)
+        set_shape_verts(shape, verts + diff)
+
+
+def apply_mesh_changes_to_all_shapes(obj: Object) -> bool:
+    _log.yellow('apply_mesh_changes_to_all_shapes start')
+    if not obj or not obj.type == 'MESH' or not obj.data.shape_keys:
+        _log.red('apply_mesh_changes_to_all_shapes: No shape keys >>>')
+        return False
+
+    key_blocks = obj.data.shape_keys.key_blocks
+    index = key_blocks.find('Basis')
+    if index < 0:
+        _log.red('apply_mesh_changes_to_all_shapes: Basis >>>')
+        return False
+
+    basis_shape = key_blocks[index]
+    mesh_verts = get_mesh_verts(obj.data)
+    basis_verts = get_shape_verts(basis_shape)
+    if basis_verts.shape != mesh_verts.shape:
+        _log.red('apply_mesh_changes_to_all_shapes: array sizes are different')
+        return False
+
+    diff = mesh_verts - basis_verts
+    if not np.any(diff):
+        _log.red('apply_mesh_changes_to_all_shapes: No need to update 1 >>>')
+        return True
+
+    if np.allclose(mesh_verts, basis_verts):
+        _log.red('apply_mesh_changes_to_all_shapes: No need to update 2 >>>')
+        return True
+
+    _log.magenta('\n\n\n*** UPDATE ALL BLENDSHAPES ***\n\n')
+    for shape in key_blocks:
+        verts = get_shape_verts(shape)
+        set_shape_verts(shape, verts + diff)
+
+    _log.output('apply_mesh_changes_to_all_shapes end >>>')
+    return True

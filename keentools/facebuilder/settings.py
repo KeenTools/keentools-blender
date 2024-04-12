@@ -34,6 +34,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Object, Area, Image
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             fb_settings,
                             get_addon_preferences,
@@ -71,6 +72,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_scene,
                                 bpy_remove_object,
                                 bpy_abspath)
+
+_log = KTLogger(__name__)
 
 
 class FBExifItem(PropertyGroup):
@@ -510,13 +513,13 @@ class FBHeadItem(PropertyGroup):
                                   description='Use expression from',
                                   update=update_expression_view)
 
-    def blenshapes_are_relevant(self):
+    def blenshapes_are_relevant(self) -> bool:
         if self.has_no_blendshapes():
             return True
         return not self.model_changed_by_pinmode and \
                not self.model_changed_by_scale
 
-    def clear_model_changed_status(self):
+    def clear_model_changed_status(self) -> None:
         self.model_changed_by_pinmode = False
         self.model_changed_by_scale = False
 

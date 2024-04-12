@@ -292,7 +292,7 @@ def bpy_new_image(name: str, **kwargs) -> Image:
     return bpy.data.images.new(name, **kwargs)
 
 
-def bpy_load_image(file_path: str) -> Mesh:
+def bpy_load_image(file_path: str) -> Image:
     return bpy.data.images.load(file_path)
 
 
