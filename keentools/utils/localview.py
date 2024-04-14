@@ -18,11 +18,14 @@
 
 from typing import Optional, Any
 
-import bpy
 from bpy.types import Area, Window, Screen
 
 from .kt_logging import KTLogger
-from .bpy_common import operator_with_context
+from .bpy_common import (operator_with_context,
+                         bpy_window,
+                         bpy_window_managers,
+                         bpy_screen,
+                         bpy_ops)
 
 
 _log = KTLogger(__name__)
@@ -44,8 +47,8 @@ def enter_area_localview(area: Optional[Area]):
         _log.output('area has problem!')
         return False
     if not area.spaces.active.local_view:
-        operator_with_context(bpy.ops.view3d.localview,
-                              {'window': bpy.context.window,  # Fix for new temp_context
+        operator_with_context(bpy_ops().view3d.localview,
+                              {'window': bpy_window(),  # Fix for new temp_context
                                'area': area})
         return True
     return False
@@ -58,17 +61,17 @@ def exit_area_localview(area: Optional[Area], window: Optional[Window]=None,
         _log.output('exit_area_localview check_area_active_problem')
         return False
     if area.spaces.active.local_view:
-        win = bpy.context.window if window is None else window
-        scr = bpy.context.screen if screen is None else screen
+        win = bpy_window() if window is None else window
+        scr = bpy_screen() if screen is None else screen
 
         if win is None:
-            win = bpy.data.window_managers['WinMan'].windows[0]
+            win = bpy_window_managers()['WinMan'].windows[0]
         if screen is None and win is not None:
             scr = win.screen
 
         _log.output(f'exit_area_localview context:\n{win}\n{area}\n{scr}\n')
 
-        operator_with_context(bpy.ops.view3d.localview,
+        operator_with_context(bpy_ops().view3d.localview,
                               {'window': win,
                                'area': area,
                                'screen': scr})

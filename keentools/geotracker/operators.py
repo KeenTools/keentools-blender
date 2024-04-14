@@ -16,12 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List
+from typing import List, Optional
 from math import radians
-import platform
-from urllib.parse import urlencode
 
-from bpy.types import Operator, Object
+from bpy.types import Operator, Object, Area
 from bpy.props import (BoolProperty,
                        IntProperty,
                        FloatProperty,
@@ -50,8 +48,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_show_addon_preferences,
                                 bpy_scene,
                                 create_empty_object,
-                                bpy_remove_object,
-                                bpy_url_open)
+                                bpy_remove_object)
 from ..tracker.calc_timer import TrackTimer, RefineTimer
 
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
@@ -1093,11 +1090,11 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             return context.window_manager.invoke_props_dialog(self, width=400)
         return self.execute(context)
 
-    def start_text_on_screen(self, context):
+    def start_text_on_screen(self, area: Optional[Area] = None ):
         settings = get_settings(self.product)
         single_line_screen_message('Projecting and baking… Please wait',
-                                   register=not settings.pinmode,
-                                   context=context, product=self.product)
+                                   area=area if not settings.pinmode else None,
+                                   product=self.product)
 
     def finish_text_on_screen(self):
         settings = get_settings(self.product)
@@ -1124,9 +1121,9 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         _log.output('GT START TEXTURE CREATION')
-        self.start_text_on_screen(context)
-        act_status = bake_texture_from_frames_action(context.area,
-                                                     selected_keyframes,
+        area = context.area
+        self.start_text_on_screen(area)
+        act_status = bake_texture_from_frames_action(area, selected_keyframes,
                                                      product=self.product)
         self.finish_text_on_screen()
 

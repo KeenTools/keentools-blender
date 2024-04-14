@@ -49,8 +49,24 @@ def bpy_context() -> Any:
     return bpy.context
 
 
+def bpy_window() -> Any:
+    return bpy.context.window
+
+
 def bpy_window_manager() -> Any:
     return bpy.context.window_manager
+
+
+def bpy_window_managers() -> Any:
+    return bpy.data.window_managers
+
+
+def bpy_screen() -> Any:
+    return bpy.context.screen
+
+
+def bpy_ops() -> Any:
+    return bpy.ops
 
 
 def bpy_objects() -> Any:
