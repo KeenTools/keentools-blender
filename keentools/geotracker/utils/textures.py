@@ -215,16 +215,15 @@ def _bake_caller() -> Optional[float]:
     return None
 
 
-def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
+def bake_texture_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                           *, file_format: str = 'PNG', frames: List[int],
                           digits: int = 4, product: int) -> None:
     global _bake_generator_var
-    _bake_generator_var = bake_generator(context.area, geotracker,
+    _bake_generator_var = bake_generator(area, geotracker,
                                          filepath_pattern,
                                          file_format=file_format,
                                          frames=frames, digits=digits,
                                          product=product)
-    area = context.area
     prepare_camera(area)
     settings = gt_settings()
     if not settings.pinmode:

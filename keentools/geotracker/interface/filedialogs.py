@@ -616,7 +616,9 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
             op = get_operator(FTConfig.ft_interrupt_modal_idname)
             op('INVOKE_DEFAULT')
 
-        bake_texture_sequence(context, geotracker, filepath_pattern,
+        bake_texture_sequence(area=context.area,
+                              geotracker=geotracker,
+                              filepath_pattern=filepath_pattern,
                               frames=frames,
                               file_format=self.file_format,
                               product=self.product)
