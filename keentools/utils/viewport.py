@@ -19,7 +19,6 @@
 import cProfile
 from typing import List, Optional, Any, Callable, Tuple
 
-import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
@@ -27,6 +26,7 @@ from ..addon_config import ProductType
 from ..preferences.user_preferences import UserPreferences
 from .points import KTScreenPins
 from .coords import get_pixel_relative_size
+from ..utils.bpy_common import bpy_window, bpy_window_manager
 
 
 _log = KTLogger(__name__)
@@ -122,15 +122,15 @@ class KTViewport:
 
     def unregister_draw_update_timer(self) -> None:
         if self._draw_update_timer_handler is not None:
-            bpy.context.window_manager.event_timer_remove(
+            bpy_window_manager().event_timer_remove(
                 self._draw_update_timer_handler
             )
         self._draw_update_timer_handler = None
 
     def register_draw_update_timer(self, time_step: float) -> None:
         self.unregister_draw_update_timer()
-        self._draw_update_timer_handler = bpy.context.window_manager.event_timer_add(
-            time_step=time_step, window=bpy.context.window
+        self._draw_update_timer_handler = bpy_window_manager().event_timer_add(
+            time_step=time_step, window=bpy_window()
         )
 
     def tag_redraw(self) -> None:

@@ -19,7 +19,6 @@
 import platform
 from urllib.parse import urlencode
 
-import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, IntProperty
 
@@ -37,7 +36,11 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                filter_module_list_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
-from .bpy_common import bpy_localview, bpy_show_addon_preferences, bpy_url_open
+from .bpy_common import (bpy_localview,
+                         bpy_show_addon_preferences,
+                         bpy_url_open,
+                         bpy_window_manager,
+                         bpy_ops)
 from ..ui_strings import buttons
 
 
@@ -107,8 +110,8 @@ class KT_OT_AddonSearch(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        bpy.context.window_manager.addon_search = self.search
-        bpy.ops.screen.userpref_show()
+        bpy_window_manager().addon_search = self.search
+        bpy_ops().screen.userpref_show()
         mods = find_modules_by_name_starting_with(self.search)
         if len(mods) > 1:
             collapse_all_modules(mods)

@@ -23,7 +23,7 @@ from bpy.types import Area, Window, Screen
 from .kt_logging import KTLogger
 from .bpy_common import (operator_with_context,
                          bpy_window,
-                         bpy_window_managers,
+                         bpy_winman,
                          bpy_screen,
                          bpy_ops)
 
@@ -65,7 +65,7 @@ def exit_area_localview(area: Optional[Area], window: Optional[Window]=None,
         scr = bpy_screen() if screen is None else screen
 
         if win is None:
-            win = bpy_window_managers()['WinMan'].windows[0]
+            win = bpy_winman().windows[0]
         if screen is None and win is not None:
             scr = win.screen
 

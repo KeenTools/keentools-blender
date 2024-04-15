@@ -61,6 +61,10 @@ def bpy_window_managers() -> Any:
     return bpy.data.window_managers
 
 
+def bpy_winman() -> Any:
+    return bpy.data.window_managers['WinMan']
+
+
 def bpy_screen() -> Any:
     return bpy.context.screen
 
@@ -71,6 +75,10 @@ def bpy_ops() -> Any:
 
 def bpy_objects() -> Any:
     return bpy.data.objects
+
+
+def bpy_data() -> Any:
+    return bpy.data
 
 
 def bpy_images() -> Any:

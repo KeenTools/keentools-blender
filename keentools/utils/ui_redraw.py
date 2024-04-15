@@ -17,13 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 from typing import List, Any, Dict, Tuple
 
-import bpy
 from bpy.types import Area, Window
 import addon_utils
 
 from .kt_logging import KTLogger
 from .bpy_common import bpy_background_mode, operator_with_context
 from ..utils.coords import get_area_region
+from ..utils.bpy_common import bpy_window_manager, bpy_winman, bpy_ops
 
 
 _log = KTLogger(__name__)
@@ -31,7 +31,7 @@ _log = KTLogger(__name__)
 
 def get_areas_by_type(area_type: str = 'VIEW_3D') -> List[Tuple[Area, Window]]:
     pairs = []
-    for window in bpy.data.window_managers['WinMan'].windows:
+    for window in bpy_winman().windows:
         for area in window.screen.areas:
             if area.type == area_type:
                 pairs.append((area, window))
@@ -39,7 +39,7 @@ def get_areas_by_type(area_type: str = 'VIEW_3D') -> List[Tuple[Area, Window]]:
 
 
 def get_all_areas() -> List[Area]:
-    return [area for window in bpy.data.window_managers['WinMan'].windows
+    return [area for window in bpy_winman().windows
                  for area in window.screen.areas]
 
 
@@ -109,19 +109,19 @@ def mark_old_modules(mods: List[Any], filter_dict: Dict) -> None:
 def total_redraw_ui() -> None:
     ''' This call also updates all texture nodes in scene depsgraph '''
     if not bpy_background_mode():
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        bpy_ops().wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         _log.output(_log.color('red', 'total_redraw_ui'))
 
 
 def total_redraw_ui_overriding_window() -> None:
     ''' This function is actual for Blender 2.80 only '''
     if not bpy_background_mode():
-        wm = bpy.context.window_manager
+        wm = bpy_window_manager()
         override = {
             'window': wm.windows[0],
             'screen': wm.windows[0].screen,
         }
-        bpy.ops.wm.redraw_timer(override, type='DRAW_WIN_SWAP', iterations=1)
+        bpy_ops().wm.redraw_timer(override, type='DRAW_WIN_SWAP', iterations=1)
         _log.output(_log.color('red', 'total_redraw_ui_overriding_window'))
 
 
@@ -134,7 +134,7 @@ def timeline_view_all() -> None:
         if not region:
             continue
         _log.output(f'area: {area}')
-        operator_with_context(bpy.ops.action.view_all,
+        operator_with_context(bpy_ops().action.view_all,
                               {'area': area, 'region': region,
                                'window': window})
     _log.output('timeline_view_all end >>>')
