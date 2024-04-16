@@ -45,8 +45,7 @@ from ...facebuilder.utils.manipulate import check_facs_available
 _log = KTLogger(__name__)
 
 
-def prepare_camera(area: Area, *,
-                   product: int = ProductType.GEOTRACKER) -> None:
+def prepare_camera(area: Area, *, product: int) -> None:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
