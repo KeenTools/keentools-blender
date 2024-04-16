@@ -37,7 +37,8 @@ from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
                                  bpy_scene_selected_objects,
-                                 bpy_background_mode)
+                                 bpy_background_mode,
+                                 bpy_context)
 from ...facebuilder.utils.manipulate import check_facs_available
 
 
@@ -108,14 +109,22 @@ def get_alone_ft_object_in_scene_selection():
 
 
 def show_warning_dialog(err: Any, limit=70) -> None:
-    _log.output('show_warning_dialog call')
+    _log.yellow('show_warning_dialog start')
     user_message = '\n'.join(split_long_string(str(err), limit=limit))
     if bpy_background_mode():
         _log.error(f'Warning operator is in background mode.\n{user_message}')
         return
+
     warn = get_operator(Config.kt_warning_idname)
+
+    if not bpy_context().window:
+        _log.error(f'\nCannot output warning: No window object in context\n'
+                   f'{user_message}')
+        return
+
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=user_message)
+    _log.output('show_warning_dialog end >>>')
 
 
 def show_unlicensed_warning() -> None:

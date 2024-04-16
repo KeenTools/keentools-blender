@@ -16,7 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Tuple, Optional, Callable
+from typing import Tuple, Optional, Callable, Any, List
+import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
@@ -33,6 +34,8 @@ from ..utils.edges import (KTEdgeShader2D,
 from ..utils.polygons import KTRasterMask
 from ..preferences.user_preferences import UserPreferences
 from .edges import FTRasterEdgeShader3D
+from ..utils.coords import (pin_to_xyz_from_geo_mesh,
+                            xy_to_xz_rotation_matrix_3x3)
 
 
 _log = KTLogger(__name__)
@@ -61,3 +64,16 @@ class FTViewport(GTViewport):
 
     def product_type(self) -> int:
         return ProductType.FACETRACKER
+
+    def surface_points_from_mesh(self, gt: Any, obj: Object,
+                                 keyframe: int) -> List:
+        geo = gt.applied_args_model_at(keyframe)
+        geo_mesh = geo.mesh(0)
+        pins_count = gt.pins_count()
+        verts = np.empty((pins_count, 3), dtype=np.float32)
+        for i in range(pins_count):
+            pin = gt.pin(keyframe, i)
+            p = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+            verts[i] = p
+        # tolist() is needed by shader batch on Mac
+        return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()

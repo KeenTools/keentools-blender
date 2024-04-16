@@ -63,10 +63,6 @@ class FBPreferences(bpy.types.AddonPreferences):
         box.label(text='Please remove it!')
 
 
-def _get_window_manager() -> Any:
-    return bpy.data.window_managers['WinMan']
-
-
 def _get_bpy_preferences() -> Any:
     return bpy.context.preferences
 

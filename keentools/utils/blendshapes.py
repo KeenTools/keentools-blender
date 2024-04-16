@@ -17,21 +17,24 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import math
-import numpy as np
 import os
 from typing import Any, List, Optional, Tuple, Dict
 
-import bpy
 from bpy.types import Object, Action, FCurve
 
 from .fcurve_operations import *
 from .kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
-from ..utils.bpy_common import operator_with_context, extend_scene_timeline_end
+from ..utils.bpy_common import (operator_with_context,
+                                extend_scene_timeline_end,
+                                bpy_data,
+                                bpy_scene,
+                                bpy_ops)
 from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
-                            xz_to_xy_rotation_matrix_3x3)
+                            xz_to_xy_rotation_matrix_3x3,
+                            get_obj_verts)
 from ..utils.manipulate import deselect_all
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -98,7 +101,7 @@ def _get_safe_blendshapes_action(
             return None
     if not animation_data.action:
         animation_data.action = \
-            bpy.data.actions.new(action_name)
+            bpy_data().actions.new(action_name)
     return animation_data.action
 
 
@@ -128,16 +131,8 @@ def zero_all_blendshape_weights(obj: Object) -> int:
     return counter
 
 
-def _get_obj_verts(obj: Object) -> Any:
-    assert obj.type == 'MESH'
-    mesh = obj.data
-    verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
-    mesh.vertices.foreach_get('co', np.reshape(verts, len(mesh.vertices) * 3))
-    return verts @ xz_to_xy_rotation_matrix_3x3()
-
-
 def _get_facs_executor(obj: Object, scale: float) -> Optional[Any]:
-    verts = _get_obj_verts(obj)
+    verts = get_obj_verts(obj) @ xz_to_xy_rotation_matrix_3x3()
 
     try:
         fe = pkt_module().FacsExecutor(verts, scale)
@@ -271,7 +266,7 @@ def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
     action_name = os.path.splitext(os.path.basename(filepath))[0]
     blendshapes_action = _get_safe_blendshapes_action(obj, action_name)
 
-    scene = bpy.context.scene
+    scene = bpy_scene()
     fps = scene.render.fps
     start = scene.frame_current
     if not fan.timecodes_enabled():
@@ -413,7 +408,7 @@ def delete_with_children(obj: Object) -> None:
     arr = []
     _find_all_children(obj, arr)
     if arr:
-        operator_with_context(bpy.ops.object.delete,
+        operator_with_context(bpy_ops().object.delete,
                               {'selected_objects': arr})
 
 
@@ -489,7 +484,7 @@ def convert_blendshapes_animation_to_controls(obj: Object) -> bool:
         if not item['slider'].animation_data:
             item['slider'].animation_data_create()
         if not item['slider'].animation_data.action:
-            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
+            item['slider'].animation_data.action = bpy_data().actions.new(name + 'Action')
         control_action = item['slider'].animation_data.action
         control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
         clear_fcurve(control_fcurve)
@@ -508,7 +503,7 @@ def create_facs_test_animation_on_sliders(obj: Object, start_time: float = 1,
         if not item['slider'].animation_data:
             item['slider'].animation_data_create()
         if not item['slider'].animation_data.action:
-            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
+            item['slider'].animation_data.action = bpy_data().actions.new(name + 'Action')
         control_action = item['slider'].animation_data.action
         control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
         anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]

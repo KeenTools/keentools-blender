@@ -38,12 +38,11 @@ def revert_default_screen_message(unregister: bool=False,
 
 def single_line_screen_message(message: str,
                                *, color: Tuple = (1.0, 0., 0., _text_opacity),
-                               register: bool = False,
-                               context: Optional[Any] = None,
+                               area: Optional[Any] = None,
                                product: int) -> None:
     vp = _get_viewport(product)
     vp.message_to_screen([{'text': message, 'color': color}],
-                         register=register, context=context)
+                         register_area=area)
 
 
 def playback_mode_screen_message(product: int) -> None:

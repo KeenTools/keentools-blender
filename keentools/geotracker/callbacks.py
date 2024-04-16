@@ -250,7 +250,7 @@ def update_geomobj(geotracker, context: Any) -> None:
 
 
 def update_movieclip(geotracker, context: Any) -> None:
-    _log.yellow('update_movieclip')
+    _log.yellow('update_movieclip start')
     if not geotracker:
         return
 
@@ -279,6 +279,7 @@ def update_movieclip(geotracker, context: Any) -> None:
         subscribe_movie_clip_color_space_watcher(geotracker)
 
     timeline_view_all()
+    _log.output('update_movieclip end >>>')
 
 
 def update_precalc_path(geotracker, context: Any) -> None:

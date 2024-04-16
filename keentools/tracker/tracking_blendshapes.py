@@ -42,7 +42,12 @@ _log = KTLogger(__name__)
 tracking_frame_name_pattern: Any = re.compile(r'frame_(\d+)$', 0)
 
 
-def get_prev_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
+def get_all_tracking_frame_shapes(key_blocks: Any) -> List:
+    return [kb for kb in key_blocks
+            if tracking_frame_name_pattern.match(kb.name)]
+
+
+def get_prev_frame_shape(key_blocks: Any, shape_index: int) -> Tuple[int, int]:
     '''
     :return: shape_index, frame_number
     '''
@@ -55,7 +60,7 @@ def get_prev_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
     return -1, -1
 
 
-def get_next_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
+def get_next_frame_shape(key_blocks: Any, shape_index: int) -> Tuple[int, int]:
     '''
     :return: shape_index, frame_number
     '''
@@ -68,7 +73,7 @@ def get_next_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
     return -1, -1
 
 
-def check_tracking_frames(key_blocks) -> Tuple[bool, Any]:
+def check_tracking_frames(key_blocks: Any) -> Tuple[bool, Any]:
     count = len(key_blocks)
     check_status = True
     non_tracking_shape_flag = False
@@ -98,7 +103,7 @@ def check_tracking_frames(key_blocks) -> Tuple[bool, Any]:
     return check_status, arr
 
 
-def reorder_tracking_frames(obj) -> None:
+def reorder_tracking_frames(obj: Object) -> None:
     key_blocks = obj.data.shape_keys.key_blocks
     check_status, arr = check_tracking_frames(key_blocks)
     if check_status:

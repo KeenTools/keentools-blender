@@ -34,6 +34,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Object, Area, Image
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             fb_settings,
                             get_addon_preferences,
@@ -71,6 +72,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_scene,
                                 bpy_remove_object,
                                 bpy_abspath)
+
+_log = KTLogger(__name__)
 
 
 class FBExifItem(PropertyGroup):
@@ -443,7 +446,6 @@ class FBHeadItem(PropertyGroup):
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)
-    ft_connected: IntProperty(default=-1)
 
     blendshapes_control_panel: PointerProperty(name='Blendshapes Control Panel',
                                                type=Object)
@@ -492,11 +494,6 @@ class FBHeadItem(PropertyGroup):
 
     model_changed_by_scale: BoolProperty(default=False)
 
-    model_changed_by_pinmode: BoolProperty(
-        name="Blendshapes status",
-        description="When turned on then the blendshapes have actual state",
-        default=False)
-
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Selected topology',
                              update=update_mesh_with_dialog)
@@ -510,19 +507,13 @@ class FBHeadItem(PropertyGroup):
                                   description='Use expression from',
                                   update=update_expression_view)
 
-    def blenshapes_are_relevant(self):
+    def blenshapes_are_relevant(self) -> bool:
         if self.has_no_blendshapes():
             return True
-        return not self.model_changed_by_pinmode and \
-               not self.model_changed_by_scale
+        return not self.model_changed_by_scale
 
-    def clear_model_changed_status(self):
-        self.model_changed_by_pinmode = False
+    def clear_model_changed_status(self) -> None:
         self.model_changed_by_scale = False
-
-    def mark_model_changed_by_pinmode(self):
-        if not self.has_no_blendshapes():
-            self.model_changed_by_pinmode = True
 
     def mark_model_changed_by_scale(self):
         if not self.has_no_blendshapes():
@@ -1033,6 +1024,10 @@ class FBSceneSettings(PropertyGroup):
         if head is None or not head.headobj:
             return zero_position
         return np.array(head.headobj.location) + FBConfig.next_head_step
+
+    def get_all_camobj(self):
+        return [cam.camobj for head in self.heads
+                for cam in head.cameras if cam.camobj]
 
     def preferences(self):
         return get_addon_preferences()

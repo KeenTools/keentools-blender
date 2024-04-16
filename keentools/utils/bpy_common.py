@@ -49,12 +49,36 @@ def bpy_context() -> Any:
     return bpy.context
 
 
+def bpy_window() -> Any:
+    return bpy.context.window
+
+
 def bpy_window_manager() -> Any:
     return bpy.context.window_manager
 
 
+def bpy_window_managers() -> Any:
+    return bpy.data.window_managers
+
+
+def bpy_winman() -> Any:
+    return bpy.data.window_managers['WinMan']
+
+
+def bpy_screen() -> Any:
+    return bpy.context.screen
+
+
+def bpy_ops() -> Any:
+    return bpy.ops
+
+
 def bpy_objects() -> Any:
     return bpy.data.objects
+
+
+def bpy_data() -> Any:
+    return bpy.data
 
 
 def bpy_images() -> Any:
@@ -292,7 +316,7 @@ def bpy_new_image(name: str, **kwargs) -> Image:
     return bpy.data.images.new(name, **kwargs)
 
 
-def bpy_load_image(file_path: str) -> Mesh:
+def bpy_load_image(file_path: str) -> Image:
     return bpy.data.images.load(file_path)
 
 
