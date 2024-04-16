@@ -25,7 +25,7 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
                        PointerProperty, CollectionProperty, BoolVectorProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, ProductType
+from ..addon_config import Config, ProductType, fb_settings
 from .ftloader import FTLoader
 from ..utils.bpy_common import (bpy_poll_is_mesh,
                                 bpy_poll_is_camera)
@@ -62,6 +62,13 @@ from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
 _log = KTLogger(__name__)
 
 
+def poll_is_camera_not_in_fb(self: Any, obj: Optional[Object]) -> bool:
+    if not bpy_poll_is_camera(self, obj):
+        return False
+    settings = fb_settings()
+    return obj not in settings.get_all_camobj()
+
+
 class FaceTrackerItem(TrackerItem):
     serial_str: StringProperty(name='GeoTracker Serialization string')
     geomobj: PointerProperty(
@@ -75,7 +82,7 @@ class FaceTrackerItem(TrackerItem):
         name='Camera',
         description='Choose which camera will be your viewpoint',
         type=Object,
-        poll=bpy_poll_is_camera,
+        poll=poll_is_camera_not_in_fb,
         update=update_camobj)
     movie_clip: PointerProperty(name='Movie Clip',
                                 description='Select Footage from list',

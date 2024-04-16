@@ -1025,6 +1025,10 @@ class FBSceneSettings(PropertyGroup):
             return zero_position
         return np.array(head.headobj.location) + FBConfig.next_head_step
 
+    def get_all_camobj(self):
+        return [cam.camobj for head in self.heads
+                for cam in head.cameras if cam.camobj]
+
     def preferences(self):
         return get_addon_preferences()
 
