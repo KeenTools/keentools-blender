@@ -24,7 +24,7 @@ from mathutils import Matrix, Vector
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ft_settings
 from ..facebuilder.utils.edges import FBRasterEdgeShader3D
-from ..utils.fb_wireframe_image import create_edge_indices
+from ..utils.fb_wireframe_image import get_ft_edge_indices_and_uvs
 
 
 _log = KTLogger(__name__)
@@ -52,9 +52,8 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
 
     def init_edge_indices(self) -> None:
         _log.blue('init_edge_indices')
-        geo = ft_settings().loader().get_geo()  # TODO: Fix this!!!
-        me = geo.mesh(0)
-        self.edge_indices, self.edge_uvs = create_edge_indices(vertex_count=me.points_count())
+        geo = ft_settings().loader().get_geo()
+        self.edge_indices, self.edge_uvs = get_ft_edge_indices_and_uvs(geo_mesh=geo.mesh(0))
 
     def init_selection_from_mesh(self, obj: Object, mask_3d: str,
                                  inverted: bool) -> None:
