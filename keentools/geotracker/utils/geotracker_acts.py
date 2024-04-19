@@ -29,6 +29,7 @@ from ...addon_config import (ActionStatus,
                              get_addon_preferences,
                              ProductType,
                              get_settings,
+                             fb_settings,
                              product_name)
 from ...geotracker_config import GTConfig
 from ...utils.animation import (get_action,
@@ -122,14 +123,14 @@ def create_geotracker_action() -> ActionStatus:
     active_object = bpy_active_object()
 
     geotracker = settings.get_current_geotracker_item()
-    obj = get_alone_object_in_scene_selection_by_type('MESH')
+    obj = get_alone_object_in_scene_selection_by_type('MESH', exclude_list=[])
     if obj is None:
-        obj = get_alone_object_in_scene_by_type('MESH')
+        obj = get_alone_object_in_scene_by_type('MESH', exclude_list=[])
     geotracker.geomobj = obj
 
-    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    camobj = get_alone_object_in_scene_selection_by_type('CAMERA', exclude_list=[])
     if camobj is None:
-        camobj = get_alone_object_in_scene_by_type('CAMERA')
+        camobj = get_alone_object_in_scene_by_type('CAMERA', exclude_list=[])
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
@@ -163,9 +164,12 @@ def create_facetracker_action() -> ActionStatus:
         obj = get_alone_ft_object_in_scene()
     geotracker.geomobj = obj
 
-    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    exclude_camobj = fb_settings().get_all_camobj()
+    camobj = get_alone_object_in_scene_selection_by_type(
+        'CAMERA', exclude_list=exclude_camobj)
     if camobj is None:
-        camobj = get_alone_object_in_scene_by_type('CAMERA')
+        camobj = get_alone_object_in_scene_by_type(
+            'CAMERA', exclude_list=exclude_camobj)
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
@@ -1093,7 +1097,7 @@ def bake_texture_from_frames_action(area: Area, selected_frames: List,
 
     prepare_camera(area, product=product)
     built_texture = bake_texture(geotracker, selected_frames, product=product)
-    revert_camera(area)
+    revert_camera(area, product=product)
 
     if settings.pinmode:
         settings.reload_current_geotracker()
