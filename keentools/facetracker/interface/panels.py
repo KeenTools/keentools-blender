@@ -408,13 +408,7 @@ class FT_PT_CameraPanel(AllVisible):
         layout = self.layout
         cam_data = geotracker.camobj.data
 
-        col = layout.column()
-        col.prop(geotracker, 'lens_mode')
-        row = col.row()
-        row.prop(geotracker, 'focal_length_estimation')
-        if geotracker.lens_mode == 'ZOOM':
-            row = col.row()
-            row.prop(geotracker, 'track_focal_length')
+        layout.prop(geotracker, 'focal_length_estimation')
 
         self._camera_lens_row(layout, cam_data)
         self._camera_sensor_size(layout, cam_data)
