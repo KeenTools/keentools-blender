@@ -466,6 +466,11 @@ class FT_PT_TrackingPanel(AllVisible):
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
 
+        row = col.row(align=True)
+        row.scale_y = 1.5
+        row.operator(FTConfig.ft_pickmode_starter_idname,
+                     **KTIcons.key_value('align_face'))
+
         col.prop(settings, 'stabilize_viewport_enabled',
                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
@@ -578,10 +583,6 @@ class FT_PT_TrackingPanel(AllVisible):
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
             layout.prop(geotracker, 'spring_pins_back')
-            col = layout.column()
-            col.scale_y = Config.btn_scale_y
-            col.operator(FTConfig.ft_pickmode_starter_idname,
-                         **KTIcons.key_value('align_face'))
 
 
 class FT_PT_MasksPanel(AllVisible):
