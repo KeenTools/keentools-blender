@@ -239,7 +239,7 @@ buttons = {
         'Create an animated Empty'
     ),
     FTConfig.ft_exit_pinmode_idname: Button(
-        'Exit Pinmode',
+        'Back to 3D',
         'Back to 3D scene'
     ),
     FTConfig.ft_stop_calculating_idname: Button(
