@@ -266,6 +266,11 @@ class FaceTrackerItem(TrackerItem):
         precision=2,
         name='XY Translations',
         description='XY translation smoothing', update=update_smoothing)
+    smoothing_face_args_coeff: FloatProperty(
+        default=0.0, min=0.0, max=1.0,
+        precision=2,
+        name='Facial expressions',
+        description='Facial expression smoothing', update=update_smoothing)
 
     overlapping_detected: BoolProperty(default=False)
 

@@ -778,7 +778,8 @@ class FT_PT_SmoothingPanel(AllVisible):
                 (geotracker.smoothing_depth_coeff != 0 or
                  geotracker.smoothing_xy_translations_coeff != 0 or
                  geotracker.smoothing_focal_length_coeff != 0 or
-                 geotracker.smoothing_rotations_coeff !=0):
+                 geotracker.smoothing_rotations_coeff !=0 or
+                 geotracker.smoothing_face_args_coeff != 0):
             row.label(text='On')
 
         row.operator(
@@ -798,6 +799,7 @@ class FT_PT_SmoothingPanel(AllVisible):
         col.prop(geotracker, 'smoothing_xy_translations_coeff')
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
+        col.prop(geotracker, 'smoothing_face_args_coeff')
 
 
 def _draw_calculating_indicator(layout: Any) -> None:

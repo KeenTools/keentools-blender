@@ -483,7 +483,7 @@ class Loader:
 
     @classmethod
     def _deserialize_global_options(cls):
-        _log.output(f'_deserialize_global_options call')
+        _log.yellow(f'_deserialize_global_options start')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
@@ -498,10 +498,11 @@ class Loader:
                 geotracker.locks = gt.fixed_dofs()
             except Exception as err:
                 _log.error(f'_deserialize_global_options:\n{str(err)}')
+        _log.output('_deserialize_global_options end >>>')
 
     @classmethod
     def load_geotracker(cls) -> bool:
-        _log.output('load_geotracker')
+        _log.yellow('load_geotracker start')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -523,6 +524,7 @@ class Loader:
             _log.error(f'load_geotracker Exception:\n{str(err)}')
             return False
         cls._deserialize_global_options()
+        _log.output('load_geotracker end >>>')
         return True
 
     @classmethod

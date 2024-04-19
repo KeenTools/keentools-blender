@@ -512,6 +512,7 @@ def update_smoothing(geotracker, context: Any) -> None:
     gt.set_smoothing_focal_length_coeff(geotracker.smoothing_focal_length_coeff)
     gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
     gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
+    gt.set_smoothing_face_args_coeff(geotracker.smoothing_face_args_coeff)
     loader.save_geotracker()
     _log.output('update_smoothing end >>>')
 
