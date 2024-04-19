@@ -582,7 +582,6 @@ class FT_PT_TrackingPanel(AllVisible):
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
-            layout.prop(geotracker, 'spring_pins_back')
 
 
 class FT_PT_MasksPanel(AllVisible):
