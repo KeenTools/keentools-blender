@@ -254,7 +254,7 @@ def track_checks(*, product: int) -> ActionStatus:
     if not geotracker.precalcless:
         status, msg, precalc_info = geotracker.reload_precalc()
         if not status or precalc_info is None:
-            msg = 'Precalc has problems. Check it'
+            msg = 'Analyse clip before tracking!'
             _log.error(msg)
             return ActionStatus(False, msg)
     else:
