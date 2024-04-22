@@ -711,6 +711,7 @@ class FBLoader:
             cam = head.get_camera(cnum)
             if cam and cam.camobj and head.headobj:
                 wf = cls.wireframer()
+                wf.set_object_world_matrix(head.headobj.matrix_world)
                 wf.set_camera_pos(head.headobj.matrix_world,
                                   cam.camobj.matrix_world)
         if wireframe:
