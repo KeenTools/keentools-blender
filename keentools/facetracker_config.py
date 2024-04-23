@@ -125,6 +125,7 @@ class FTConfig:
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
     ft_share_feedback_idname = operators + '.share_feedback'
+    ft_move_wrapper = operators + '.move_wrapper'
 
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'

@@ -16,17 +16,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Callable
 
 from ..utils.kt_logging import KTLogger
+from ..facebuilder_config import FBConfig
 from ..geotracker_config import GTConfig
+from ..facetracker_config import FTConfig
 from ..utils.bpy_common import bpy_window_manager
 
 
 _log = KTLogger(__name__)
 
 
-_geotracker_keymaps: List[Tuple] = []
+_tracker_keymaps: List[Tuple] = []
 _facebuilder_keymaps: List[Tuple] = []
 
 
@@ -35,38 +37,89 @@ def get_keyconfig() -> Any:
 
 
 def geotracker_keymaps_register() -> None:
-    global _geotracker_keymaps
     _log.yellow('geotracker_keymaps_register start')
+    global _tracker_keymaps
     keyconfig = get_keyconfig()
     km = keyconfig.keymaps.new(name='Window', space_type='EMPTY')
     kmi1 = km.keymap_items.new(idname=GTConfig.gt_prev_keyframe_idname,
                                type='LEFT_ARROW',
                                value='PRESS', alt=True)
+    _tracker_keymaps.append((km, kmi1))
+    _log.output(f'register gt keymap item: {kmi1}')
+
     kmi2 = km.keymap_items.new(idname=GTConfig.gt_next_keyframe_idname,
                                type='RIGHT_ARROW',
                                value='PRESS', alt=True)
-    _geotracker_keymaps.append((km, kmi1))
-    _geotracker_keymaps.append((km, kmi2))
+    _tracker_keymaps.append((km, kmi2))
+    _log.output(f'register gt keymap item: {kmi2}')
+
     km = keyconfig.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
     kmi3 = km.keymap_items.new(idname=GTConfig.gt_toggle_lock_view_idname,
                                type='L',
                                value='PRESS')
-    _geotracker_keymaps.append((km, kmi3))
+    _tracker_keymaps.append((km, kmi3))
+    _log.output(f'register gt keymap item: {kmi3}')
+
+    kmi4 = km.keymap_items.new(idname=GTConfig.gt_move_wrapper,
+                               type='MIDDLEMOUSE',
+                               value='PRESS', head=True)
+    _facebuilder_keymaps.append((km, kmi4))
+    kmi4.active = True
+    _log.output(f'register gt keymap item: {kmi4}')
+
     _log.output('geotracker_keymaps_register end >>>')
 
 
-def geotracker_keymaps_unregister() -> None:
-    _log.yellow('geotracker_keymaps_unregister start')
-    global _geotracker_keymaps
+def facetracker_keymaps_register() -> None:
+    _log.yellow('facetracker_keymaps_register start')
+    global _tracker_keymaps
+    keyconfig = get_keyconfig()
+    km = keyconfig.keymaps.new(name='Window', space_type='EMPTY')
+    kmi1 = km.keymap_items.new(idname=FTConfig.ft_prev_keyframe_idname,
+                               type='LEFT_ARROW',
+                               value='PRESS', alt=True)
+    _tracker_keymaps.append((km, kmi1))
+    _log.output(f'register ft keymap item: {kmi1}')
+
+    kmi2 = km.keymap_items.new(idname=FTConfig.ft_next_keyframe_idname,
+                               type='RIGHT_ARROW',
+                               value='PRESS', alt=True)
+    _tracker_keymaps.append((km, kmi2))
+    _log.output(f'register ft keymap item: {kmi2}')
+
+    km = keyconfig.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
+    kmi3 = km.keymap_items.new(idname=FTConfig.ft_toggle_lock_view_idname,
+                               type='L',
+                               value='PRESS')
+    _tracker_keymaps.append((km, kmi3))
+    _log.output(f'register ft keymap item: {kmi3}')
+
+    kmi4 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
+                               type='MIDDLEMOUSE',
+                               value='PRESS', head=True)
+    _facebuilder_keymaps.append((km, kmi4))
+    kmi4.active = True
+    _log.output(f'register ft keymap item: {kmi4}')
+
+    _log.output('facetracker_keymaps_register end >>>')
+
+
+def tracker_keymaps_unregister() -> None:
+    _log.yellow('tracker_keymaps_unregister start')
+    global _tracker_keymaps
     try:
-        for km, kmi in _geotracker_keymaps:
+        for km, kmi in _tracker_keymaps:
             _log.output(f'unregister keymap item: {kmi}')
             km.keymap_items.remove(kmi)
 
     except Exception as err:
-        _log.error(f'geotracker_keymaps_unregister Exception:\n{str(err)}')
-    _geotracker_keymaps.clear()
-    _log.output('geotracker_keymaps_unregister end >>>')
+        _log.error(f'tracker_keymaps_unregister Exception:\n{str(err)}')
+    _tracker_keymaps.clear()
+    _log.output('tracker_keymaps_unregister end >>>')
+
+
+geotracker_keymaps_unregister: Callable = tracker_keymaps_unregister
+facetracker_keymaps_unregister: Callable = tracker_keymaps_unregister
 
 
 def facebuilder_keymaps_register(use_trackpad: bool = False) -> None:
@@ -78,24 +131,27 @@ def facebuilder_keymaps_register(use_trackpad: bool = False) -> None:
 
     km = keyconfig.keymaps.new(name=category_name, space_type=space_type)
 
-    kmi1 = km.keymap_items.new(idname='keentools_fb.move_wrapper',
+    kmi1 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
                                type='MIDDLEMOUSE',
                                value='PRESS', head=True)
     _facebuilder_keymaps.append((km, kmi1))
     kmi1.active = True
+    _log.output(f'register fb keymap item: {kmi1}')
 
     if use_trackpad:
-        kmi2 = km.keymap_items.new(idname='keentools_fb.move_wrapper',
+        kmi2 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
                                    type='TRACKPADPAN',
                                    value='ANY', head=True)
         _facebuilder_keymaps.append((km, kmi2))
         kmi2.active = True
+        _log.output(f'register fb keymap item: {kmi2}')
 
-    kmi3 = km.keymap_items.new(idname='keentools_fb.move_wrapper',
+    kmi3 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
                                type='MOUSEROTATE',
                                value='ANY', head=True)
     _facebuilder_keymaps.append((km, kmi3))
     kmi3.active = True
+    _log.output(f'register fb keymap item: {kmi3}')
 
     _log.output('facebuilder_keymaps_register end >>>')
 
@@ -105,7 +161,7 @@ def facebuilder_keymaps_unregister() -> None:
     global _facebuilder_keymaps
     for km, kmi in _facebuilder_keymaps:
         try:
-            _log.output(f'unregister keymap item: {kmi}')
+            _log.output(f'unregister fb keymap item: {kmi}')
             km.keymap_items.remove(kmi)
         except Exception as err:
             _log.error(f'facebuilder_keymaps_unregister Exception:\n{str(err)}')

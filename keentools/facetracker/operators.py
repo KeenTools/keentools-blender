@@ -822,6 +822,39 @@ class FT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_MoveWrapper(Operator):
+    bl_idname = FTConfig.ft_move_wrapper
+    bl_label = 'move wrapper'
+    bl_description = 'KeenTools move wrapper operator'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'use_cursor_init={self.use_cursor_init}')
+        settings = ft_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        op = get_operator('view3d.move')
+        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'use_cursor_init={self.use_cursor_init}')
+        settings = ft_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if work_area != context.area:
+            return {'PASS_THROUGH'}
+
+        op = get_operator('view3d.move')
+        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -857,4 +890,5 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DefaultWireframeSettings,
                   FT_OT_WireframeColor,
                   FT_OT_RemoveFocalKeyframe,
-                  FT_OT_RemoveFocalKeyframes)
+                  FT_OT_RemoveFocalKeyframes,
+                  FT_OT_MoveWrapper)

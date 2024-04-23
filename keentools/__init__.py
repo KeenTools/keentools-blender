@@ -163,6 +163,7 @@ else:
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
     from .facetracker import facetracker_register, facetracker_unregister
+    from .common.interface.panels import add_timeline_panel, remove_timeline_panel
     from .utils.viewport_state import ViewportStateItem
     from .utils.warning import KT_OT_AddonWarning
     from .utils.common_operators import CLASSES_TO_REGISTER as COMMON_OPERATOR_CLASSES
@@ -199,6 +200,8 @@ else:
         _log.info('GeoTracker classes have been registered')
         facetracker_register()
         _log.info('FaceTracker classes have been registered')
+        add_timeline_panel()
+        _log.info('Common timeline panel has been registered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
         output_import_statistics()
 
@@ -208,6 +211,8 @@ else:
                    f'UNREGISTER ---')
         stop_timers(True)
         _log.debug('START UNREGISTER CLASSES')
+        remove_timeline_panel()
+        _log.info('Common timeline panel has been unregistered')
         facetracker_unregister()
         _log.info('FaceTracker classes have been unregistered')
         geotracker_unregister()

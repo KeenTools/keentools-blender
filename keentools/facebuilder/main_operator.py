@@ -1164,10 +1164,11 @@ class FB_OT_ResetView(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class FB_OT_MoveWrapper(ButtonOperator, Operator):
-    bl_idname = 'keentools_fb.move_wrapper'
+class FB_OT_MoveWrapper(Operator):
+    bl_idname = FBConfig.fb_move_wrapper
     bl_label = 'move wrapper'
     bl_description = 'KeenTools move wrapper operator'
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
 
@@ -1188,7 +1189,7 @@ class FB_OT_MoveWrapper(ButtonOperator, Operator):
         if not settings:
             return {'CANCELLED'}
 
-        work_area = FBLoader.get_work_area()
+        work_area = settings.loader().get_work_area()
         if work_area != context.area:
             return {'PASS_THROUGH'}
 
