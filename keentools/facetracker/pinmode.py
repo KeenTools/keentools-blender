@@ -21,7 +21,7 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ft_settings
+from ..addon_config import ft_settings, get_addon_preferences
 from ..facetracker_config import FTConfig
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
@@ -62,8 +62,12 @@ class FT_OT_PinMode(PinMode):
         reorder_tracking_frames(geomobj)
 
     def register_hotkeys(self) -> None:
-        _log.yellow(f'{self.__class__.__name__} register_hotkeys')
-        facetracker_keymaps_register()
+        prefs = get_addon_preferences()
+        if prefs.ft_use_hotkeys:
+            _log.yellow(f'{self.__class__.__name__} register_hotkeys')
+            facetracker_keymaps_register()
+        else:
+            _log.red(f'{self.__class__.__name__} register_hotkeys disabled')
 
     def unregister_hotkeys(self) -> None:
         _log.yellow(f'{self.__class__.__name__} unregister_hotkeys')

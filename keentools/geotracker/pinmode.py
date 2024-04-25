@@ -21,7 +21,7 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import gt_settings
+from ..addon_config import gt_settings, get_addon_preferences
 from ..geotracker_config import GTConfig
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
@@ -51,8 +51,12 @@ class GT_OT_PinMode(PinMode):
         return gt_settings()
 
     def register_hotkeys(self) -> None:
-        _log.yellow(f'{self.__class__.__name__} register_hotkeys')
-        geotracker_keymaps_register()
+        prefs = get_addon_preferences()
+        if prefs.gt_use_hotkeys:
+            _log.yellow(f'{self.__class__.__name__} register_hotkeys')
+            geotracker_keymaps_register()
+        else:
+            _log.red(f'{self.__class__.__name__} register_hotkeys disabled')
 
     def unregister_hotkeys(self) -> None:
         _log.yellow(f'{self.__class__.__name__} unregister_hotkeys')

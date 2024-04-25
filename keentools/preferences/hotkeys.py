@@ -38,6 +38,8 @@ def get_keyconfig() -> Any:
 
 def geotracker_keymaps_register() -> None:
     _log.yellow('geotracker_keymaps_register start')
+    geotracker_keymaps_unregister()
+
     global _tracker_keymaps
     keyconfig = get_keyconfig()
     km = keyconfig.keymaps.new(name='Window', space_type='EMPTY')
@@ -63,7 +65,7 @@ def geotracker_keymaps_register() -> None:
     kmi4 = km.keymap_items.new(idname=GTConfig.gt_move_wrapper,
                                type='MIDDLEMOUSE',
                                value='PRESS', head=True)
-    _facebuilder_keymaps.append((km, kmi4))
+    _tracker_keymaps.append((km, kmi4))
     kmi4.active = True
     _log.output(f'register gt keymap item: {kmi4}')
 
@@ -72,6 +74,8 @@ def geotracker_keymaps_register() -> None:
 
 def facetracker_keymaps_register() -> None:
     _log.yellow('facetracker_keymaps_register start')
+    facetracker_keymaps_unregister()
+
     global _tracker_keymaps
     keyconfig = get_keyconfig()
     km = keyconfig.keymaps.new(name='Window', space_type='EMPTY')
@@ -97,7 +101,7 @@ def facetracker_keymaps_register() -> None:
     kmi4 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
                                type='MIDDLEMOUSE',
                                value='PRESS', head=True)
-    _facebuilder_keymaps.append((km, kmi4))
+    _tracker_keymaps.append((km, kmi4))
     kmi4.active = True
     _log.output(f'register ft keymap item: {kmi4}')
 
@@ -124,6 +128,8 @@ facetracker_keymaps_unregister: Callable = tracker_keymaps_unregister
 
 def facebuilder_keymaps_register(use_trackpad: bool = False) -> None:
     _log.yellow('facebuilder_keymaps_register start')
+    facebuilder_keymaps_unregister()
+
     global _facebuilder_keymaps
     keyconfig = get_keyconfig()
     category_name = '3D View Generic'
