@@ -483,7 +483,7 @@ class Loader:
 
     @classmethod
     def _deserialize_global_options(cls):
-        _log.output(f'_deserialize_global_options call')
+        _log.yellow(f'_deserialize_global_options start')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
@@ -498,10 +498,11 @@ class Loader:
                 geotracker.locks = gt.fixed_dofs()
             except Exception as err:
                 _log.error(f'_deserialize_global_options:\n{str(err)}')
+        _log.output('_deserialize_global_options end >>>')
 
     @classmethod
     def load_geotracker(cls) -> bool:
-        _log.output('load_geotracker')
+        _log.yellow('load_geotracker start')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -523,6 +524,7 @@ class Loader:
             _log.error(f'load_geotracker Exception:\n{str(err)}')
             return False
         cls._deserialize_global_options()
+        _log.output('load_geotracker end >>>')
         return True
 
     @classmethod
@@ -552,13 +554,13 @@ class Loader:
 
     @classmethod
     def _update_viewport_wireframe(cls, wireframe_data: bool = False) -> None:
-        _log.blue('update_viewport_wireframe')
+        _log.blue('_update_viewport_wireframe')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         vp = cls.viewport()
         wf = vp.wireframer()
         if not geotracker or not geotracker.geomobj:
-            _log.red('update_viewport_wireframe wf.clear_all')
+            _log.red('update_viewport_wireframe wf.clear_all end >>>')
             wf.clear_all()
             wf.create_batches()
             return
@@ -569,8 +571,15 @@ class Loader:
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world))
 
+            if (geotracker.mask_3d != '' and
+                    settings.product_type() == ProductType.FACETRACKER):
+                gt = settings.loader().kt_geotracker()
+                wf.vertices = gt.applied_args_model_vertices_at(
+                    bpy_current_frame()) @ xy_to_xz_rotation_matrix_3x3()
+
         _log.output('wf.create_batches')
         wf.create_batches()
+        _log.output('_update_viewport_wireframe end >>>')
 
     @classmethod
     def _update_viewport_pins_and_residuals(cls, area: Area) -> None:

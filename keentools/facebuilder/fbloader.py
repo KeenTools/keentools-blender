@@ -701,6 +701,8 @@ class FBLoader:
         if adaptive_opacity:
             if settings.use_adaptive_opacity:
                 settings.calc_adaptive_opacity(work_area)
+                wf = cls.wireframer()
+                wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         if wireframe_colors:
             vp = cls.viewport()
             vp.update_wireframe_colors()
@@ -711,6 +713,7 @@ class FBLoader:
             cam = head.get_camera(cnum)
             if cam and cam.camobj and head.headobj:
                 wf = cls.wireframer()
+                wf.set_object_world_matrix(head.headobj.matrix_world)
                 wf.set_camera_pos(head.headobj.matrix_world,
                                   cam.camobj.matrix_world)
         if wireframe:

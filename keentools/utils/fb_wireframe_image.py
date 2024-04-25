@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Tuple, List, Dict, Optional
+from typing import Any, Tuple, List, Dict, Optional, Set
 import numpy as np
 
 from .kt_logging import KTLogger
@@ -31,7 +31,8 @@ from ..facebuilder.utils.manipulate import check_facs_available
 
 
 _log = KTLogger(__name__)
-_fb: Optional[Any] = None
+_shadow_fb: Optional[Any] = None
+_cached_edge_indices_dict: Dict = dict()
 
 
 def _FBCameraInput_class() -> Any:
@@ -53,16 +54,25 @@ def _FBCameraInput_class() -> Any:
     return _FBCameraInput
 
 
-def _get_fb() -> Any:
-    global _fb
-    if _fb is None:
-        _fb = pkt_module().FaceBuilder(_FBCameraInput_class()())
-    return _fb
+def get_shadow_fb() -> Any:
+    global _shadow_fb
+    if _shadow_fb is None:
+        _shadow_fb = pkt_module().FaceBuilder(_FBCameraInput_class()())
+    return _shadow_fb
+
+
+def masks_to_number(mask_array: List) -> int:
+    n = 0
+    for m in mask_array:
+        n <<= 1
+        if m:
+            n += 1
+    return n
 
 
 def create_wireframe_image(texture_colors: List) -> bool:
     _log.yellow('create_wireframe_image')
-    fb = _get_fb()
+    fb = get_shadow_fb()
     if not fb.face_texture_available():
         _log.error('create_wireframe_image: cannot initialize image 1')
         return False
@@ -95,48 +105,174 @@ def create_wireframe_image(texture_colors: List) -> bool:
     return False
 
 
-_cached_edge_indices_dict: Dict = dict()
+def get_fb_mesh_for_texturing(fb: Any) -> Any:
+    geo = fb.applied_args_replaced_uvs_model()
+    return geo.mesh(0)
 
 
-def create_edge_indices(*, fb: Optional[Any] = None,
-                        vertex_count: Optional[int] = None) -> Tuple[Any, Any]:
-    def _empty_result() -> Tuple[Any, Any]:
-        _log.red('create_edge_indices _empty_result')
-        return (np.empty(shape=(0, 2), dtype=np.int32),
-                np.empty(shape=(0, 3), dtype=np.float32))
+def change_fb_lod(fb: Any, vertex_count: int) -> bool:
+    _log.yellow('change_fb_lod start')
+    mesh = get_fb_mesh_for_texturing(fb)
+    if vertex_count == mesh.points_count():
+        _log.output('change_fb_lod: current is ok >>>')
+        return True
 
+    current_model_index = fb.selected_model()
+    for i in range(len(fb.models_list())):
+        if i == current_model_index:
+            continue
+        fb.select_model(i)
+        mesh = get_fb_mesh_for_texturing(fb)
+        if vertex_count == mesh.points_count():
+            _log.output(f'change_fb_lod: found new {i} >>>')
+            return True
+
+    fb.select_model(current_model_index)
+    _log.error('change_fb_lod: cannot find proper LOD >>>')
+    return False
+
+
+def get_mesh_vert_set(me: Any) -> Set:
+    return {me.face_point(i, k)
+            for i in range(me.faces_count())
+            for k in range(me.face_size(i))}
+
+
+def change_mask_config(fb: Any, geo_mesh: Any) -> None:
+    _log.yellow('change_mask_config start')
+    all_points_set = {x for x in range(geo_mesh.points_count())}
+    rest_points_set = all_points_set.difference(get_mesh_vert_set(geo_mesh))
+    masks = fb.masks()
+    masks_count = len(fb.masks())
+
+    if not rest_points_set:
+        for i in range(masks_count):
+            fb.set_mask(i, True)
+        _log.output(f'change_mask_config: all parts are visible >>>')
+        return
+
+    for i in range(masks_count):
+        fb.set_mask(i, False)
+
+    for i in range(masks_count):
+        fb.set_mask(i, True)
+        mesh = get_fb_mesh_for_texturing(fb)
+        masks[i] = not rest_points_set.intersection(get_mesh_vert_set(mesh))
+        fb.set_mask(i, False)
+
+    for i in range(masks_count):
+        fb.set_mask(i, masks[i])
+    _log.output(f'change_mask_config: {masks} >>>')
+
+
+def empty_edge_indices_and_uvs() -> Tuple[Any, Any]:
+    _log.error('empty_edge_indices_and_uvs')
+    max_edge_index_count = 200000
+    max_vert_count = 200000
+    return (np.zeros(shape=(max_edge_index_count, 2), dtype=np.int32),
+            np.zeros(shape=(max_vert_count, 2), dtype=np.float32))
+
+
+def get_cache_key(vert_count: int, poly_count: int, masks: List) -> int:
+    mask_value = masks_to_number(masks)
+    cache_key = mask_value * 10000000000 + vert_count * 100000 + poly_count
+    _log.green(f'get_cache_key: {cache_key}')
+    return cache_key
+
+
+def get_fb_edge_indices_and_uvs(*, fb: Any) -> Tuple[Any, Any]:
     global _cached_edge_indices_dict
-    _log.blue('create_edge_indices')
-    work_fb = _get_fb() if fb is None else fb
+    _log.blue('get_fb_edge_indices_and_uvs start >>>')
 
-    if not work_fb.face_texture_available():
-        _log.error('create_edge_indices: fb.face_texture_available is False')
-        return _empty_result()
+    if not fb.face_texture_available():
+        _log.error('get_fb_edge_indices_and_uvs: '
+                   'fb.face_texture_available is False >>>')
+        return empty_edge_indices_and_uvs()
 
-    working_geo = work_fb.applied_args_replaced_uvs_model()
-    me = working_geo.mesh(0)
+    me = get_fb_mesh_for_texturing(fb)
     vert_count = me.points_count()
     poly_count = me.faces_count()
 
-    _log.green(f'mesh points: {vert_count} polygons: {poly_count}')
-
-    if vertex_count is not None and vertex_count != vert_count:
-        # TODO: Change LOD
-        _log.error('LOD needs to be changed')
-        pass
-
-    cache_key = vert_count * 1000000 + poly_count
+    cache_key = get_cache_key(vert_count, poly_count, fb.masks())
 
     if cache_key in _cached_edge_indices_dict:
-        _log.green(f'create_edge_indices: cached data is used [{cache_key}]')
+        _log.green(f'get_fb_edge_indices_and_uvs: '
+                   f'cached data is used [{cache_key}] >>>')
         return _cached_edge_indices_dict[cache_key]
 
     if not check_facs_available(vert_count):
-        _log.error(f'create_edge_indices: '
-                   f'check_facs_available({vert_count}) is False')
-        return _empty_result()
+        _log.error(f'get_fb_edge_indices_and_uvs: '
+                   f'check_facs_available({vert_count}) is False >>>')
+        return empty_edge_indices_and_uvs()
 
-    _log.output('create_edge_indices: calculate new indices')
+    _log.magenta('get_fb_edge_indices_and_uvs: calculate new indices')
+    indices, tex_uvs = calc_fb_edge_indices_and_uvs(fb)
+
+    _log.output(f'get_fb_edge_indices_and_uvs: put in cache [{cache_key}] >>>'
+                f'\nedge_indices: {indices.shape}'
+                f'\nedge_uvs: {tex_uvs.shape}')
+    _cached_edge_indices_dict[cache_key] = (indices, tex_uvs)
+    return indices, tex_uvs
+
+
+def get_ft_edge_indices_and_uvs(*, geo_mesh: Any) -> Tuple[Any, Any]:
+    global _cached_edge_indices_dict
+    _log.blue('get_ft_edge_indices_and_uvs start >>>')
+    fb = get_shadow_fb()
+
+    if not fb.face_texture_available():
+        _log.error('get_ft_edge_indices_and_uvs: '
+                   'fb.face_texture_available is False >>>')
+        return empty_edge_indices_and_uvs()
+
+    geo_vertex_count = geo_mesh.points_count()
+    geo_poly_count = geo_mesh.faces_count()
+    _log.green(f'mesh points: {geo_vertex_count} polygons: {geo_poly_count}')
+
+    me = get_fb_mesh_for_texturing(fb)
+    if geo_vertex_count != me.points_count():
+        if not change_fb_lod(fb, geo_vertex_count):
+            _log.error('get_ft_edge_indices_and_uvs: '
+                       'cannot change LOD >>>')
+            return empty_edge_indices_and_uvs()
+        change_mask_config(fb, geo_mesh)
+        me = get_fb_mesh_for_texturing(fb)
+
+    if geo_poly_count != me.faces_count():
+        change_mask_config(fb, geo_mesh)
+        me = get_fb_mesh_for_texturing(fb)
+        if geo_poly_count != me.faces_count():
+            _log.error('get_ft_edge_indices_and_uvs: '
+                       'cannot find proper mask config >>>')
+            return empty_edge_indices_and_uvs()
+
+    cache_key = get_cache_key(geo_vertex_count, geo_poly_count, fb.masks())
+
+    if cache_key in _cached_edge_indices_dict:
+        _log.green(f'get_ft_edge_indices_and_uvs: '
+                   f'cached data is used [{cache_key}] >>>')
+        return _cached_edge_indices_dict[cache_key]
+
+    if not check_facs_available(geo_vertex_count):
+        _log.error(f'get_ft_edge_indices_and_uvs: '
+                   f'check_facs_available({geo_vertex_count}) is False >>>')
+        return empty_edge_indices_and_uvs()
+
+    _log.magenta('get_ft_edge_indices_and_uvs: calculate new indices')
+    indices, tex_uvs = calc_fb_edge_indices_and_uvs(fb)
+
+    _log.output(f'get_ft_edge_indices_and_uvs: put in cache [{cache_key}] >>>'
+                f'\nedge_indices: {indices.shape}'
+                f'\nedge_uvs: {tex_uvs.shape}')
+    _cached_edge_indices_dict[cache_key] = (indices, tex_uvs)
+    return indices, tex_uvs
+
+
+def calc_fb_edge_indices_and_uvs(fb: Any) -> Tuple[Any, Any]:
+    _log.yellow('calc_fb_edge_indices_and_uvs start')
+    geo = fb.applied_args_replaced_uvs_model()
+    me = geo.mesh(0)
+
     face_counts = [me.face_size(x) for x in range(me.faces_count())]
     sum_face_counts = sum(face_counts)
     indices = np.empty((sum_face_counts, 2), dtype=np.int32)
@@ -157,8 +293,5 @@ def create_edge_indices(*, fb: Optional[Any] = None,
                       me.face_point(face, 0))
         i += 1
 
-    _log.output(f'create_edge_indices: put in cache [{cache_key}]'
-                f'\nedge_indices: {indices.shape}'
-                f'\nedge_uvs: {tex_uvs.shape}')
-    _cached_edge_indices_dict[cache_key] = (indices, tex_uvs)
+    _log.output('calc_fb_edge_indices_and_uvs end >>>')
     return indices, tex_uvs

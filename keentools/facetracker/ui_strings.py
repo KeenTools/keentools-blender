@@ -37,7 +37,7 @@ buttons = {
         'Modal Operator for Pick Face mode'
     ),
     FTConfig.ft_pickmode_starter_idname: Button(
-        'Align Face (FT)',
+        'Auto align',
         'Auto align mesh in current view'
     ),
     FTConfig.ft_switch_to_camera_mode_idname: Button(
@@ -239,7 +239,7 @@ buttons = {
         'Create an animated Empty'
     ),
     FTConfig.ft_exit_pinmode_idname: Button(
-        'Exit Pinmode',
+        'Back to 3D',
         'Back to 3D scene'
     ),
     FTConfig.ft_stop_calculating_idname: Button(

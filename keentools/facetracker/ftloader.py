@@ -87,5 +87,24 @@ class FTLoader(Loader):
         _log.output(f'{cls.__name__}.start_viewport end >>>')
         return ActionStatus(True, 'ok')
 
+    @classmethod
+    def _deserialize_global_options(cls):
+        _log.yellow(f'_deserialize_global_options start')
+        settings = cls.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        gt = cls.kt_geotracker()
+        with settings.ui_write_mode_context():
+            try:
+                settings.wireframe_backface_culling = gt.back_face_culling()
+                settings.track_focal_length = gt.track_focal_length()
+                geotracker.smoothing_depth_coeff = gt.get_smoothing_depth_coeff()
+                geotracker.smoothing_focal_length_coeff = gt.get_smoothing_focal_length_coeff()
+                geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
+                geotracker.smoothing_xy_translations_coeff = gt.get_smoothing_xy_translations_coeff()
+                geotracker.smoothing_face_args_coeff = gt.get_smoothing_face_args_coeff()
+                geotracker.locks = gt.fixed_dofs()
+            except Exception as err:
+                _log.error(f'_deserialize_global_options:\n{str(err)}')
+        _log.output('_deserialize_global_options end >>>')
 
 FTLoader.init_handlers()

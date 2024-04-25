@@ -732,6 +732,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
 
     def init_selection_from_mesh(self, obj: Object, mask_3d: str,
                                  inverted: bool) -> None:
+        _log.yellow(f'{self.__class__.__name__}.init_selection_from_mesh')
         self.selection_triangle_indices = get_triangles_in_vertex_group(
             obj, mask_3d, inverted)
         if len(self.selection_triangle_indices) > 0:

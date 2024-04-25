@@ -57,18 +57,19 @@ def prepare_camera(area: Area, *, product: int) -> None:
     geotracker.reload_background_image()
 
 
-def revert_camera(area: Area, *,
-                  product: int = ProductType.GEOTRACKER) -> None:
+def revert_camera(area: Area, *, product: int) -> None:
     settings = get_settings(product)
     if not settings.pinmode:
         settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
 
 
-def get_alone_object_in_selection_by_type(
-        selection: List, obj_type: str = 'MESH') -> Optional[Object]:
+def get_alone_object_in_selection_by_type(*,
+        selection: List, obj_type: str, exclude_list: List) -> Optional[Object]:
     found_obj = None
     for obj in selection:
+        if obj in exclude_list:
+            continue
         if obj.type == obj_type:
             if found_obj is not None:
                 return None
@@ -77,15 +78,17 @@ def get_alone_object_in_selection_by_type(
 
 
 def get_alone_object_in_scene_by_type(
-        obj_type: str = 'MESH') -> Optional[Object]:
-    return get_alone_object_in_selection_by_type(bpy_all_scene_objects(),
-                                                 obj_type)
+        obj_type: str, exclude_list: List) -> Optional[Object]:
+    return get_alone_object_in_selection_by_type(
+        selection=bpy_all_scene_objects(), obj_type=obj_type,
+        exclude_list=exclude_list)
 
 
 def get_alone_object_in_scene_selection_by_type(
-        obj_type: str = 'MESH') -> Optional[Object]:
-    return get_alone_object_in_selection_by_type(bpy_scene_selected_objects(),
-                                                 obj_type)
+        obj_type: str, exclude_list: List) -> Optional[Object]:
+    return get_alone_object_in_selection_by_type(
+        selection=bpy_scene_selected_objects(), obj_type=obj_type,
+        exclude_list=exclude_list)
 
 
 def get_alone_ft_object_in_selection(selection: List) -> Optional[Object]:
@@ -251,7 +254,7 @@ def track_checks(*, product: int) -> ActionStatus:
     if not geotracker.precalcless:
         status, msg, precalc_info = geotracker.reload_precalc()
         if not status or precalc_info is None:
-            msg = 'Precalc has problems. Check it'
+            msg = 'Analyse clip before tracking!'
             _log.error(msg)
             return ActionStatus(False, msg)
     else:

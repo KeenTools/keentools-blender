@@ -342,7 +342,7 @@ def update_mask_3d_color(settings, context: Any) -> None:
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=True)
+        loader.update_viewport_shaders(wireframe=True, wireframe_colors=True)
     _log.output('update_mask_3d_color end >>>')
 
 
@@ -439,9 +439,9 @@ def update_track_focal_length(geotracker, context: Any) -> None:
 def update_mask_3d(geotracker, context: Any) -> None:
     _log.yellow('update_mask_3d')
     settings = ft_settings()
-    settings.loader().update_viewport_shaders(wireframe=True)
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
+    settings.loader().update_viewport_shaders(wireframe=True, wireframe_colors=True)
     _log.output('update_mask_3d end >>>')
 
 
@@ -512,6 +512,7 @@ def update_smoothing(geotracker, context: Any) -> None:
     gt.set_smoothing_focal_length_coeff(geotracker.smoothing_focal_length_coeff)
     gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
     gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
+    gt.set_smoothing_face_args_coeff(geotracker.smoothing_face_args_coeff)
     loader.save_geotracker()
     _log.output('update_smoothing end >>>')
 

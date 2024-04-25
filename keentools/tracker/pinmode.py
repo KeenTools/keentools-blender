@@ -281,6 +281,12 @@ class PinMode(Operator):
         vp.tag_redraw()
         _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 
+    def register_hotkeys(self) -> None:
+        pass
+
+    def unregister_hotkeys(self) -> None:
+        pass
+
     def _start_new_pinmode(self, context: Any) -> None:
         _log.yellow(f'{self.__class__.__name__} _start_new_pinmode')
         settings = self.get_settings()
@@ -290,6 +296,8 @@ class PinMode(Operator):
 
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
+
+        self.register_hotkeys()
         _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 
     def _set_new_geotracker(self, area: Area, num: Optional[int]=None) -> None:
@@ -444,12 +452,14 @@ class PinMode(Operator):
         if self.pinmode_id != settings.pinmode_id:
             _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
             _log.red(f'{self.__class__.__name__} Extreme pinmode stop -- finished >>>')
+            self.unregister_hotkeys()
             return {'FINISHED'}
 
         if not context.space_data:
             _log.output('VIEWPORT IS CLOSED')
             loader.out_pinmode()
             _log.red(f'{self.__class__.__name__} viewport closed -- finished >>>')
+            self.unregister_hotkeys()
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
@@ -460,6 +470,7 @@ class PinMode(Operator):
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 loader.out_pinmode()
                 _log.red(f'{self.__class__.__name__} camera rotated -- finished >>>')
+                self.unregister_hotkeys()
                 return {'FINISHED'}
 
         _playback_message(context.area, product=product)
@@ -498,6 +509,7 @@ class PinMode(Operator):
                 return {'PASS_THROUGH'}
             _log.output('Exit pinmode by ESC')
             loader.out_pinmode()
+            self.unregister_hotkeys()
             _log.red(f'{self.__class__.__name__} Exit by ESC -- finished >>>')
             return {'FINISHED'}
 

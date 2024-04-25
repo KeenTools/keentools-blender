@@ -408,13 +408,7 @@ class FT_PT_CameraPanel(AllVisible):
         layout = self.layout
         cam_data = geotracker.camobj.data
 
-        col = layout.column()
-        col.prop(geotracker, 'lens_mode')
-        row = col.row()
-        row.prop(geotracker, 'focal_length_estimation')
-        if geotracker.lens_mode == 'ZOOM':
-            row = col.row()
-            row.prop(geotracker, 'track_focal_length')
+        layout.prop(geotracker, 'focal_length_estimation')
 
         self._camera_lens_row(layout, cam_data)
         self._camera_sensor_size(layout, cam_data)
@@ -465,6 +459,11 @@ class FT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
+
+        row = col.row(align=True)
+        row.scale_y = 1.5
+        row.operator(FTConfig.ft_pickmode_starter_idname,
+                     **KTIcons.key_value('align_face'))
 
         col.prop(settings, 'stabilize_viewport_enabled',
                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
@@ -577,11 +576,6 @@ class FT_PT_TrackingPanel(AllVisible):
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
-            layout.prop(geotracker, 'spring_pins_back')
-            col = layout.column()
-            col.scale_y = Config.btn_scale_y
-            col.operator(FTConfig.ft_pickmode_starter_idname,
-                         **KTIcons.key_value('align_face'))
 
 
 class FT_PT_MasksPanel(AllVisible):
@@ -784,7 +778,8 @@ class FT_PT_SmoothingPanel(AllVisible):
                 (geotracker.smoothing_depth_coeff != 0 or
                  geotracker.smoothing_xy_translations_coeff != 0 or
                  geotracker.smoothing_focal_length_coeff != 0 or
-                 geotracker.smoothing_rotations_coeff !=0):
+                 geotracker.smoothing_rotations_coeff !=0 or
+                 geotracker.smoothing_face_args_coeff != 0):
             row.label(text='On')
 
         row.operator(
@@ -804,6 +799,7 @@ class FT_PT_SmoothingPanel(AllVisible):
         col.prop(geotracker, 'smoothing_xy_translations_coeff')
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
+        col.prop(geotracker, 'smoothing_face_args_coeff')
 
 
 def _draw_calculating_indicator(layout: Any) -> None:

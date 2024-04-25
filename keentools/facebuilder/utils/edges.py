@@ -55,7 +55,7 @@ from ...utils.gpu_control import (set_blend_alpha,
                                   set_color_mask,
                                   revert_blender_viewport_state)
 from ...utils.fb_wireframe_image import (create_wireframe_image,
-                                         create_edge_indices)
+                                         get_fb_edge_indices_and_uvs)
 from ...utils.bpy_common import bpy_context
 
 
@@ -318,7 +318,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def init_edge_indices(self) -> None:
         _log.blue('fb init_edge_indices')
         fb = fb_settings().loader().get_builder()
-        self.edge_indices, self.edge_uvs = create_edge_indices(fb=fb)
+        self.edge_indices, self.edge_uvs = get_fb_edge_indices_and_uvs(fb=fb)
 
     def init_geom_data_from_core(self, edge_vertices: Any,
                                  edge_vertex_normals: Any,
