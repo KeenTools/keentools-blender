@@ -202,7 +202,8 @@ else:
         _log.info('FaceTracker classes have been registered')
         add_timeline_panel()
         _log.info('Common timeline panel has been registered')
-        _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
+        _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} '
+                   f'REGISTERED ===\n\n')
         output_import_statistics()
 
 
@@ -224,7 +225,7 @@ else:
             unregister_class(cls)
         _log.info('KeenTools addon classes have been unregistered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} '
-                   f'UNREGISTERED ===')
+                   f'UNREGISTERED ===\n\n')
 
 
 if __name__ == '__main__':

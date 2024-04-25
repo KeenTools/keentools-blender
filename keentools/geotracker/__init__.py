@@ -28,8 +28,7 @@ from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
-from ..preferences.hotkeys import (geotracker_keymaps_register,
-                                   geotracker_keymaps_unregister)
+from ..preferences.hotkeys import geotracker_keymaps_unregister
 from .actor import GT_OT_Actor
 
 
@@ -45,7 +44,7 @@ CLASSES_TO_REGISTER = (FrameListItem,
 
 
 def geotracker_register() -> None:
-    _log.output('--- START GEOTRACKER REGISTER ---')
+    _log.green('--- START GEOTRACKER REGISTER ---')
 
     _log.output('START GEOTRACKER REGISTER CLASSES')
     for cls in CLASSES_TO_REGISTER:
@@ -55,14 +54,14 @@ def geotracker_register() -> None:
     _log.output('MAIN GEOTRACKER VARIABLE REGISTER')
     add_addon_settings_var(Config.gt_global_var_name, GTSceneSettings)
 
-    _log.output('GEOTRACKER KEYMAPS REGISTER')
-    geotracker_keymaps_register()
-
-    _log.output('=== GEOTRACKER REGISTERED ===')
+    _log.green('=== GEOTRACKER REGISTERED ===')
 
 
 def geotracker_unregister() -> None:
-    _log.output('--- START GEOTRACKER UNREGISTER ---')
+    _log.green('--- START GEOTRACKER UNREGISTER ---')
+
+    _log.output('GEOTRACKER KEYMAPS UNREGISTER')
+    geotracker_keymaps_unregister()
 
     _log.output('START GEOTRACKER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):
@@ -72,7 +71,4 @@ def geotracker_unregister() -> None:
     _log.output('MAIN GEOTRACKER VARIABLE UNREGISTER')
     remove_addon_settings_var(Config.gt_global_var_name)
 
-    _log.output('GEOTRACKER KEYMAPS UNREGISTER')
-    geotracker_keymaps_unregister()
-
-    _log.output('=== GEOTRACKER UNREGISTERED ===')
+    _log.green('=== GEOTRACKER UNREGISTERED ===')
