@@ -406,21 +406,21 @@ class FB_PT_OptionsPanel(AllVisible, Panel):
 
         row = col.row(align=True)
         row.enabled = settings.pinmode
-        row.prop(settings, 'shape_rigidity', text='Shape')
+        row.prop(settings, 'shape_rigidity')
 
         if head.should_use_emotions():
             row = col.row(align=True)
-            row.prop(settings, 'expression_rigidity', text='Expressions')
+            row.prop(settings, 'expression_rigidity')
             row.enabled = head.should_use_emotions()
 
         if not head.lock_blinking and head.should_use_emotions():
             row = col.row(align=True)
-            row.prop(settings, 'blinking_rigidity', text='Eyelids')
+            row.prop(settings, 'blinking_rigidity')
             row.enabled = not head.lock_blinking and head.should_use_emotions()
 
         if not head.lock_neck_movement and head.should_use_emotions():
             row =  col.row(align=True)
-            row.prop(settings, 'neck_movement_rigidity', text='Neck')
+            row.prop(settings, 'neck_movement_rigidity')
             row.enabled = not head.lock_neck_movement and head.should_use_emotions()
 
 

@@ -103,6 +103,12 @@ class FTLoader(Loader):
                 geotracker.smoothing_xy_translations_coeff = gt.get_smoothing_xy_translations_coeff()
                 geotracker.smoothing_face_args_coeff = gt.get_smoothing_face_args_coeff()
                 geotracker.locks = gt.fixed_dofs()
+
+                geotracker.lock_blinking = gt.blinking_locked()
+                geotracker.lock_neck_movement = gt.neck_movement_locked()
+                geotracker.rigidity = gt.rigidity()
+                geotracker.blinking_rigidity = gt.blinking_rigidity()
+                geotracker.neck_movement_rigidity = gt.neck_movement_rigidity()
             except Exception as err:
                 _log.error(f'_deserialize_global_options:\n{str(err)}')
         _log.output('_deserialize_global_options end >>>')

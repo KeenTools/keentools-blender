@@ -578,6 +578,57 @@ class FT_PT_TrackingPanel(AllVisible):
             self._tracking_center_block(settings, layout)
 
 
+class FT_PT_OptionsPanel(AllVisible, Panel):
+    bl_idname = FTConfig.ft_options_panel_idname
+    bl_label = 'Options'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FTConfig.ft_tracking_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        settings = ft_settings()
+        if settings is None:
+            return False
+        if not settings.pinmode:
+            return False
+        return True
+
+    def draw(self, context):
+        settings = ft_settings()
+        if settings is None:
+            return
+        layout = self.layout
+
+        if not settings.pinmode:
+            return
+
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        col = layout.column(align=True)
+        col.label(text='Lock movements')
+        row = col.row(align=True)
+        row.label(text='', icon='BLANK1')
+        col2 = row.column(align=True)
+        col2.prop(geotracker, 'lock_blinking')
+        col2.prop(geotracker, 'lock_neck_movement')
+
+        col = layout.column(align=True)
+        col.label(text='Mesh rigidity')
+
+        row = col.row(align=True)
+        row.prop(geotracker, 'rigidity')
+
+        if not geotracker.lock_blinking:
+            row = col.row(align=True)
+            row.prop(geotracker, 'blinking_rigidity')
+
+        if not geotracker.lock_neck_movement:
+            row = col.row(align=True)
+            row.prop(geotracker, 'neck_movement_rigidity')
+
+
 class FT_PT_MasksPanel(AllVisible):
     bl_idname = FTConfig.ft_masks_panel_idname
     bl_label = 'Masks'

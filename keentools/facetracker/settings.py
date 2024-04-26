@@ -55,7 +55,12 @@ from .callbacks import (update_camobj,
                         update_solve_for_camera,
                         update_smoothing,
                         update_stabilize_viewport_enabled,
-                        update_locks)
+                        update_locks,
+                        update_lock_blinking,
+                        update_lock_neck_movement,
+                        update_rigidity,
+                        update_blinking_rigidity,
+                        update_neck_movement_rigidity)
 from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
 
 
@@ -278,6 +283,28 @@ class FaceTrackerItem(TrackerItem):
                               size=6, subtype='NONE',
                               default=(False,) * 6,
                               update=update_locks)
+
+    lock_blinking: BoolProperty(name='Lock eyelids',
+                                default=False, update=update_lock_blinking)
+    lock_neck_movement: BoolProperty(name='Lock neck',
+                                     default=False,
+                                     update=update_lock_neck_movement)
+
+    rigidity: FloatProperty(
+        description='Change how much pins affect the model expressions. '
+                    'Accessible in Pinmode only',
+        name='Expressions', default=2.0, min=0.001, max=1000.0,
+        update=update_rigidity)
+    blinking_rigidity: FloatProperty(
+        description='Change how much pins affect blinking. '
+                    'Accessible in Pinmode only',
+        name='Eyelids', default=2.0, min=0.001, max=1000.0,
+        update=update_blinking_rigidity)
+    neck_movement_rigidity: FloatProperty(
+        description='Change how much pins affect neck movement. '
+                    'Accessible in Pinmode only',
+        name='Neck', default=2.0, min=0.001, max=1000.0,
+        update=update_neck_movement_rigidity)
 
 
 class FTSceneSettings(TRSceneSetting):

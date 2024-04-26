@@ -486,9 +486,10 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
 
 
 def update_solve_for_camera(geotracker, context: Any) -> None:
-    _log.yellow('update_solve_for_camera')
+    _log.green('update_solve_for_camera start')
     settings = ft_settings()
     if not settings.pinmode:
+        _log.output('update_solve_for_camera no pinmode >>>')
         return
     obj = geotracker.animatable_object()
     if not obj:
@@ -502,9 +503,10 @@ def update_solve_for_camera(geotracker, context: Any) -> None:
 
 
 def update_smoothing(geotracker, context: Any) -> None:
-    _log.yellow('update_smoothing')
+    _log.green('update_smoothing start')
     settings = ft_settings()
     if settings.ui_write_mode:
+        _log.green('update_smoothing ui_write_mode >>>')
         return
     loader = settings.loader()
     gt = loader.kt_geotracker()
@@ -518,19 +520,91 @@ def update_smoothing(geotracker, context: Any) -> None:
 
 
 def update_stabilize_viewport_enabled(settings, context: Any) -> None:
-    _log.yellow('update_stabilize_viewport_enabled')
+    _log.green('update_stabilize_viewport_enabled start')
     settings.stabilize_viewport(reset=True)
     _log.output('update_stabilize_viewport_enabled end >>>')
 
 
 def update_locks(geotracker, context: Any) -> None:
-    _log.yellow('update_locks')
+    _log.green('update_locks start')
     settings = ft_settings()
     if settings.ui_write_mode:
+        _log.green('update_locks ui_write_mode >>>')
         return
     loader = settings.loader()
     gt = loader.kt_geotracker()
     gt.set_fixed_dofs(list(geotracker.locks))
+    _log.output(f'locks={geotracker.locks}')
     loader.save_geotracker()
     _log.magenta(f'{gt.fixed_dofs()}')
     _log.output('update_locks end >>>')
+
+
+def update_lock_blinking(geotracker: Any, context: Any) -> None:
+    _log.green('update_lock_blinking start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_lock_blinking ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_blinking_locked(geotracker.lock_blinking)
+    _log.output(f'lock_blinking={geotracker.lock_blinking}')
+    loader.save_geotracker()
+    _log.output('update_lock_blinking end >>>')
+
+
+def update_lock_neck_movement(geotracker: Any, context: Any) -> None:
+    _log.green('update_lock_neck_movement start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_lock_neck_movement ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_neck_movement_locked(geotracker.lock_neck_movement)
+    _log.output(f'lock_neck_movement={geotracker.lock_neck_movement}')
+    loader.save_geotracker()
+    _log.output('update_lock_neck_movement end >>>')
+
+
+def update_rigidity(geotracker: Any, context: Any) -> None:
+    _log.green('update_rigidity start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_rigidity ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_rigidity(geotracker.rigidity)
+    _log.output(f'rigidity={geotracker.rigidity}')
+    loader.save_geotracker()
+    _log.output('update_rigidity end >>>')
+
+
+def update_blinking_rigidity(geotracker: Any, context: Any) -> None:
+    _log.green('update_blinking_rigidity start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_blinking_rigidity ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_blinking_rigidity(geotracker.blinking_rigidity)
+    _log.output(f'blinking_rigidity={geotracker.blinking_rigidity}')
+    loader.save_geotracker()
+    _log.output('update_blinking_rigidity end >>>')
+
+
+def update_neck_movement_rigidity(geotracker: Any, context: Any) -> None:
+    _log.green('update_neck_movement_rigidity start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_neck_movement_rigidity ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_neck_movement_rigidity(geotracker.neck_movement_rigidity)
+    _log.output(f'neck_movement_rigidity={geotracker.neck_movement_rigidity}')
+    loader.save_geotracker()
+    _log.output('update_neck_movement_rigidity end >>>')
