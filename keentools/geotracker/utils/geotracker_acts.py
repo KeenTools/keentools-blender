@@ -415,7 +415,7 @@ def track_next_frame_action(forward: bool=True, *,
     gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     next_frame = current_frame + 1 if forward else current_frame - 1
-    settings.calculating_mode = 'TRACKING'
+    settings.start_calculating('TRACKING')
     try:
         _log.output(loader.get_geotracker_state())
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -882,7 +882,7 @@ def create_animated_empty_action(
     return ActionStatus(True, 'ok')
 
 
-def create_empty_from_selected_pins_action(
+def create_hard_empties_from_selected_pins_action(
         from_frame: int, to_frame: int, linked: bool = False,
         orientation: str = 'NORMAL', size: float = 1.0,
         *, product: int) -> ActionStatus:
@@ -949,6 +949,8 @@ def create_empty_from_selected_pins_action(
     if linked:
         return ActionStatus(True, 'ok')
 
+    settings.start_calculating('ESTIMATE_FL')
+
     source_matrices = {}
     for frame in range(from_frame, to_frame + 1):
         bpy_set_current_frame(frame)
@@ -977,6 +979,8 @@ def create_empty_from_selected_pins_action(
                 _log.error(unbreak_status.error_message)
 
     bpy_set_current_frame(current_frame)
+
+    settings.stop_calculating()
 
     _log.output(f'create_empty_from_selected_pins_action end >>>')
     return ActionStatus(True, 'ok')

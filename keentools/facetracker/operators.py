@@ -315,7 +315,7 @@ class FT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = prev_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -345,7 +345,7 @@ class FT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = next_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -600,15 +600,15 @@ class FT_OT_StopCalculating(Operator):
             self.attempts = 0
             return {'FINISHED'}
 
-        if settings.calculating_mode == 'PRECALC':
+        if settings.is_calculating('PRECALC'):
             _log.output(f'PrecalcTimer: {PrecalcTimer.active_timers()}')
             if len(PrecalcTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'TRACKING':
+        elif settings.is_calculating('TRACKING'):
             _log.output(f'TrackTimer: {FTTrackTimer.active_timers()}')
             if len(FTTrackTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'REFINE':
+        elif settings.is_calculating('REFINE'):
             _log.output(f'RefineTimer: {FTRefineTimer.active_timers()}')
             if len(FTRefineTimer.active_timers()) == 0:
                 settings.stop_calculating()
