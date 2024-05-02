@@ -789,22 +789,22 @@ class FBSceneSettings(PropertyGroup):
     shape_rigidity: FloatProperty(
         description='Adjust overall mesh rigidity: '
                     '0 - most flexible, 10 - most rigid, default = 1',
-        name='Shape rigidity', default=1.0, min=0.001, max=1000.0,
+        name='Shape', default=1.0, min=0.001, max=1000.0,
         update=update_shape_rigidity)
     expression_rigidity: FloatProperty(
         description='Change how much pins affect the model expressions. '
                     'Accessible in Pinmode only',
-        name='Expression rigidity', default=2.0, min=0.001, max=1000.0,
+        name='Expressions', default=2.0, min=0.001, max=1000.0,
         update=update_expression_rigidity)
     blinking_rigidity: FloatProperty(
         description='Change how much pins affect blinking. '
                     'Accessible in Pinmode only',
-        name='Eye blinking rigidity', default=2.0, min=0.001, max=1000.0,
+        name='Eyelids', default=2.0, min=0.001, max=1000.0,
         update=update_blinking_rigidity)
     neck_movement_rigidity: FloatProperty(
         description='Change how much pins affect neck movement. '
                     'Accessible in Pinmode only',
-        name='Neck movement rigidity', default=2.0, min=0.001, max=1000.0,
+        name='Neck', default=2.0, min=0.001, max=1000.0,
         update=update_neck_movement_rigidity)
 
     # Warning! current_headnum and current_camnum work only in Pinmode!

@@ -472,14 +472,16 @@ class Loader:
 
     @classmethod
     def save_geotracker(cls) -> None:
-        _log.output('save_geotracker call')
+        _log.yellow('save_geotracker start')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
+            _log.error('save_geotracker: no geotracker >>>')
             return
 
         gt = cls.kt_geotracker()
         geotracker.save_serial_str(gt.serialize())
+        _log.output('save_geotracker end >>>')
 
     @classmethod
     def _deserialize_global_options(cls):

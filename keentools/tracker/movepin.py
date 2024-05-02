@@ -40,6 +40,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_is_animation_playing)
 from ..geotracker.interface.screen_mesages import (revert_default_screen_message,
                                                    clipping_changed_screen_message)
+from ..geotracker.utils.tracking import check_unbreak_rotaion_is_needed
+from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
 
 
 _log = KTLogger(__name__)
@@ -164,6 +166,7 @@ class MovePin(bpy.types.Operator):
             else:
                 force_undo_push('Drag GeoTracker pin')
 
+        _log.green('on_left_mouse_release start')
         settings = self.get_settings()
         loader = settings.loader()
         loader.viewport().pins().reset_current_pin()
@@ -188,10 +191,28 @@ class MovePin(bpy.types.Operator):
         loader.viewport_area_redraw()
 
         _push_action_in_undo_history()
+        _log.output('on_left_mouse_release end >>>')
         return {'FINISHED'}
 
     def update_on_left_mouse_release(self) -> None:
-        pass
+        _log.yellow('tracker update_on_left_mouse_release start')
+        settings = self.get_settings()
+        prefs = settings.preferences()
+        if not prefs.gt_auto_unbreak_rotation:
+            _log.red('tracker update_on_left_mouse_release prefs end >>>')
+            return
+
+        geotracker = settings.get_current_geotracker_item()
+        obj = geotracker.animatable_object()
+        product = settings.product_type()
+        if check_unbreak_rotaion_is_needed(obj):
+            _log.green(f'unbreak to object: {obj}')
+            unbreak_status = unbreak_object_rotation_act(obj)
+            if not unbreak_status.success:
+                _log.red(unbreak_status.error_message)
+            else:
+                mark_object_keyframes(obj, product=product)
+        _log.output('tracker update_on_left_mouse_release end >>>')
 
     def _pin_drag(self, kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int,
