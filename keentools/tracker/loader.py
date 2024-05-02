@@ -165,7 +165,8 @@ def frame_change_post_handler_wrapper(settings_func: Callable) -> Callable:
                                         f'{scene.name} {scene.frame_current}'))
         settings = settings_func()
         loader = settings.loader()
-        if settings.is_calculating('ESTIMATE_FL'):
+        if (settings.is_calculating('ESTIMATE_FL')
+                or settings.is_calculating('NO_SHADER_UPDATE')):
             return
         geotracker = settings.get_current_geotracker_item()
         if geotracker is None:

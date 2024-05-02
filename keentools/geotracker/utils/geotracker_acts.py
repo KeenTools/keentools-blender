@@ -886,7 +886,7 @@ def create_hard_empties_from_selected_pins_action(
         from_frame: int, to_frame: int, linked: bool = False,
         orientation: str = 'NORMAL', size: float = 1.0,
         *, product: int) -> ActionStatus:
-    _log.yellow(f'create_empty_from_selected_pins_action start [{product_name(product)}]')
+    _log.yellow(f'create_hard_empties_from_selected_pins_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -949,7 +949,7 @@ def create_hard_empties_from_selected_pins_action(
     if linked:
         return ActionStatus(True, 'ok')
 
-    settings.start_calculating('ESTIMATE_FL')
+    settings.start_calculating('NO_SHADER_UPDATE')
 
     source_matrices = {}
     for frame in range(from_frame, to_frame + 1):
@@ -982,7 +982,7 @@ def create_hard_empties_from_selected_pins_action(
 
     settings.stop_calculating()
 
-    _log.output(f'create_empty_from_selected_pins_action end >>>')
+    _log.output(f'create_hard_empties_from_selected_pins_action end >>>')
     return ActionStatus(True, 'ok')
 
 
