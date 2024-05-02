@@ -946,7 +946,7 @@ class FT_PT_ScenePanel(AllVisible):
             row.prop(settings, 'export_locator_orientation', text='')
         row = col.split(factor=0.4, align=True)
         row.prop(settings, 'export_linked_locator')
-        op = row.operator(GTConfig.gt_export_animated_empty_idname)
+        op = row.operator(FTConfig.ft_export_animated_empty_idname)
         op.product = ProductType.FACETRACKER
 
 

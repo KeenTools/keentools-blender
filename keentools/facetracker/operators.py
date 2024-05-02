@@ -29,6 +29,7 @@ from bpy.props import (BoolProperty,
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
+                            get_settings,
                             ft_settings,
                             get_operator,
                             ProductType,
@@ -42,7 +43,9 @@ from .ftloader import FTLoader
 from ..geotracker.utils.prechecks import common_checks
 from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_background_mode,
-                                bpy_show_addon_preferences)
+                                bpy_show_addon_preferences,
+                                bpy_start_frame,
+                                bpy_end_frame)
 from ..utils.manipulate import force_undo_push
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
@@ -66,7 +69,9 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 track_to,
                                                 track_next_frame_action,
                                                 refine_async_action,
-                                                refine_all_async_action)
+                                                refine_all_async_action,
+                                                create_animated_empty_action,
+                                                create_soft_empties_from_selected_pins_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 
 
@@ -822,6 +827,89 @@ class FT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_export_animated_empty_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+
+    def draw(self, context):
+        return
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'[{product_name(self.product)}]')
+
+        check_status = common_checks(product=self.product,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = get_settings(self.product)
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            check_status = common_checks(product=self.product,
+                                         pinmode=True, geotracker=True,
+                                         geometry=True, camera=True,
+                                         reload_geotracker=True)
+            if not check_status.success:
+                self.report({'ERROR'}, check_status.error_message)
+                return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} invoke end >>>')
+        return self.execute(context)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
+        geotracker = settings.get_current_geotracker_item()
+
+        if settings.export_locator_selector == 'GEOMETRY':
+            act_status = create_animated_empty_action(
+                geotracker.geomobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'CAMERA':
+            act_status = create_animated_empty_action(
+                geotracker.camobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'SELECTED_PINS':
+            if len(settings.loader().viewport().pins().get_selected_pins()) == 0:
+                msg = 'No pins selected'
+                _log.error(msg)
+                self.report({'ERROR'}, msg)
+                return {'CANCELLED'}
+
+            act_status = create_soft_empties_from_selected_pins_action(
+                bpy_start_frame(), bpy_end_frame(),
+                linked=settings.export_linked_locator,
+                orientation=settings.export_locator_orientation,
+                product=self.product)
+            if not act_status.success:
+                _log.error(act_status.error_message)
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
+        msg = 'Unknown selector state'
+        _log.error(msg)
+        self.report({'ERROR'}, msg)
+        return {'CANCELLED'}
+
+
 class FT_OT_MoveWrapper(Operator):
     bl_idname = FTConfig.ft_move_wrapper
     bl_label = 'move wrapper'
@@ -891,4 +979,5 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_WireframeColor,
                   FT_OT_RemoveFocalKeyframe,
                   FT_OT_RemoveFocalKeyframes,
+                  FT_OT_ExportAnimatedEmpty,
                   FT_OT_MoveWrapper)
