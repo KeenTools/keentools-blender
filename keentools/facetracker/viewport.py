@@ -35,7 +35,8 @@ from ..utils.polygons import KTRasterMask
 from ..preferences.user_preferences import UserPreferences
 from .edges import FTRasterEdgeShader3D
 from ..utils.coords import (pin_to_xyz_from_geo_mesh,
-                            xy_to_xz_rotation_matrix_3x3)
+                            xy_to_xz_rotation_matrix_3x3,
+                            InvScaleFromMatrix)
 
 
 _log = KTLogger(__name__)
@@ -75,5 +76,8 @@ class FTViewport(GTViewport):
             pin = gt.pin(keyframe, i)
             p = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
             verts[i] = p
+
+        scale_inv = np.array(InvScaleFromMatrix(obj.matrix_world),
+                             dtype=np.float32)
         # tolist() is needed by shader batch on Mac
-        return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()
+        return (verts @ xy_to_xz_rotation_matrix_3x3() @ scale_inv).tolist()

@@ -78,6 +78,7 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
+                             InvScaleFromMatrix,
                              change_near_and_far_clip_planes,
                              pin_to_xyz_from_geo_mesh,
                              pin_to_normal_from_geo_mesh,
@@ -923,7 +924,7 @@ def create_hard_empties_from_selected_pins_action(
         normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
-    scale_inv = InvScaleMatrix(3, geomobj.matrix_world.to_scale())
+    scale_inv = InvScaleFromMatrix(geomobj.matrix_world)
     inv_mat = geomobj.matrix_world.inverted_safe()
 
     empties = []
@@ -1034,7 +1035,7 @@ def create_soft_empties_from_selected_pins_action(
         geo_mesh = geo.mesh(0)
 
         geomobj_matrix_world = geomobj.matrix_world
-        scale_inv = InvScaleMatrix(3, geomobj_matrix_world.to_scale())
+        scale_inv = InvScaleFromMatrix(geomobj_matrix_world)
         inv_mat = geomobj_matrix_world.inverted_safe()
 
         for i, pin_index in enumerate(selected_pins):

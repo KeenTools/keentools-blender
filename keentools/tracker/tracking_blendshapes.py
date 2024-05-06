@@ -29,7 +29,7 @@ from ..utils.bpy_common import (bpy_new_action,
                                 bpy_shape_key_move_top,
                                 bpy_shape_key_move_up,
                                 bpy_shape_key_move_bottom)
-from ..utils.coords import xy_to_xz_rotation_matrix_3x3
+from ..utils.coords import xy_to_xz_rotation_matrix_3x3, InvScaleFromMatrix
 from ..utils.blendshapes import get_blendshape
 from ..utils.fcurve_operations import (get_safe_action_fcurve,
                                        get_action_fcurve,
@@ -190,9 +190,12 @@ def create_relative_shape_keyframe(frame: int, *,
     shape_index, shape, new_shape_created = get_blendshape(geomobj,
                                                            name=shape_name,
                                                            create=True)
+    scale_inv = np.array(InvScaleFromMatrix(geomobj.matrix_world),
+                         dtype=np.float32)
     gt = loader.kt_geotracker()
     verts = gt.applied_args_model_vertices_at(frame)
-    shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
+    shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()
+                                  @ scale_inv).ravel())
 
     geomobj.active_shape_key_index = shape_index
     key_blocks = mesh.shape_keys.key_blocks
