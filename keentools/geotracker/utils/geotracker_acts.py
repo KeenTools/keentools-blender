@@ -78,6 +78,7 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
+                             InvScaleFromMatrix,
                              change_near_and_far_clip_planes,
                              pin_to_xyz_from_geo_mesh,
                              pin_to_normal_from_geo_mesh,
@@ -415,7 +416,7 @@ def track_next_frame_action(forward: bool=True, *,
     gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     next_frame = current_frame + 1 if forward else current_frame - 1
-    settings.calculating_mode = 'TRACKING'
+    settings.start_calculating('TRACKING')
     try:
         _log.output(loader.get_geotracker_state())
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -882,11 +883,11 @@ def create_animated_empty_action(
     return ActionStatus(True, 'ok')
 
 
-def create_empty_from_selected_pins_action(
+def create_hard_empties_from_selected_pins_action(
         from_frame: int, to_frame: int, linked: bool = False,
         orientation: str = 'NORMAL', size: float = 1.0,
         *, product: int) -> ActionStatus:
-    _log.yellow(f'create_empty_from_selected_pins_action start [{product_name(product)}]')
+    _log.yellow(f'create_hard_empties_from_selected_pins_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -923,7 +924,7 @@ def create_empty_from_selected_pins_action(
         normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
-    scale_inv = InvScaleMatrix(3, geomobj.matrix_world.to_scale())
+    scale_inv = InvScaleFromMatrix(geomobj.matrix_world)
     inv_mat = geomobj.matrix_world.inverted_safe()
 
     empties = []
@@ -948,6 +949,8 @@ def create_empty_from_selected_pins_action(
 
     if linked:
         return ActionStatus(True, 'ok')
+
+    settings.start_calculating('NO_SHADER_UPDATE')
 
     source_matrices = {}
     for frame in range(from_frame, to_frame + 1):
@@ -978,7 +981,115 @@ def create_empty_from_selected_pins_action(
 
     bpy_set_current_frame(current_frame)
 
-    _log.output(f'create_empty_from_selected_pins_action end >>>')
+    settings.stop_calculating()
+
+    _log.output(f'create_hard_empties_from_selected_pins_action end >>>')
+    return ActionStatus(True, 'ok')
+
+
+def create_soft_empties_from_selected_pins_action(
+        from_frame: int, to_frame: int, linked: bool = False,
+        orientation: str = 'NORMAL', size: float = 1.0,
+        *, product: int) -> ActionStatus:
+    _log.yellow(f'create_soft_empties_from_selected_pins_action start [{product_name(product)}]')
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    if from_frame < 0 or to_frame < from_frame:
+        return ActionStatus(False, 'Wrong frame range')
+
+    settings = get_settings(product)
+    geotracker = settings.get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    loader = settings.loader()
+
+    gt = loader.kt_geotracker()
+
+    pins = loader.viewport().pins()
+    pins_count = gt.pins_count()
+    selected_pins = pins.get_selected_pins(pins_count)
+    selected_pins_count = len(selected_pins)
+    if selected_pins_count == 0:
+        return ActionStatus(False, 'No pins selected')
+
+    zv = Vector((0, 0, 1))
+    empties = []
+    for i in range(selected_pins_count):
+        empty = create_empty_object('ftPin')
+        empty.empty_display_type = 'ARROWS'
+        empty.empty_display_size = size
+        empty.parent = geotracker.geomobj
+        empties.append(empty)
+
+    current_frame = bpy_current_frame()
+
+    settings.start_calculating('NO_SHADER_UPDATE')
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        geo = gt.applied_args_model_at(frame)
+        geo_mesh = geo.mesh(0)
+
+        geomobj_matrix_world = geomobj.matrix_world
+        scale_inv = InvScaleFromMatrix(geomobj_matrix_world)
+        inv_mat = geomobj_matrix_world.inverted_safe()
+
+        for i, pin_index in enumerate(selected_pins):
+            empty = empties[i]
+            pin = gt.pin(frame, pin_index)
+            point = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+            normal = pin_to_normal_from_geo_mesh(pin, geo_mesh)
+            pos = np.array(point, dtype=np.float32) @ xy_to_xz_rotation_matrix_3x3()
+
+            if orientation == 'NORMAL':
+                quaternion_matrix = zv.rotation_difference(
+                    np.array(normal, dtype=np.float32) @
+                    xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
+                empty.matrix_world = quaternion_matrix
+            elif orientation == 'WORLD':
+                empty.matrix_world = inv_mat
+
+            empty.location = pos @ scale_inv
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        for empty in empties:
+            unbreak_status = unbreak_object_rotation_act(empty)
+            if not unbreak_status.success:
+                _log.error(unbreak_status.error_message)
+
+    if linked:
+        bpy_set_current_frame(current_frame)
+        settings.stop_calculating()
+        return ActionStatus(True, 'ok')
+
+    source_matrices = {}
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        matrices = []
+        for empty in empties:
+            matrices.append(empty.matrix_world.copy())
+        source_matrices[frame] = matrices
+
+    for empty in empties:
+        empty.parent = None
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        for i, empty in enumerate(empties):
+            empty.matrix_world = source_matrices[frame][i]
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    bpy_set_current_frame(current_frame)
+    settings.stop_calculating()
+    _log.output(f'create_soft_empties_from_selected_pins_action end >>>')
     return ActionStatus(True, 'ok')
 
 

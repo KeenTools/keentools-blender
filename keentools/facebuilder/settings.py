@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Optional
 import math
 from contextlib import contextmanager
 
@@ -868,10 +868,13 @@ class FBSceneSettings(PropertyGroup):
     def wrong_pinmode_id(self):
         return self.pinmode_id in {'', 'stop'}
 
+    def start_calculating(self, mode: str) -> None:
+        self.calculating_mode = mode
+
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'
 
-    def is_calculating(self, mode=None) -> bool:
+    def is_calculating(self, mode: Optional[str] = None) -> bool:
         if mode is None:
             return self.calculating_mode != 'NONE'
         return self.calculating_mode == mode

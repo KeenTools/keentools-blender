@@ -147,7 +147,7 @@ class PrecalcTimer(CalcTimer):
         self._start_time = time.time()
         prepare_camera(self.get_area(), product=self.product)
         settings = self.get_settings()
-        settings.calculating_mode = 'PRECALC'
+        settings.start_calculating('PRECALC')
 
         self.set_current_state(self.runner_state)
         # self._area_header('Precalc is calculating... Please wait')

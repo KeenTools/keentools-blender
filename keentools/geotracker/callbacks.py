@@ -156,7 +156,7 @@ def lens_change_callback() -> None:
 
     if old_focal_length_px != new_focal_length_px:
         current_frame = bpy_current_frame()
-        settings.calculating_mode = 'ESTIMATE_FL'
+        settings.start_calculating('ESTIMATE_FL')
         gt = GTLoader.kt_geotracker()
         gt.recalculate_model_for_new_focal_length(old_focal_length_px,
                                                   new_focal_length_px, True,

@@ -61,8 +61,7 @@ from ..utils.manipulate import switch_to_camera
 _log = KTLogger(__name__)
 
 
-def depsgraph_update_handler_wrapper(settings_func: Callable,
-                                     loader: Any) -> Callable:
+def depsgraph_update_handler_wrapper(settings_func: Callable) -> Callable:
     def depsgraph_update_handler_internal(scene, depsgraph=None):
         def _check_updated(depsgraph, name):
             _log.output('DEPSGRAPH UPDATES: {}'.format(len(depsgraph.updates)))
@@ -82,6 +81,7 @@ def depsgraph_update_handler_wrapper(settings_func: Callable,
             return
 
         settings = settings_func()
+        loader = settings.loader()
         if not settings.pinmode:
             _log.output('depsgraph_update_handler: no pinmode found')
             geotracker = settings.get_current_geotracker_item()
@@ -114,12 +114,15 @@ def depsgraph_update_handler_wrapper(settings_func: Callable,
     return depsgraph_update_handler_internal
 
 
-def undo_redo_handler_wrapper(settings_func: Callable,
-                              loader: Any) -> Callable:
+def undo_redo_handler_wrapper(settings_func: Callable) -> Callable:
     def undo_redo_handler_internal(scene):
         _log.output('gt_undo_handler')
+        settings = settings_func()
+        if not settings:
+            _log.error('undo_redo_handler_internal: no settings')
+            return
+        loader = settings.loader()
         try:
-            settings = settings_func()
             geotracker = settings.get_current_geotracker_item()
             vp = loader.viewport()
             area = vp.get_work_area()
@@ -156,13 +159,14 @@ def unregister_app_handler(app_handlers, handler) -> None:
             app_handlers.remove(handler)
 
 
-def frame_change_post_handler_wrapper(settings_func: Callable,
-                                      loader: Any) -> Callable:
+def frame_change_post_handler_wrapper(settings_func: Callable) -> Callable:
     def frame_change_post_handler_internal(scene) -> None:
         _log.output(_log.color('green', f'frame_change_post_handler: '
                                         f'{scene.name} {scene.frame_current}'))
         settings = settings_func()
-        if settings.calculating_mode == 'ESTIMATE_FL':
+        loader = settings.loader()
+        if (settings.is_calculating('ESTIMATE_FL')
+                or settings.is_calculating('NO_SHADER_UPDATE')):
             return
         geotracker = settings.get_current_geotracker_item()
         if geotracker is None:
@@ -221,10 +225,10 @@ class Loader:
     def init_handlers(cls):
         _log.yellow(f'{cls.__name__}.init_handlers start')
         cls.frame_change_post_handler = frame_change_post_handler_wrapper(
-            cls.get_settings, cls)
+            cls.get_settings)
         cls.depsgraph_update_handler = depsgraph_update_handler_wrapper(
-            cls.get_settings, cls)
-        cls.undo_redo_handler = undo_redo_handler_wrapper(cls.get_settings, cls)
+            cls.get_settings)
+        cls.undo_redo_handler = undo_redo_handler_wrapper(cls.get_settings)
 
         cls.check_shader_timer = KTStopShaderTimer(cls.get_settings,
                                                    cls.force_stop_shaders)

@@ -442,7 +442,7 @@ class _CommonTimer(TimerMixin):
                                              self._operation_help,
                                              product=self.product)
         settings = self.get_settings()
-        settings.calculating_mode = self._calc_mode
+        settings.start_calculating(self._calc_mode)
 
         _func = self.timer_func
         if not bpy_background_mode():

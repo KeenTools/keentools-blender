@@ -169,7 +169,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
 
     delta = 0.001
     settings = get_settings(product)
-    settings.calculating_mode = 'REPROJECT'
+    settings.start_calculating('REPROJECT')
 
     single_line_screen_message('Projecting and baking… Please wait',
                                product=product)

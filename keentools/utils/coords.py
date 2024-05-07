@@ -474,6 +474,11 @@ def InvScaleMatrix(rank: int, sc: Tuple) -> Matrix:
     return scm
 
 
+def InvScaleFromMatrix(mat: Matrix) -> Matrix:
+    scale_vec = mat.to_scale()
+    return InvScaleMatrix(3, scale_vec)
+
+
 def UniformScaleMatrix(rank: int, sc: float) -> Matrix:
     return ScaleMatrix(rank, (sc, sc, sc))
 

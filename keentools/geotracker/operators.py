@@ -82,7 +82,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     toggle_pins_action,
                                     center_geo_action,
                                     create_animated_empty_action,
-                                    create_empty_from_selected_pins_action,
+                                    create_hard_empties_from_selected_pins_action,
                                     bake_texture_from_frames_action,
                                     transfer_tracking_to_camera_action,
                                     transfer_tracking_to_geometry_action,
@@ -246,7 +246,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = prev_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -276,7 +276,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = next_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -666,7 +666,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 self.report({'ERROR'}, msg)
                 return {'CANCELLED'}
 
-            act_status = create_empty_from_selected_pins_action(
+            act_status = create_hard_empties_from_selected_pins_action(
                 bpy_start_frame(), bpy_end_frame(),
                 linked=settings.export_linked_locator,
                 orientation=settings.export_locator_orientation,
@@ -722,15 +722,15 @@ class GT_OT_StopCalculating(Operator):
             _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
-        if settings.calculating_mode == 'PRECALC':
+        if settings.is_calculating('PRECALC'):
             _log.output(f'PrecalcTimer: {PrecalcTimer.active_timers()}')
             if len(PrecalcTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'TRACKING':
+        elif settings.is_calculating('TRACKING'):
             _log.output(f'TrackTimer: {TrackTimer.active_timers()}')
             if len(TrackTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'REFINE':
+        elif settings.is_calculating('REFINE'):
             _log.output(f'RefineTimer: {RefineTimer.active_timers()}')
             if len(RefineTimer.active_timers()) == 0:
                 settings.stop_calculating()

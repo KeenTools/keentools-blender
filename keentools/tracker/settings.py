@@ -437,10 +437,13 @@ class TRSceneSetting(PropertyGroup):
             return
         vp.stabilize(geotracker.geomobj)
 
+    def start_calculating(self, mode: str) -> None:
+        self.calculating_mode = mode
+
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'
 
-    def is_calculating(self, mode=None) -> bool:
+    def is_calculating(self, mode: Optional[str] = None) -> bool:
         if mode is None:
             return self.calculating_mode != 'NONE'
         return self.calculating_mode == mode

@@ -146,7 +146,7 @@ class MovePin(bpy.types.Operator):
 
         if self.old_focal_length != new_focal_length:
             current_frame = bpy_current_frame()
-            settings.calculating_mode = 'ESTIMATE_FL'
+            settings.start_calculating('ESTIMATE_FL')
             gt = settings.loader().kt_geotracker()
             gt.recalculate_model_for_new_focal_length(self.old_focal_length,
                                                       new_focal_length, False,
