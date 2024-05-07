@@ -270,17 +270,6 @@ class GTViewport(KTViewport):
         return verts
 
     def create_batch_2d(self, area: Area) -> None:
-        def _add_markers_at_camera_corners(points: List,
-                                           vertex_colors: List) -> None:
-            points.append(
-                (image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2))
-            )
-            points.append(
-                (image_space_to_region(0.5, asp * 0.5, x1, y1, x2, y2))
-            )
-            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
-            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # right camera corner
-
         rx, ry = bpy_render_frame()
         asp = ry / rx
         x1, y1, x2, y2 = get_camera_border(area)
@@ -306,9 +295,6 @@ class GTViewport(KTViewport):
         if pins.current_pin() and pin_num < points_count:
             vertex_colors[pin_num] = GTConfig.current_pin_color
 
-        if GTConfig.show_markers_at_camera_corners:
-            _add_markers_at_camera_corners(points, vertex_colors)
-
         self.points2d().set_vertices_colors(points, vertex_colors)
         self.points2d().create_batch()
 
@@ -326,8 +312,6 @@ class GTViewport(KTViewport):
         x1, y1, x2, y2 = get_camera_border(area)
 
         p2d = self.points2d().get_vertices()
-        if GTConfig.show_markers_at_camera_corners:
-            p2d = p2d[:-2]
         p3d = self.points3d().get_vertices()
 
         wire = self.residuals()

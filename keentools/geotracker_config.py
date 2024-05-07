@@ -168,7 +168,6 @@ class GTConfig:
     text_scale_y = 0.75
     default_precalc_filename = 'geotracker.precalc'
     viewport_redraw_interval = 0.15
-    show_markers_at_camera_corners = False
 
     pin_size = 7.0
     pin_sensitivity = 16.0

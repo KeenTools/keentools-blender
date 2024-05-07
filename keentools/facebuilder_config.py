@@ -205,7 +205,6 @@ class FBConfig:
 
     next_head_step = (2.5, 0., 0.)
 
-    show_markers_at_camera_corners = False
     recreate_vertex_groups = True
 
     # In Material
