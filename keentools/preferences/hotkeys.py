@@ -126,7 +126,7 @@ geotracker_keymaps_unregister: Callable = tracker_keymaps_unregister
 facetracker_keymaps_unregister: Callable = tracker_keymaps_unregister
 
 
-def facebuilder_keymaps_register(use_trackpad: bool = False) -> None:
+def facebuilder_keymaps_register(use_trackpad: bool = True) -> None:
     _log.yellow('facebuilder_keymaps_register start')
     facebuilder_keymaps_unregister()
 
@@ -145,7 +145,7 @@ def facebuilder_keymaps_register(use_trackpad: bool = False) -> None:
     _log.output(f'register fb keymap item: {kmi1}')
 
     if use_trackpad:
-        kmi2 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
+        kmi2 = km.keymap_items.new(idname='view3d.move',
                                    type='TRACKPADPAN',
                                    value='ANY', head=True)
         _facebuilder_keymaps.append((km, kmi2))
