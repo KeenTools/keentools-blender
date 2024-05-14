@@ -65,9 +65,9 @@ _log = KTLogger(__name__)
 class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
         super().__init__(target_class)
-        self.edge_indices: Any = np.array([], dtype=np.int32)
-        self.edge_uvs: Any = np.empty(shape=(0, 3), dtype=np.float32)
-        self.wide_edge_uvs: Any = np.empty(shape=(0, 2), dtype=np.float32)
+        self.edge_indices: Any = np.array((0, 2), dtype=np.int32)
+        self.edge_uvs: Any = np.empty((0, 3), dtype=np.float32)
+        self.wide_edge_uvs: Any = np.empty((0, 2), dtype=np.float32)
 
         self.viewport_size: Tuple[float, float] = (1920, 1080)
 
@@ -311,9 +311,9 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.triangle_indices = get_triangulation_indices(mesh)
 
     def _clear_edge_uvs(self) -> None:
-        self.edge_indices = np.empty(shape=(0, 2), dtype=np.int32)
-        self.edge_uvs = np.empty(shape=(0, 3), dtype=np.float32)
-        self.wide_edge_uvs = np.empty(shape=(0, 3), dtype=np.float32)
+        self.edge_indices = np.empty((0, 2), dtype=np.int32)
+        self.edge_uvs = np.empty((0, 3), dtype=np.float32)
+        self.wide_edge_uvs = np.empty((0, 3), dtype=np.float32)
 
     def init_edge_indices(self) -> None:
         _log.blue('fb init_edge_indices')

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, List
 import numpy as np
 
 import bpy
@@ -41,15 +41,16 @@ def test_points2d(points2d: Any, *,
                   x_step: float=30, y_step: float=20,
                   x_start: float=30, y_start: float=30,
                   point_count: int=5) -> None:
-    verts = []
-    vert_colors = []
+    verts: List[Tuple] = []
+    vert_colors: List[Tuple] = []
     colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0),
               (0, 1, 1), (1, 0, 1), (0, 0, 0), (1, 1, 1)]
     for i, col in enumerate(colors):
         for x in range(point_count):
             verts.append((x_start + x * x_step, y_start + y_step * i))
             vert_colors.append((*col, (x + 1)/point_count))
-    points2d.set_vertices_colors(verts, vert_colors)
+    points2d.set_vertices_colors(np.array(verts, dtype=np.float32),
+                                 np.array(vert_colors, dtype=np.float32))
     points2d.create_batch()
 
 
@@ -57,15 +58,16 @@ def test_points3d(points3d: Any, *,
                   x_step: float=0.3, y_step: float=0.2,
                   x_start: float=0, y_start: float=0,
                   point_count: int=10) -> None:
-    verts = []
-    vert_colors = []
+    verts: List[Tuple] = []
+    vert_colors: List[Tuple] = []
     colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0),
               (0, 1, 1), (1, 0, 1), (0, 0, 0), (1, 1, 1)]
     for i, col in enumerate(colors):
         for x in range(point_count):
             verts.append((x_start + x * x_step, y_start + y_step * i, 0))
             vert_colors.append((*col, (x + 1)/point_count))
-    points3d.set_vertices_colors(verts, vert_colors)
+    points3d.set_vertices_colors(np.array(verts, dtype=np.float32),
+                                 np.array(vert_colors, dtype=np.float32))
     points3d.create_batch()
 
 
@@ -73,9 +75,9 @@ def test_edges_3d(residuals: Any, *,
                   x_step: float=0.3, y_step: float=0.2,
                   x_start: float=0, y_start: float=0,
                   point_count: int=10) -> None:
-    verts = []
-    vert_colors = []
-    edge_lengths = []
+    verts: List[Tuple] = []
+    vert_colors: List[Tuple] = []
+    edge_lengths: List[float] = []
     colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0),
               (0, 1, 1), (1, 0, 1), (0, 0, 0), (1, 1, 1)]
     for i, col in enumerate(colors):
@@ -86,8 +88,9 @@ def test_edges_3d(residuals: Any, *,
             vert_colors.append((*col, (x + 1)/point_count))
             edge_lengths.append(0)
             edge_lengths.append(22.0)
-    residuals.set_vertices_colors(verts, vert_colors)
-    residuals.lengths = edge_lengths
+    residuals.set_vertices_colors(np.array(verts, dtype=np.float32),
+                                  np.array(vert_colors, dtype=np.float32))
+    residuals.lengths = np.array(edge_lengths, dtype=np.float32)
     residuals.create_batch()
 
 
@@ -95,9 +98,9 @@ def test_residuals(residuals: Any, *,
                    x_step: float=30, y_step: float=20,
                    x_start: float=30, y_start: float=30,
                    point_count: int=6) -> None:
-    verts = []
-    vert_colors = []
-    edge_lengths = []
+    verts: List[Tuple] = []
+    vert_colors: List[Tuple] = []
+    edge_lengths: List[float] = []
     colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0),
           (0, 1, 1), (1, 0, 1), (0, 0, 0), (1, 1, 1)]
     for i, col in enumerate(colors):
@@ -108,8 +111,9 @@ def test_residuals(residuals: Any, *,
             vert_colors.append((*col, (x + 1)/point_count))
             edge_lengths.append(0)
             edge_lengths.append(22.0)
-    residuals.set_vertices_colors(verts, vert_colors)
-    residuals.edge_lengths = edge_lengths
+    residuals.set_vertices_colors(np.array(verts, dtype=np.float32),
+                                  np.array(vert_colors, dtype=np.float32))
+    residuals.edge_lengths = np.array(edge_lengths, dtype=np.float32)
     residuals.create_batch()
 
 
@@ -144,7 +148,7 @@ def create_np_mask_image(*, width: int=512, height: int=256,
                          channels: int=4) -> Any:
     black_color = (0, 0, 0, 1)
     white_color = (1, 1, 1, 1)
-    np_buf = np.full((height, width, channels), white_color)
+    np_buf = np.full((height, width, channels), white_color, dtype=np.float32)
     r = 100
     r2 = r * r
     xc = width / 2

@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, List
 import re
 
 from bpy.props import IntProperty, BoolProperty
@@ -42,10 +43,11 @@ class FB_OT_BlendshapesWarning(Operator):
     accept: BoolProperty(name='Proceed with topology change '
                               'and recreate blendshapes',
                          default=False)
-    content_red = []
-    content_white = []
+    content_red: List[str] = []
+    content_white: List[str] = []
 
-    def output_text(self, layout, content, red=False):
+    def output_text(self, layout: Any, content: List[str],
+                    red: bool = False) -> None:
         for txt in content:
             row = layout.row()
             row.alert = red
@@ -86,9 +88,10 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
 
     headnum: IntProperty(default=0)
     accept: BoolProperty(name='Set neutral expression', default=False)
-    content_red = []
+    content_red: List[str] = []
 
-    def output_text(self, layout, content, red=False):
+    def output_text(self, layout: Any, content: List[str],
+                    red: bool = False) -> None:
         for txt in content:
             row = layout.row()
             row.alert = red
@@ -123,7 +126,7 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
-def _tex_file_filter_buttons(layout, headnum):
+def _tex_file_filter_buttons(layout: Any, headnum: int) -> None:
     row = layout.row(align=True)
     row.alignment = 'LEFT'
     op = row.operator(FBConfig.fb_filter_cameras_idname, text='Select All')
@@ -135,7 +138,7 @@ def _tex_file_filter_buttons(layout, headnum):
     op.headnum = headnum
 
 
-def _tex_selector(layout, headnum):
+def _tex_selector(layout: Any, headnum: int) -> None:
     settings = fb_settings()
     head = settings.get_head(headnum)
     if not head:
@@ -172,7 +175,7 @@ def _tex_selector(layout, headnum):
         col.label(text='to create texture.')
 
 
-def _texture_bake_options(layout):
+def _texture_bake_options(layout: Any) -> None:
     settings = fb_settings()
     col = layout.column(align=True)
     row = col.row()
@@ -277,7 +280,7 @@ class FB_OT_ResetTextureSettings(Operator):
         return {'FINISHED'}
 
 
-def _draw_exif(layout, head):
+def _draw_exif(layout: Any, head: Any) -> None:
     # Show EXIF info message
     if len(head.exif.info_message) > 0:
         box = layout.box()

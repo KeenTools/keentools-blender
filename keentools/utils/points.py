@@ -38,10 +38,10 @@ _log = KTLogger(__name__)
 class KTScreenPins:
     ''' Pins are stored in image space coordinates '''
     def __init__(self):
-        self._pins: Any = np.empty(shape=(0, 2), dtype=np.float32)
+        self._pins: Any = np.empty((0, 2), dtype=np.float32)
         self._current_pin_num: int = -1
-        self._disabled_pins: Any = np.empty(shape=(0,), dtype=np.int32)
-        self._selected_pins: Any = np.empty(shape=(0,), dtype=np.int32)
+        self._disabled_pins: Any = np.empty((0,), dtype=np.int32)
+        self._selected_pins: Any = np.empty((0,), dtype=np.int32)
         self._add_selection_mode: bool = False
         self._move_pin_mode: bool = False
 
@@ -58,7 +58,7 @@ class KTScreenPins:
         self.reset_current_pin()
         self.clear_disabled_pins()
         self.clear_selected_pins()
-        self.set_pins(np.empty(shape=(0, 2), dtype=np.float32))
+        self.set_pins(np.empty((0, 2), dtype=np.float32))
 
     def add_pin(self, vec2d: Tuple[float, float]) -> None:
         _log.output(f'add_pin: {vec2d}')
@@ -120,7 +120,7 @@ class KTScreenPins:
 
     def clear_selected_pins(self) -> None:
         _log.output('clear_selected_pins')
-        self._selected_pins = np.empty(shape=(0,), dtype=np.int32)
+        self._selected_pins = np.empty((0,), dtype=np.int32)
 
     def get_disabled_pins(self) -> Any:
         return self._disabled_pins
@@ -131,7 +131,7 @@ class KTScreenPins:
 
     def clear_disabled_pins(self) -> None:
         _log.output('clear_disabled_pins')
-        self._disabled_pins = np.empty(shape=(0,), dtype=np.int32)
+        self._disabled_pins = np.empty((0,), dtype=np.int32)
 
     def pins_inside_rectangle(self, x1: float, y1: float,
                               x2: float, y2: float) -> Any:
@@ -191,13 +191,13 @@ class KTShaderPoints(KTShaderBase):
         self.shader: Any = None
         self.batch: Any = None
 
-        self.vertices: List[Tuple[float, float, float]] = []
-        self.vertices_colors: List[Tuple[float, float, float, float]] = []
+        self.vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.vertices_colors: Any = np.empty((0, 4), dtype=np.float32)
 
         self._point_size: float = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
 
-    def get_vertices(self) -> List[Tuple[float, float, float]]:
+    def get_vertices(self) -> Any:
         return self.vertices
 
     def set_point_size(self, ps: float) -> None:
@@ -206,13 +206,13 @@ class KTShaderPoints(KTShaderBase):
     def get_point_size(self) -> float:
         return self._point_size
 
-    def set_vertices_colors(self, verts: List, colors: List) -> None:
+    def set_vertices_colors(self, verts: Any, colors: Any) -> None:
         self.vertices = verts
         self.vertices_colors = colors
 
     def clear_vertices(self) -> None:
-        self.vertices = []
-        self.vertices_colors = []
+        self.vertices = np.empty((0, 3), dtype=np.float32)
+        self.vertices_colors = np.empty((0, 4), dtype=np.float32)
 
     def clear_all(self) -> None:
         self.clear_vertices()

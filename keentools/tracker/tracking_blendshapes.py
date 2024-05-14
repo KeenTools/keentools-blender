@@ -77,7 +77,7 @@ def check_tracking_frames(key_blocks: Any) -> Tuple[bool, Any]:
     count = len(key_blocks)
     check_status = True
     non_tracking_shape_flag = False
-    arr = np.empty(shape=(count, 2), dtype=np.int32)
+    arr = np.empty((count, 2), dtype=np.int32)
     frame = -1
     for i in range(count - 1, -1, -1):
         res = tracking_frame_name_pattern.match(key_blocks[i].name)

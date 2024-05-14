@@ -56,7 +56,7 @@ class _ComputationState(Enum):
 
 
 class TimerMixin:
-    _timers: List = []
+    _timers: List[Any] = []
 
     @classmethod
     def active_timers(cls) -> List:

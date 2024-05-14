@@ -47,7 +47,7 @@ def set_detected_faces(faces_info: List[Any]) -> None:
 def get_detected_faces_rectangles() -> List[Tuple]:
     faces = get_detected_faces()
     _log.yellow(f'get_detected_faces_rectangles:\n{faces}')
-    rects = []
+    rects: List[Tuple] = []
     for i, face in enumerate(faces):
         x1, y1 = face.xy_min
         x2, y2 = face.xy_max

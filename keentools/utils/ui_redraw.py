@@ -30,7 +30,7 @@ _log = KTLogger(__name__)
 
 
 def get_areas_by_type(area_type: str = 'VIEW_3D') -> List[Tuple[Area, Window]]:
-    pairs = []
+    pairs: List[Tuple[Area, Window]] = []
     for window in bpy_winman().windows:
         for area in window.screen.areas:
             if area.type == area_type:
@@ -59,7 +59,7 @@ def show_ui_panel(context: Any) -> None:
 
 def filter_module_list_by_name_starting_with(module_list: List[Any],
                                              name_start: str) -> List[Any]:
-    mods = []
+    mods: List[Any] = []
     for mod in module_list:
         if hasattr(mod, 'bl_info') and mod.bl_info \
                 and 'name' in mod.bl_info.keys() \

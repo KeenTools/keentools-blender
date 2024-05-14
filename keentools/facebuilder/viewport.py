@@ -128,8 +128,8 @@ class FBViewport(KTViewport):
         _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
     def update_surface_points(
-            self, fb: Any, headobj: Object, keyframe: int=-1,
-            color: Tuple[float, float, float, float]=FBConfig.surface_point_color):
+            self, fb: Any, headobj: Object, keyframe: int = -1,
+            color: Tuple[float, float, float, float] = FBConfig.surface_point_color) -> None:
         verts = self.surface_points_from_fb(fb, keyframe)
         colors = [color] * len(verts)
 
@@ -161,34 +161,32 @@ class FBViewport(KTViewport):
             settings.pin_size * FBConfig.surf_pin_size_scale)
 
     def surface_points_from_mesh(self, fb: Any, headobj: Object,
-                                 keyframe: int=-1) -> List[Any]:
-        verts = []
-        for i in range(fb.pins_count(keyframe)):
+                                 keyframe: int = -1) -> Any:
+        pins_count = fb.pins_count(keyframe)
+        verts = np.empty((pins_count, 3), dtype=np.float32)
+        for i in range(pins_count):
             pin = fb.pin(keyframe, i)
-            p = pin_to_xyz_from_mesh(pin, headobj)
-            verts.append(p)
+            verts[i] = pin_to_xyz_from_mesh(pin, headobj)
         return verts
 
-    def surface_points_from_fb(self, fb: Any, keyframe: int=-1) -> List[Tuple]:
+    def surface_points_from_fb(self, fb: Any, keyframe: int = -1) -> Any:
         geo = fb.applied_args_model_at(keyframe)
         geo_mesh = geo.mesh(0)
         pins_count = fb.pins_count(keyframe)
         verts = np.empty((pins_count, 3), dtype=np.float32)
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
-            verts[i] = p
-        # tolist() is needed by shader batch on Mac
-        return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()
+            verts[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+        return verts @ xy_to_xz_rotation_matrix_3x3()
 
     def img_points(self, fb: Any, keyframe: int) -> Any:
         w, h = bpy_render_frame()
         pins_count = fb.pins_count(keyframe)
-        verts = np.empty(shape=(pins_count, 2), dtype=np.float32)
+        verts = np.empty((pins_count, 2), dtype=np.float32)
         for i in range(pins_count):
             pin = fb.pin(keyframe, i)
             x, y = pin.img_pos
-            verts[i, :] = frame_to_image_space(x, y, w, h)
+            verts[i] = frame_to_image_space(x, y, w, h)
         return verts
 
     def create_batch_2d(self, area: Area) -> None:
@@ -198,7 +196,8 @@ class FBViewport(KTViewport):
         for i, p in enumerate(points):
             points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
 
-        vertex_colors = [FBConfig.pin_color] * len(points)
+        vertex_colors = np.full((len(points), 4), FBConfig.pin_color,
+                                dtype=np.float32)
 
         pins = self.pins()
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
@@ -223,19 +222,23 @@ class FBViewport(KTViewport):
         x1, y1, x2, y2 = get_camera_border(area)
         kt_pins = fb.projected_pins(keyframe)
 
-        verts = []
-        for pin in kt_pins:
+        verts_count = len(kt_pins)
+        verts = np.empty((verts_count * 2, 2), dtype=np.float32)
+        for i, pin in enumerate(kt_pins):
             x, y = frame_to_image_space(*pin.img_pos, rx, ry)
-            verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
+            verts[i * 2] = image_space_to_region(x, y, x1, y1, x2, y2)
             x, y = frame_to_image_space(*pin.surface_point, rx, ry)
-            verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
+            verts[i * 2 + 1] = image_space_to_region(x, y, x1, y1, x2, y2)
 
         wire = self.residuals()
         wire.vertices = verts
-        wire.vertices_colors = [FBConfig.residual_color] * len(wire.vertices)
+        wire.vertices_colors = np.full((verts_count * 2, 4),
+                                       FBConfig.residual_color,
+                                       dtype=np.float32)
 
         # For pin dashes drawing template like this: O- - - -o
-        wire.edge_lengths = [0.0, 22.0] * len(kt_pins)
+        wire.edge_lengths = np.full((verts_count, 2), (0.0, 22.0),
+                                    dtype=np.float32).ravel()
         wire.create_batch()
 
     def unhide_all_shaders(self):

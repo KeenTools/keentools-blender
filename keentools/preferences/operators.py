@@ -61,7 +61,7 @@ def _get_hardware_id(product: int = ProductType.FACEBUILDER) -> str:
 
 
 def _get_addon_and_core_version_info() -> List[str]:
-    txt_arr = []
+    txt_arr: List[str] = []
     try:
         txt_arr.append(f'Addon: {Config.addon_name} {Config.addon_version}')
         txt_arr.append(f'Core version {pkt_module().__version__}, '
@@ -111,10 +111,7 @@ class KTPREF_OT_InstalFromFilePktWithWarning(Operator):
     filepath: StringProperty()
     filename: StringProperty()
     warning: StringProperty()
-    confirm_install: BoolProperty(
-        name='Install anyway', default=False)
-
-    content = []
+    confirm_install: BoolProperty(name='Install anyway', default=False)
 
     def _report_canceled(self):
         self.report({'ERROR'}, 'Installation has been canceled '
