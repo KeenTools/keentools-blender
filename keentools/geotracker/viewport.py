@@ -242,7 +242,7 @@ class GTViewport(KTViewport):
             m = np.array(obj.matrix_world, dtype=np.float32).transpose()
             verts = multiply_verts_on_matrix_4x4(verts, m)
 
-        self.points3d().set_vertices_colors(verts, colors)
+        self.points3d().set_vertices_and_colors(verts, colors)
         self.points3d().create_batch()
         _log.output('update_surface_points end >>>')
 
@@ -301,7 +301,7 @@ class GTViewport(KTViewport):
         if pins.current_pin() and pin_num < points_count:
             vertex_colors[pin_num] = GTConfig.current_pin_color
 
-        self.points2d().set_vertices_colors(points, vertex_colors)
+        self.points2d().set_vertices_and_colors(points, vertex_colors)
         self.points2d().create_batch()
 
         mask = self.mask2d()
@@ -323,7 +323,7 @@ class GTViewport(KTViewport):
         wire = self.residuals()
         wire.clear_vertices()
         wire.edge_lengths = np.empty((0,), dtype=np.int32)
-        wire.vertices_colors = np.empty((0, 4), dtype=np.float32)
+        wire.vertex_colors = np.empty((0, 4), dtype=np.float32)
 
         if len(p2d) != len(p3d):
             return
@@ -366,16 +366,16 @@ class GTViewport(KTViewport):
                                     dtype=np.float32).ravel()
 
         wire.vertices = verts
-        wire.vertices_colors = np.full((residual_count * 2, 4),
-                                       GTConfig.residual_color,
-                                       dtype=np.float32)
+        wire.vertex_colors = np.full((residual_count * 2, 4),
+                                     GTConfig.residual_color,
+                                     dtype=np.float32)
         pins = self.pins()
         if pins.move_pin_mode():
-            points_count = len(wire.vertices_colors)
+            points_count = len(wire.vertex_colors)
             hidden_color = (*GTConfig.residual_color[:3], 0.0)
             for i in [x for x in pins.get_disabled_pins() if 2 * x < points_count]:
-                wire.vertices_colors[i * 2] = hidden_color
-                wire.vertices_colors[i * 2 + 1] = hidden_color
+                wire.vertex_colors[i * 2] = hidden_color
+                wire.vertex_colors[i * 2 + 1] = hidden_color
         wire.create_batch()
 
     def hide_pins_and_residuals(self):

@@ -49,8 +49,8 @@ def test_points2d(points2d: Any, *,
         for x in range(point_count):
             verts.append((x_start + x * x_step, y_start + y_step * i))
             vert_colors.append((*col, (x + 1)/point_count))
-    points2d.set_vertices_colors(np.array(verts, dtype=np.float32),
-                                 np.array(vert_colors, dtype=np.float32))
+    points2d.set_vertices_and_colors(np.array(verts, dtype=np.float32),
+                                     np.array(vert_colors, dtype=np.float32))
     points2d.create_batch()
 
 
@@ -66,8 +66,8 @@ def test_points3d(points3d: Any, *,
         for x in range(point_count):
             verts.append((x_start + x * x_step, y_start + y_step * i, 0))
             vert_colors.append((*col, (x + 1)/point_count))
-    points3d.set_vertices_colors(np.array(verts, dtype=np.float32),
-                                 np.array(vert_colors, dtype=np.float32))
+    points3d.set_vertices_and_colors(np.array(verts, dtype=np.float32),
+                                     np.array(vert_colors, dtype=np.float32))
     points3d.create_batch()
 
 
@@ -88,8 +88,8 @@ def test_edges_3d(residuals: Any, *,
             vert_colors.append((*col, (x + 1)/point_count))
             edge_lengths.append(0)
             edge_lengths.append(22.0)
-    residuals.set_vertices_colors(np.array(verts, dtype=np.float32),
-                                  np.array(vert_colors, dtype=np.float32))
+    residuals.set_vertices_and_colors(np.array(verts, dtype=np.float32),
+                                      np.array(vert_colors, dtype=np.float32))
     residuals.lengths = np.array(edge_lengths, dtype=np.float32)
     residuals.create_batch()
 
@@ -111,8 +111,8 @@ def test_residuals(residuals: Any, *,
             vert_colors.append((*col, (x + 1)/point_count))
             edge_lengths.append(0)
             edge_lengths.append(22.0)
-    residuals.set_vertices_colors(np.array(verts, dtype=np.float32),
-                                  np.array(vert_colors, dtype=np.float32))
+    residuals.set_vertices_and_colors(np.array(verts, dtype=np.float32),
+                                      np.array(vert_colors, dtype=np.float32))
     residuals.edge_lengths = np.array(edge_lengths, dtype=np.float32)
     residuals.create_batch()
 

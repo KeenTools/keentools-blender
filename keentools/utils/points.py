@@ -192,7 +192,7 @@ class KTShaderPoints(KTShaderBase):
         self.batch: Any = None
 
         self.vertices: Any = np.empty((0, 3), dtype=np.float32)
-        self.vertices_colors: Any = np.empty((0, 4), dtype=np.float32)
+        self.vertex_colors: Any = np.empty((0, 4), dtype=np.float32)
 
         self._point_size: float = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
@@ -206,13 +206,13 @@ class KTShaderPoints(KTShaderBase):
     def get_point_size(self) -> float:
         return self._point_size
 
-    def set_vertices_colors(self, verts: Any, colors: Any) -> None:
+    def set_vertices_and_colors(self, verts: Any, colors: Any) -> None:
         self.vertices = verts
-        self.vertices_colors = colors
+        self.vertex_colors = colors
 
     def clear_vertices(self) -> None:
         self.vertices = np.empty((0, 3), dtype=np.float32)
-        self.vertices_colors = np.empty((0, 4), dtype=np.float32)
+        self.vertex_colors = np.empty((0, 4), dtype=np.float32)
 
     def clear_all(self) -> None:
         self.clear_vertices()
@@ -258,7 +258,7 @@ class KTPoints2D(KTShaderPoints):
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
             {'pos': self.list_for_batch(self.vertices),
-             'color': self.list_for_batch(self.vertices_colors)},
+             'color': self.list_for_batch(self.vertex_colors)},
             indices=None)
         self.increment_batch_counter()
 
@@ -286,7 +286,7 @@ class KTPoints3D(KTShaderPoints):
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
             {'pos': self.list_for_batch(self.vertices),
-             'color': self.list_for_batch(self.vertices_colors)},
+             'color': self.list_for_batch(self.vertex_colors)},
             indices=None)
         self.increment_batch_counter()
 

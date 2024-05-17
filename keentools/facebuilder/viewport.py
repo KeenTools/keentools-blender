@@ -137,7 +137,7 @@ class FBViewport(KTViewport):
             m = np.array(headobj.matrix_world, dtype=np.float32).transpose()
             verts = multiply_verts_on_matrix_4x4(verts, m)
 
-        self.points3d().set_vertices_colors(verts, colors)
+        self.points3d().set_vertices_and_colors(verts, colors)
         self.points3d().create_batch()
 
     def update_wireframe_colors(self) -> None:
@@ -203,7 +203,7 @@ class FBViewport(KTViewport):
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
             vertex_colors[pins.current_pin_num()] = FBConfig.current_pin_color
 
-        self.points2d().set_vertices_colors(points, vertex_colors)
+        self.points2d().set_vertices_and_colors(points, vertex_colors)
         self.points2d().create_batch()
 
         # Rectangles drawing
@@ -232,9 +232,9 @@ class FBViewport(KTViewport):
 
         wire = self.residuals()
         wire.vertices = verts
-        wire.vertices_colors = np.full((verts_count * 2, 4),
-                                       FBConfig.residual_color,
-                                       dtype=np.float32)
+        wire.vertex_colors = np.full((verts_count * 2, 4),
+                                     FBConfig.residual_color,
+                                     dtype=np.float32)
 
         # For pin dashes drawing template like this: O- - - -o
         wire.edge_lengths = np.full((verts_count, 2), (0.0, 22.0),
