@@ -171,10 +171,8 @@ class KTScreenPins:
         self._selected_pins = np.array([x if x < index else x - 1
                                         for x in self._selected_pins
                                         if x != index], dtype=np.int32)
-        if index in self._disabled_pins:
-            self._disabled_pins.remove(index)
         self._disabled_pins = np.array([x if x < index else x - 1
-                                        for x in self._selected_pins
+                                        for x in self._disabled_pins
                                         if x != index], dtype=np.int32)
         self.set_pins(np.delete(pins, index, axis=0))
 
