@@ -67,7 +67,7 @@ class FTViewport(GTViewport):
         return ProductType.FACETRACKER
 
     def surface_points_from_mesh(self, gt: Any, obj: Object,
-                                 keyframe: int) -> List:
+                                 keyframe: int) -> Any:
         geo = gt.applied_args_model_at(keyframe)
         geo_mesh = geo.mesh(0)
         pins_count = gt.pins_count()
@@ -79,5 +79,4 @@ class FTViewport(GTViewport):
 
         scale_inv = np.array(InvScaleFromMatrix(obj.matrix_world),
                              dtype=np.float32)
-        # tolist() is needed by shader batch on Mac
-        return (verts @ xy_to_xz_rotation_matrix_3x3() @ scale_inv).tolist()
+        return verts @ xy_to_xz_rotation_matrix_3x3() @ scale_inv

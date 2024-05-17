@@ -45,7 +45,7 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         self.selection_fill_color: Tuple[float, float, float, float] = (1, 0, 0, 0.5)
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
-        self.selection_triangle_indices: List[Tuple[int, int, int]] = []
+        self.selection_triangle_indices: Any = np.empty((0,), dtype=np.int32)
 
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
@@ -101,8 +101,8 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         super().create_batches()
 
         if self.selection_fill_shader is not None:
-            verts = []
-            indices = []
+            verts = np.empty((0, 3), dtype=np.float32)
+            indices = np.empty((0,), dtype=np.int32)
             verts_count = len(self.vertices)
             if verts_count > 0 and len(self.selection_triangle_indices) > 0:
                 max_index = np.max(self.selection_triangle_indices)
@@ -112,7 +112,8 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
 
             self.selection_fill_batch = batch_for_shader(
                 self.selection_fill_shader, 'TRIS',
-                {'pos': self.list_for_batch(verts)}, indices=indices)
+                {'pos': self.list_for_batch(verts)},
+                indices=self.list_for_batch(indices))
         else:
             _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 

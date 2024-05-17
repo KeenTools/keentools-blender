@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import List
 import sys
 import platform
 import bpy
@@ -149,8 +150,8 @@ def get_system_info():
     return txt_arr
 
 
-def get_gpu_info():
-    txt_arr = []
+def get_gpu_info() -> List[str]:
+    txt_arr: List[str] = []
     try:
         import gpu
         txt_arr.append(f'Video: {gpu.platform.renderer_get()}')

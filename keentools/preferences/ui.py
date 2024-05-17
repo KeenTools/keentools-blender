@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import List
 import sys
 
 from bpy.types import Operator, AddonPreferences
@@ -892,8 +893,8 @@ class KTAddonPreferences(AddonPreferences):
                               text='Download', icon='URL')
             op.url = Config.core_download_website_url
 
-    def _get_problem_info(self):
-        info = []
+    def _get_problem_info(self) -> List[str]:
+        info: List[str] = []
         if 'pykeentools' in sys.modules:
             try:
                 import importlib

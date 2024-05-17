@@ -405,7 +405,7 @@ def _find_all_children(obj: Object, obj_list: List) -> None:
 
 
 def delete_with_children(obj: Object) -> None:
-    arr = []
+    arr: List[Object] = []
     _find_all_children(obj, arr)
     if arr:
         operator_with_context(bpy_ops().object.delete,
@@ -413,7 +413,7 @@ def delete_with_children(obj: Object) -> None:
 
 
 def select_control_panel_sliders(panel_obj: Object) -> int:
-    arr = []
+    arr: List[Object] = []
     _find_all_children(panel_obj, arr)
     empties = [obj for obj in arr if obj.type == 'EMPTY']
     counter = 0

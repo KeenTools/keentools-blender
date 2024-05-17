@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Tuple, Optional
+from typing import Any, Tuple, Optional, List
 
 import bpy
 from bpy.types import Object
@@ -178,7 +178,7 @@ def _get_dir_name(obj: Object) -> str:
     return attrs.get_safe_custom_attribute(obj, FBConfig.fb_dir_prop_name)
 
 
-def _get_image_names(obj: Object) -> str:
+def _get_image_names(obj: Object) -> List[str]:
     return attrs.get_safe_custom_attribute(obj, FBConfig.fb_images_prop_name)
 
 
@@ -216,7 +216,7 @@ def reconstruct_by_head() -> bool:
 
     images = _get_image_names(obj)
     if type(images) is not list:
-        images = []
+        images: List[str] = []
     _log.output(f'IMAGES: {images}')
     _log.output('PARAMETERS LOADED. START HEAD CREATION')
 

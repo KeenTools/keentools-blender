@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
+from typing import List
 import os
 import sys
 import tempfile
@@ -342,7 +342,7 @@ def _get_all_pids_on_windows():
         logger.error('_get_all_pids_on_windows Exception: {}'.format(str(err)))
         return None
     rows = re.split(b'\n', output.stdout)
-    pids = []
+    pids: List[int] = []
     for row in rows:
         elems = re.split(b'","', row)
         try:

@@ -737,8 +737,9 @@ class FBLoader:
         kid = settings.get_keyframe(headnum, camnum)
         fb = cls.get_builder()
         vp = cls.viewport()
-        vp.pins().set_pins(vp.img_points(fb, kid))
-        vp.pins().reset_current_pin()
+        pins = vp.pins()
+        pins.reset_current_pin()
+        pins.set_pins(vp.img_points(fb, kid))
 
     @classmethod
     def get_work_area(cls) -> Optional[Area]:

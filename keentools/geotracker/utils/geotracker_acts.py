@@ -917,17 +917,17 @@ def create_hard_empties_from_selected_pins_action(
     geo_mesh = geo.mesh(0)
 
     points = np.empty((selected_pins_count, 3), dtype=np.float32)
-    normals = []
+    normals = np.empty((selected_pins_count, 3), dtype=np.float32)
     for i, pin_index in enumerate(selected_pins):
         pin = gt.pin(current_frame, pin_index)
         points[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
-        normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
+        normals[i] = pin_to_normal_from_geo_mesh(pin, geo_mesh)
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
     scale_inv = InvScaleFromMatrix(geomobj.matrix_world)
     inv_mat = geomobj.matrix_world.inverted_safe()
 
-    empties = []
+    empties: List[Object] = []
     zv = Vector((0, 0, 1))
 
     for i, pos in enumerate(pin_positions):
@@ -955,7 +955,7 @@ def create_hard_empties_from_selected_pins_action(
     source_matrices = {}
     for frame in range(from_frame, to_frame + 1):
         bpy_set_current_frame(frame)
-        matrices = []
+        matrices: List[Matrix] = []
         for empty in empties:
             matrices.append(empty.matrix_world.copy())
         source_matrices[frame] = matrices
@@ -1017,7 +1017,7 @@ def create_soft_empties_from_selected_pins_action(
         return ActionStatus(False, 'No pins selected')
 
     zv = Vector((0, 0, 1))
-    empties = []
+    empties: List[Object] = []
     for i in range(selected_pins_count):
         empty = create_empty_object('ftPin')
         empty.empty_display_type = 'ARROWS'
@@ -1072,7 +1072,7 @@ def create_soft_empties_from_selected_pins_action(
     source_matrices = {}
     for frame in range(from_frame, to_frame + 1):
         bpy_set_current_frame(frame)
-        matrices = []
+        matrices: List[Matrix] = []
         for empty in empties:
             matrices.append(empty.matrix_world.copy())
         source_matrices[frame] = matrices

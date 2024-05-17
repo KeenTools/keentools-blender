@@ -223,26 +223,28 @@ class GTViewport(KTViewport):
 
     def update_surface_points(self, gt: Any, obj: Object, keyframe: int,
                               color: Tuple=GTConfig.surface_point_color) -> None:
+        _log.yellow('update_surface_points start')
         if obj:
             verts = self.surface_points_from_mesh(gt, obj, keyframe)
         else:
-            verts = []
+            verts = np.empty((0, 3), dtype=np.float32)
 
-        colors = [color] * len(verts)
+        verts_count = len(verts)
+        colors = np.full((verts_count, 4), color, dtype=np.float32)
 
         pins = self.pins()
         if pins.move_pin_mode():
-            points_count = len(verts)
             hidden_color = (*color[:3], 0.0)
-            for i in [x for x in pins.get_disabled_pins() if x < points_count]:
+            for i in [x for x in pins.get_disabled_pins() if x < verts_count]:
                 colors[i] = hidden_color
 
         if len(verts) > 0:
             m = np.array(obj.matrix_world, dtype=np.float32).transpose()
             verts = multiply_verts_on_matrix_4x4(verts, m)
 
-        self.points3d().set_vertices_colors(verts, colors)
+        self.points3d().set_vertices_and_colors(verts, colors)
         self.points3d().create_batch()
+        _log.output('update_surface_points end >>>')
 
     def update_pin_sensitivity(self) -> None:
         settings = gt_settings()
@@ -255,32 +257,25 @@ class GTViewport(KTViewport):
             settings.pin_size * GTConfig.surf_pin_size_scale)
 
     def surface_points_from_mesh(self, gt: Any, geomobj: Object,
-                                 keyframe: int) -> List:
-        verts = []
+                                 keyframe: int) -> Any:
+        _log.yellow('surface_points_from_mesh start')
         pins_count = gt.pins_count()
+        verts = np.zeros((pins_count, 3), dtype=np.float32)
         obj = evaluated_object(geomobj)
-        if len(obj.data.vertices) == 0:
+        if pins_count ==0 or len(obj.data.vertices) == 0:
+            _log.output('surface_points_from_mesh empty end >>>')
             return verts
+
         for i in range(pins_count):
             pin = gt.pin(keyframe, i)
             if pin is not None:
                 p = pin_to_xyz_from_mesh(pin, obj)
                 if p is not None:
-                    verts.append(p)
+                    verts[i] = p
+        _log.output('surface_points_from_mesh end >>>')
         return verts
 
     def create_batch_2d(self, area: Area) -> None:
-        def _add_markers_at_camera_corners(points: List,
-                                           vertex_colors: List) -> None:
-            points.append(
-                (image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2))
-            )
-            points.append(
-                (image_space_to_region(0.5, asp * 0.5, x1, y1, x2, y2))
-            )
-            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
-            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # right camera corner
-
         rx, ry = bpy_render_frame()
         asp = ry / rx
         x1, y1, x2, y2 = get_camera_border(area)
@@ -306,10 +301,7 @@ class GTViewport(KTViewport):
         if pins.current_pin() and pin_num < points_count:
             vertex_colors[pin_num] = GTConfig.current_pin_color
 
-        if GTConfig.show_markers_at_camera_corners:
-            _add_markers_at_camera_corners(points, vertex_colors)
-
-        self.points2d().set_vertices_colors(points, vertex_colors)
+        self.points2d().set_vertices_and_colors(points, vertex_colors)
         self.points2d().create_batch()
 
         mask = self.mask2d()
@@ -326,14 +318,12 @@ class GTViewport(KTViewport):
         x1, y1, x2, y2 = get_camera_border(area)
 
         p2d = self.points2d().get_vertices()
-        if GTConfig.show_markers_at_camera_corners:
-            p2d = p2d[:-2]
         p3d = self.points3d().get_vertices()
 
         wire = self.residuals()
         wire.clear_vertices()
-        wire.edge_lengths = []
-        wire.vertices_colors = []
+        wire.edge_lengths = np.empty((0,), dtype=np.int32)
+        wire.vertex_colors = np.empty((0, 4), dtype=np.float32)
 
         if len(p2d) != len(p3d):
             return
@@ -360,25 +350,32 @@ class GTViewport(KTViewport):
         vv = to_homogeneous(p3d) @ transform
         vv = (vv.T / vv[:, 3]).T
 
-        verts = []
+        residual_count = len(vv)
+        verts = np.empty((residual_count * 2, 2), dtype=np.float32)
+
         shift_x, shift_y = camobj.data.shift_x, camobj.data.shift_y
         for i, v in enumerate(vv):
             x, y = frame_to_image_space(v[0], v[1], rx, ry, shift_x, shift_y)
-            verts.append(image_space_to_region(x, y, x1, y1, x2, y2, shift_x, shift_y))
-            wire.edge_lengths.append(0)
-            verts.append((p2d[i][0], p2d[i][1]))
+            verts[i * 2] = image_space_to_region(x, y, x1, y1, x2, y2,
+                                                 shift_x, shift_y)
+            verts[i * 2 + 1] = p2d[i][:2]
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
-            wire.edge_lengths.append(Config.residual_dashed_line_length)
+
+        wire.edge_lengths = np.full((residual_count, 2),
+                                    (0.0, Config.residual_dashed_line_length),
+                                    dtype=np.float32).ravel()
 
         wire.vertices = verts
-        wire.vertices_colors = [GTConfig.residual_color] * len(verts)
+        wire.vertex_colors = np.full((residual_count * 2, 4),
+                                     GTConfig.residual_color,
+                                     dtype=np.float32)
         pins = self.pins()
         if pins.move_pin_mode():
-            points_count = len(wire.vertices_colors)
-            color = (*GTConfig.residual_color[:3], 0.0)
+            points_count = len(wire.vertex_colors)
+            hidden_color = (*GTConfig.residual_color[:3], 0.0)
             for i in [x for x in pins.get_disabled_pins() if 2 * x < points_count]:
-                wire.vertices_colors[i * 2] = color
-                wire.vertices_colors[i * 2 + 1] = color
+                wire.vertex_colors[i * 2] = hidden_color
+                wire.vertex_colors[i * 2 + 1] = hidden_color
         wire.create_batch()
 
     def hide_pins_and_residuals(self):

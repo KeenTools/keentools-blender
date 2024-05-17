@@ -1920,7 +1920,7 @@ class GT_OT_RigWindow(Operator):
         settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
-        objects = []
+        objects: List[Object] = []
         if self.parent_camera and geotracker.camobj:
             objects.append(geotracker.camobj)
         if self.parent_geometry and geotracker.geomobj:

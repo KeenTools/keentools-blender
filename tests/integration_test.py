@@ -3,12 +3,11 @@
 # start it from commandline:
 # blender -b -P /full_path_to/test_file.py
 # -------
+from typing import List, Tuple, Any
 import unittest
 import sys
 import os
 import numpy as np
-
-import bpy
 
 # Import test functions used in unit-tests started from any location
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +16,7 @@ import test_utils
 from keentools.utils.kt_logging import KTLogger
 from keentools.facebuilder.settings import model_type_callback, uv_items_callback
 from keentools.utils import coords, materials
+from keentools.utils.bpy_common import bpy_context, bpy_ops
 from keentools.addon_config import fb_settings, get_operator
 from keentools.facebuilder_config import FBConfig
 from keentools.facebuilder.fbloader import FBLoader
@@ -40,17 +40,17 @@ class TestConfig:
 
 
 class DataHolder:
-    image_files = []
+    image_files: List[str] = []
     @classmethod
-    def get_image_file_names(cls):
+    def get_image_file_names(cls) -> List[str]:
         return cls.image_files
 
     @classmethod
-    def set_image_file_names(cls, image_files):
+    def set_image_file_names(cls, image_files: List[str]) -> None:
         cls.image_files = image_files
 
 
-def _get_models():
+def _get_models() -> List[Tuple]:
     return [x[0] for x in model_type_callback(None, None)]
 
 
@@ -80,7 +80,7 @@ class FaceBuilderTest(unittest.TestCase):
 
         test_utils.pinmode_execute(headnum, camnum)
 
-        brect = tuple(coords.get_camera_border(bpy.context.area))
+        brect = tuple(coords.get_camera_border(bpy_context().area))
         arect = (396.5, -261.9, 1189.5, 1147.9)
         test_utils.move_pin(793, 421, 651, 425, arect, brect, headnum, camnum)
         test_utils.move_pin(732, 478, 826, 510, arect, brect, headnum, camnum)
@@ -134,7 +134,7 @@ class FaceBuilderTest(unittest.TestCase):
         test_utils.out_pinmode()
 
         headobj = test_utils.select_by_headnum(headnum)
-        bpy.ops.object.duplicate_move(
+        bpy_ops().object.duplicate_move(
             OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
             TRANSFORM_OT_translate={"value": (-4.0, 0, 0)})
         test_utils.save_scene(filename='before.blend')
@@ -262,9 +262,9 @@ class FaceBuilderTest(unittest.TestCase):
     def test_uv_switch(self):
         if TestConfig.skip_this_test('test_uv_switch'):
             return
-        def _get_uv_names():
+        def _get_uv_names() -> List[str]:
             return [x[0] for x in uv_items_callback(None, None)]
-        def _get_uvs_in_np_array(obj):
+        def _get_uvs_in_np_array(obj) -> Any:
             uv_map = obj.data.uv_layers.active
             uv_count = len(uv_map.data)
             np_uvs = np.empty((uv_count, 2), dtype=np.float32)
@@ -281,7 +281,7 @@ class FaceBuilderTest(unittest.TestCase):
         for level_of_detail in _get_models():
             head.model_type = level_of_detail
 
-            previous = []
+            previous: List[Any] = []
             for uv_name in _get_uv_names():
                 head.tex_uv_shape = uv_name
                 np_uvs = _get_uvs_in_np_array(headobj)

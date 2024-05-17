@@ -62,16 +62,16 @@ class KTEdgeShaderBase(KTShaderBase):
         self.line_shader: Optional[Any] = None
         self.line_batch: Optional[Any] = None
         # Triangle vertices & indices
-        self.vertices: List = []
-        self.triangle_indices: List = []
+        self.vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.triangle_indices: Any = np.empty((0,), dtype=np.int32)
         # Edge vertices
-        self.edge_vertices: List = []
-        self.edge_colors: List = []
-        self.vertices_colors: List = []
+        self.edge_vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.edge_colors: Any = np.empty((0, 4), dtype=np.float32)
+        self.vertex_colors: Any = np.empty((0, 4), dtype=np.float32)
 
         # pykeentools data
-        self.triangle_vertices: List = []
-        self.edge_vertex_normals: List = []
+        self.triangle_vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.edge_vertex_normals: Any = np.empty((0, 3), dtype=np.float32)
 
         self.backface_culling: bool = True
         self.adaptive_opacity: float = 1.0
@@ -79,15 +79,11 @@ class KTEdgeShaderBase(KTShaderBase):
         self.line_width: float = 1.0
 
         self.wireframe_offset: float = 0.0
-        self.wide_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
-        self.wide_opposite_edge_vertices: Any = np.empty(shape=(0, 3),
-                                                         dtype=np.float32)
-        self.wide_vertex_pos_indices: Any = np.empty(shape=(0, 3),
-                                                     dtype=np.int32)
-        self.wide_vertex_opp_indices: Any = np.empty(shape=(0, 3),
-                                                     dtype=np.int32)
-        self.wide_edge_vertex_normals: Any = np.empty(shape=(0, 3),
-                                                      dtype=np.float32)
+        self.wide_edge_vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.wide_opposite_edge_vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.wide_vertex_pos_indices: Any = np.empty((0, 3), dtype=np.int32)
+        self.wide_vertex_opp_indices: Any = np.empty((0, 3), dtype=np.int32)
+        self.wide_edge_vertex_normals: Any = np.empty((0, 3), dtype=np.float32)
         self.camera_pos: Vector = Vector((0, 0, 0))
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
 
@@ -102,15 +98,16 @@ class KTEdgeShaderBase(KTShaderBase):
         self.lit_light_matrix = mat
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
-        self.edge_colors = [color] * len(self.edge_vertices)
+        self.edge_colors = np.full((len(self.edge_vertices), 4), color,
+                                   dtype=np.float32)
 
-    def set_vertices_colors(self, verts: List, colors: List) -> None:
+    def set_vertices_and_colors(self, verts: Any, colors: Any) -> None:
         self.vertices = verts
-        self.vertices_colors = colors
+        self.vertex_colors = colors
 
     def clear_vertices(self) -> None:
-        self.vertices = []
-        self.vertices_colors = []
+        self.vertices = np.empty((0, 3), dtype=np.float32)
+        self.vertex_colors = np.empty((0, 4), dtype=np.float32)
 
     def set_backface_culling(self, state: bool) -> None:
         self.backface_culling = state
@@ -122,27 +119,26 @@ class KTEdgeShaderBase(KTShaderBase):
         self.line_width = width
 
     def clear_all(self) -> None:
-        self.vertices = []
-        self.triangle_indices = []
-        self.edge_vertices = []
-        self.edge_colors = []
-        self.vertices_colors = []
+        self.vertices = np.empty((0, 3), dtype=np.float32)
+        self.triangle_indices = np.empty((0,), dtype=np.int32)
+        self.edge_vertices = np.empty((0, 3), dtype=np.float32)
+        self.edge_colors = np.empty((0, 4), dtype=np.float32)
+        self.vertex_colors = np.empty((0, 4), dtype=np.float32)
 
-        self.triangle_vertices = []
-        self.edge_vertex_normals = []
+        self.triangle_vertices = np.empty((0, 3), dtype=np.float32)
+        self.edge_vertex_normals = np.empty((0, 3), dtype=np.float32)
 
-        self.wide_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
-        self.wide_opposite_edge_vertices = np.empty(shape=(0, 3),
-                                                    dtype=np.float32)
-        self.wide_vertex_pos_indices = np.empty(shape=(0, 3), dtype=np.int32)
-        self.wide_vertex_opp_indices = np.empty(shape=(0, 3), dtype=np.int32)
-        self.wide_edge_vertex_normals = np.empty(shape=(0, 3), dtype=np.float32)
+        self.wide_edge_vertices = np.empty((0, 3), dtype=np.float32)
+        self.wide_opposite_edge_vertices = np.empty((0, 3), dtype=np.float32)
+        self.wide_vertex_pos_indices = np.empty((0, 3), dtype=np.int32)
+        self.wide_vertex_opp_indices = np.empty((0, 3), dtype=np.int32)
+        self.wide_edge_vertex_normals = np.empty((0, 3), dtype=np.float32)
 
 
 class KTEdgeShader2D(KTEdgeShaderBase):
     def __init__(self, target_class: Any):
         super().__init__(target_class)
-        self.edge_lengths: List[float] = []
+        self.edge_lengths: Any = np.empty((0,), dtype=np.float32)
 
     def init_shaders(self) -> Optional[bool]:
         if self.line_shader is not None:
@@ -186,7 +182,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
             {'pos': self.list_for_batch(self.vertices),
-             'color': self.list_for_batch(self.vertices_colors),
+             'color': self.list_for_batch(self.vertex_colors),
              'lineLength': self.list_for_batch(self.edge_lengths)}
         )
         self.increment_batch_counter()
@@ -198,14 +194,14 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
     def clear_all(self) -> None:
         super().clear_all()
-        self.edge_lengths = []
+        self.edge_lengths = np.empty((0,), dtype=np.float32)
 
 
 class KTRectangleShader2D(KTEdgeShader2D):
     def __init__(self, target_class: Any=SpaceView3D):
         super().__init__(target_class)
-        self.rectangles = []
-        self.line_width = Config.face_selection_frame_width
+        self.rectangles: List[List] = []
+        self.line_width: float = Config.face_selection_frame_width
 
     def clear_rectangles(self) -> None:
         self.rectangles = []
@@ -236,8 +232,8 @@ class KTRectangleShader2D(KTEdgeShader2D):
             rect[6] = (*color,) if i == index else (*rect[7],)
 
     def prepare_shader_data(self, area: Area) -> None:
-        rect_points = []
-        rect_colors = []
+        rect_points: List[Tuple] = []
+        rect_colors: List[Tuple] = []
 
         rx1, ry1, rx2, ry2 = get_camera_border(area)
 
@@ -253,7 +249,7 @@ class KTRectangleShader2D(KTEdgeShader2D):
                 rect_colors.append(col1)
                 previous_p = p
 
-        self.set_vertices_colors(rect_points, rect_colors)
+        self.set_vertices_and_colors(rect_points, rect_colors)
 
     def init_shaders(self) -> Optional[bool]:
         if self.line_shader is not None:
@@ -293,7 +289,7 @@ class KTRectangleShader2D(KTEdgeShader2D):
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
             {'pos': self.list_for_batch(self.vertices),
-             'color': self.list_for_batch(self.vertices_colors)}
+             'color': self.list_for_batch(self.vertex_colors)}
         )
 
 
@@ -301,7 +297,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
     def __init__(self, target_class: Any):
         super().__init__(target_class)
         self.edge_vertices: List[Tuple[float, float, float]] = []
-        self.edge_vertices_colors: List[Tuple[float, float, float, float]] = []
+        self.edge_vertex_colors: List[Tuple[float, float, float, float]] = []
         self.fill_color: Tuple[float, float, float, float] = (1., 1., 1., 0.01)
         self.fill_indices: List[Tuple[int, int, int]] = [(0, 1, 3), (4, 5, 0)]
 
@@ -341,13 +337,13 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             self.fill_batch.draw(self.fill_shader)
 
     def create_batch(self) -> None:
-        self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
+        self.edge_vertex_colors = [self.line_color] * len(self.edge_vertices)
 
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
                 {'pos': self.list_for_batch(self.edge_vertices),
-                 'color': self.list_for_batch(self.edge_vertices_colors)}
+                 'color': self.list_for_batch(self.edge_vertex_colors)}
             )
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
@@ -363,7 +359,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
 
     def clear_rectangle(self) -> None:
         self.edge_vertices = []
-        self.edge_vertices_colors = []
+        self.edge_vertex_colors = []
         self.edge_lengths = []
 
     def clear_all(self) -> None:
@@ -403,13 +399,13 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
         return None
 
     def create_batch(self) -> None:
-        self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
+        self.edge_vertex_colors = [self.line_color] * len(self.edge_vertices)
 
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
                 {'pos': self.list_for_batch(self.edge_vertices),
-                 'color': self.list_for_batch(self.edge_vertices_colors),
+                 'color': self.list_for_batch(self.edge_vertex_colors),
                  'lineLength': self.list_for_batch(self.edge_lengths)})
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
@@ -452,7 +448,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         pos = [region.view2d.view_to_region(x, 0, clip=False)[0]
                for x in self.keyframes]
         self.vertices = [(x, y) for x in pos for y in (bottom, top)]
-        self.vertices_colors = [self.line_color for _ in self.vertices]
+        self.vertex_colors = [self.line_color for _ in self.vertices]
         self.edge_lengths = [x for _ in pos for x in (bottom, top * 0.5)]
 
     def draw_checks(self) -> bool:
@@ -504,7 +500,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
-        self.selection_triangle_indices: List[Tuple[int, int, int]] = []
+        self.selection_triangle_indices: Any = np.empty((0,), dtype=np.int32)
 
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
@@ -625,8 +621,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
             _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
 
         if self.selection_fill_shader is not None:
-            verts = []
-            indices = []
+            verts = np.empty((0, 3), dtype=np.float32)
+            indices = np.empty((0,), dtype=np.int32)
             verts_count = len(self.vertices)
             if verts_count > 0 and len(self.selection_triangle_indices) > 0:
                 max_index = np.max(self.selection_triangle_indices)
@@ -636,7 +632,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
 
             self.selection_fill_batch = batch_for_shader(
                 self.selection_fill_shader, 'TRIS',
-                {'pos': self.list_for_batch(verts)}, indices=indices)
+                {'pos': self.list_for_batch(verts)},
+                indices=self.list_for_batch(indices))
         else:
             _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 
@@ -705,9 +702,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
 
     def clear_all(self) -> None:
         super().clear_all()
-        self.wide_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
-        self.wide_opposite_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
-        self.wide_edge_vertex_normals = np.empty(shape=(0, 3), dtype=np.float32)
+        self.wide_edge_vertices = np.empty((0, 3), dtype=np.float32)
+        self.wide_opposite_edge_vertices = np.empty((0, 3), dtype=np.float32)
+        self.wide_edge_vertex_normals = np.empty((0, 3), dtype=np.float32)
 
     def draw_empty_fill(self) -> None:
         shader = self.fill_shader

@@ -84,15 +84,15 @@ class FB_OT_MovePin(Operator):
         pin = FBLoader.get_builder().add_pin(
             kid, (image_space_to_frame(x, y))
         )
+        pins = FBLoader.viewport().pins()
         if pin is not None:
             _log.output('ADD PIN')
-            vp = FBLoader.viewport()
-            vp.pins().add_pin((x, y))
-            vp.pins().set_current_pin_num_to_last()
+            pins.add_pin((x, y))
+            pins.set_current_pin_num_to_last()
             FBLoader.update_camera_pins_count(headnum, camnum)
         else:
             _log.output('MISS MODEL')
-            FBLoader.viewport().pins().reset_current_pin()
+            pins.reset_current_pin()
             return {"FINISHED"}
         return None
 

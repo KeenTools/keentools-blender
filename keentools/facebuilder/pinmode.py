@@ -147,7 +147,7 @@ class FB_OT_PinMode(Operator):
             vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.yellow('_delete_found_pin call')
+        _log.yellow('_delete_found_pin start')
         settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -156,8 +156,9 @@ class FB_OT_PinMode(Operator):
 
         fb = FBLoader.get_builder()
         fb.remove_pin(kid, nearest)
-        del FBLoader.viewport().pins().arr()[nearest]
-        _log.output('FB PIN REMOVED {}'.format(nearest))
+        vp = FBLoader.viewport()
+        vp.pins().remove_pin(nearest)
+        _log.output(f'FB PIN REMOVED {nearest}')
 
         if not FBLoader.solve(headnum, camnum):
             _log.error('FB DELETE PIN PROBLEM')
@@ -175,7 +176,6 @@ class FB_OT_PinMode(Operator):
         push_head_in_undo_history(head, 'Pin Remove')
 
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        vp = FBLoader.viewport()
         _log.output(f'before FBLoader.update_fb_viewport_shaders '
                     f'{vp.wireframer().get_statistics()}')
         FBLoader.update_fb_viewport_shaders(area=area,
@@ -184,7 +184,6 @@ class FB_OT_PinMode(Operator):
                                             pins_and_residuals=True)
 
         _log.output('_delete_found_pin end >>>')
-
         return {'RUNNING_MODAL'}
 
     def _undo_detected(self, area: Area) -> None:

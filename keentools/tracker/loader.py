@@ -346,17 +346,23 @@ class Loader:
 
     @classmethod
     def load_pins_into_viewport(cls) -> None:
+        _log.yellow('load_pins_into_viewport start')
         keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
         w, h = bpy_render_frame()
         kt_pins = gt.projected_pins(keyframe)
         pins = vp.pins()
-        pins.set_pins([frame_to_image_space(*pin.img_pos, w, h,
-                                            *get_scene_camera_shift())
-                       for pin in kt_pins])
+        if len(kt_pins) == 0:
+            pins.clear_pins()
+            _log.output('load_pins_into_viewport 1 end>>>')
+            return
+        pins.set_pins(np.array([frame_to_image_space(*pin.img_pos, w, h,
+                                                     *get_scene_camera_shift())
+                                for pin in kt_pins], dtype=np.float32))
         pins.set_disabled_pins([i for i, pin in enumerate(kt_pins)
                                 if not pin.enabled])
+        _log.output('load_pins_into_viewport end >>>')
 
     @classmethod
     def viewport_area_redraw(cls):
