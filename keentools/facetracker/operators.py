@@ -961,7 +961,8 @@ class FT_OT_PanDetector(Operator):
             return {'CANCELLED'}
 
         work_area = settings.loader().get_work_area()
-        viewport_native_pan_operator_activate(work_area == context.area)
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
         return {'PASS_THROUGH'}
 
 

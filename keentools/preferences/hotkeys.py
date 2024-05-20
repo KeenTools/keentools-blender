@@ -38,11 +38,13 @@ def set_native_pan_operator_kmi(kmi: Any) -> None:
     _native_pan_operator_kmi = kmi
 
 
-def viewport_native_pan_operator_activate(status: bool) -> None:
+def viewport_native_pan_operator_activate(status: bool) -> bool:
     global _native_pan_operator_kmi
     if not _native_pan_operator_kmi:
-        return
+        return False
+    prev_status = _native_pan_operator_kmi.active
     _native_pan_operator_kmi.active = status
+    return prev_status != status
 
 
 def get_keyconfig() -> Any:
