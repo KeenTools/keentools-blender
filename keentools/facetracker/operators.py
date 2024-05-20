@@ -73,7 +73,7 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 create_animated_empty_action,
                                                 create_soft_empties_from_selected_pins_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
-from ..preferences.hotkeys import viewport_pan_detector_activate
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -961,7 +961,7 @@ class FT_OT_PanDetector(Operator):
             return {'CANCELLED'}
 
         work_area = settings.loader().get_work_area()
-        viewport_pan_detector_activate(work_area == context.area)
+        viewport_native_pan_operator_activate(work_area == context.area)
         return {'PASS_THROUGH'}
 
 

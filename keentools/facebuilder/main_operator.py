@@ -68,7 +68,7 @@ from .facebuilder_acts import (remove_pins_act,
                                center_geo_act)
 from .prechecks import common_fb_checks
 from .integration import FB_OT_ExportToCC
-from ..preferences.hotkeys import viewport_pan_detector_activate
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -1213,7 +1213,7 @@ class FB_OT_PanDetector(Operator):
             return {'CANCELLED'}
 
         work_area = settings.loader().get_work_area()
-        viewport_pan_detector_activate(work_area == context.area)
+        viewport_native_pan_operator_activate(work_area == context.area)
         return {'PASS_THROUGH'}
 
 

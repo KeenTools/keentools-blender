@@ -106,7 +106,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     get_operator_reposition_matrix,
                                     move_scene_tracking_action,
                                     unbreak_rotation_act)
-from ..preferences.hotkeys import viewport_pan_detector_activate
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -2092,7 +2092,7 @@ class GT_OT_PanDetector(Operator):
             return {'CANCELLED'}
 
         work_area = settings.loader().get_work_area()
-        viewport_pan_detector_activate(work_area == context.area)
+        viewport_native_pan_operator_activate(work_area == context.area)
         return {'PASS_THROUGH'}
 
 
