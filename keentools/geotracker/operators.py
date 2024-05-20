@@ -2044,8 +2044,8 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
 
 class GT_OT_MoveWrapper(Operator):
     bl_idname = GTConfig.gt_move_wrapper
-    bl_label = 'Pan View (GeoTracker)'
-    bl_description = 'KeenTools Viewport Pan override operator (GeoTracker)'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
@@ -2077,8 +2077,8 @@ class GT_OT_MoveWrapper(Operator):
 
 class GT_OT_PanDetector(Operator):
     bl_idname = GTConfig.gt_pan_detector
-    bl_label = 'Pan View detect (GeoTracker)'
-    bl_description = 'KeenTools Viewport Pan override operator (GeoTracker)'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):

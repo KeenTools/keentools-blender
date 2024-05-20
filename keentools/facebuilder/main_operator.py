@@ -1165,8 +1165,8 @@ class FB_OT_ResetView(ButtonOperator, Operator):
 
 class FB_OT_MoveWrapper(Operator):
     bl_idname = FBConfig.fb_move_wrapper
-    bl_label = 'Pan View (FaceBuilder)'
-    bl_description = 'KeenTools Viewport Pan override operator (FaceBuilder)'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
@@ -1198,8 +1198,8 @@ class FB_OT_MoveWrapper(Operator):
 
 class FB_OT_PanDetector(Operator):
     bl_idname = FBConfig.fb_pan_detector
-    bl_label = 'Pan View detect (FaceBuilder)'
-    bl_description = 'KeenTools Viewport Pan override operator (FaceBuilder)'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):

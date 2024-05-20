@@ -913,9 +913,8 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
 class FT_OT_MoveWrapper(Operator):
     bl_idname = FTConfig.ft_move_wrapper
-    bl_label = 'Pan View (FaceTracker)'
-    bl_description = 'KeenTools Viewport Pan override operator (FaceTracker)'
-
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
@@ -947,8 +946,8 @@ class FT_OT_MoveWrapper(Operator):
 
 class FT_OT_PanDetector(Operator):
     bl_idname = FTConfig.ft_pan_detector
-    bl_label = 'Pan View detect (FaceTracker)'
-    bl_description = 'KeenTools Viewport Pan override operator (FaceTracker)'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
