@@ -126,6 +126,7 @@ class FBConfig:
     fb_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
 
     fb_move_wrapper = operators + '.move_wrapper'
+    fb_pan_detector = operators + '.pan_detector'
 
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'

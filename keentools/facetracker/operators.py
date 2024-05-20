@@ -73,6 +73,7 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 create_animated_empty_action,
                                                 create_soft_empties_from_selected_pins_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
+from ..preferences.hotkeys import viewport_pan_detector_activate
 
 
 _log = KTLogger(__name__)
@@ -912,8 +913,9 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
 class FT_OT_MoveWrapper(Operator):
     bl_idname = FTConfig.ft_move_wrapper
-    bl_label = 'move wrapper'
-    bl_description = 'KeenTools move wrapper operator'
+    bl_label = 'Pan View (FaceTracker)'
+    bl_description = 'KeenTools Viewport Pan override operator (FaceTracker)'
+
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
@@ -941,6 +943,27 @@ class FT_OT_MoveWrapper(Operator):
 
         op = get_operator('view3d.move')
         return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class FT_OT_PanDetector(Operator):
+    bl_idname = FTConfig.ft_pan_detector
+    bl_label = 'Pan View detect (FaceTracker)'
+    bl_description = 'KeenTools Viewport Pan override operator (FaceTracker)'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        settings = ft_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        viewport_pan_detector_activate(work_area == context.area)
+        return {'PASS_THROUGH'}
 
 
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
@@ -980,4 +1003,5 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_RemoveFocalKeyframe,
                   FT_OT_RemoveFocalKeyframes,
                   FT_OT_ExportAnimatedEmpty,
-                  FT_OT_MoveWrapper)
+                  FT_OT_MoveWrapper,
+                  FT_OT_PanDetector)
