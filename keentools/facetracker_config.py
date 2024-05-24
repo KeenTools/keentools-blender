@@ -126,6 +126,7 @@ class FTConfig:
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
     ft_share_feedback_idname = operators + '.share_feedback'
     ft_move_wrapper = operators + '.move_wrapper'
+    ft_pan_detector = operators + '.pan_detector'
 
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'

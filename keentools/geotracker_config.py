@@ -119,6 +119,7 @@ class GTConfig:
     gt_unbreak_rotation_idname = operators + '.unbreak_rotation'
     gt_share_feedback_idname = operators + '.share_feedback'
     gt_move_wrapper = operators + '.move_wrapper'
+    gt_pan_detector = operators + '.pan_detector'
 
     # Window ids
     gt_rescale_window_idname = operators + '.rescale_window'

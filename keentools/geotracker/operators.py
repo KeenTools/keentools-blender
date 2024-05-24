@@ -106,6 +106,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     get_operator_reposition_matrix,
                                     move_scene_tracking_action,
                                     unbreak_rotation_act)
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -2043,8 +2044,8 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
 
 class GT_OT_MoveWrapper(Operator):
     bl_idname = GTConfig.gt_move_wrapper
-    bl_label = 'move wrapper'
-    bl_description = 'KeenTools move wrapper operator'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
@@ -2072,6 +2073,28 @@ class GT_OT_MoveWrapper(Operator):
 
         op = get_operator('view3d.move')
         return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class GT_OT_PanDetector(Operator):
+    bl_idname = GTConfig.gt_pan_detector
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        settings = gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
+        return {'PASS_THROUGH'}
 
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
@@ -2132,4 +2155,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,
                   GT_OT_SwitchCameraToFixedWarning,
-                  GT_OT_MoveWrapper)
+                  GT_OT_MoveWrapper,
+                  GT_OT_PanDetector)

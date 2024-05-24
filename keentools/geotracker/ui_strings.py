@@ -318,6 +318,14 @@ buttons = {
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
     ),
+    GTConfig.gt_move_wrapper: Button(
+        'Pan View (GeoTracker)',
+        'KeenTools Viewport Pan override operator (GeoTracker)'
+    ),
+    GTConfig.gt_pan_detector: Button(
+        'Pan View detect (GeoTracker)',
+        'KeenTools Viewport Pan override operator (GeoTracker)'
+    ),
     # Menu buttons
     GTConfig.gt_clear_tracking_menu_exec_idname: Button(
         'Clear menu',

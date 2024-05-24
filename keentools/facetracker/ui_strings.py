@@ -330,6 +330,14 @@ buttons = {
         'FaceTracker Interruptor',
         'Interrupt current operation by Esc'
     ),
+    FTConfig.ft_move_wrapper: Button(
+        'Pan View (FaceTracker)',
+        'KeenTools Viewport Pan override operator (FaceTracker)'
+    ),
+    FTConfig.ft_pan_detector: Button(
+        'Pan View detect (FaceTracker)',
+        'KeenTools Viewport Pan override operator (FaceTracker)'
+    ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
         'Clear menu',

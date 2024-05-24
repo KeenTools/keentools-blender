@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Tuple, List, Any, Callable
+from typing import Tuple, List, Any, Callable, Optional
 
 from ..utils.kt_logging import KTLogger
 from ..facebuilder_config import FBConfig
@@ -30,13 +30,28 @@ _log = KTLogger(__name__)
 
 _tracker_keymaps: List[Tuple] = []
 _facebuilder_keymaps: List[Tuple] = []
+_native_pan_operator_kmi: Optional[Any] = None
+
+
+def set_native_pan_operator_kmi(kmi: Any) -> None:
+    global _native_pan_operator_kmi
+    _native_pan_operator_kmi = kmi
+
+
+def viewport_native_pan_operator_activate(status: bool) -> bool:
+    global _native_pan_operator_kmi
+    if not _native_pan_operator_kmi:
+        return False
+    prev_status = _native_pan_operator_kmi.active
+    _native_pan_operator_kmi.active = status
+    return prev_status != status
 
 
 def get_keyconfig() -> Any:
     return bpy_window_manager().keyconfigs.addon
 
 
-def geotracker_keymaps_register() -> None:
+def geotracker_keymaps_register(use_trackpad: bool = True) -> None:
     _log.yellow('geotracker_keymaps_register start')
     geotracker_keymaps_unregister()
 
@@ -62,17 +77,41 @@ def geotracker_keymaps_register() -> None:
     _tracker_keymaps.append((km, kmi3))
     _log.output(f'register gt keymap item: {kmi3}')
 
-    kmi4 = km.keymap_items.new(idname=GTConfig.gt_move_wrapper,
-                               type='MIDDLEMOUSE',
-                               value='PRESS', head=True)
-    _tracker_keymaps.append((km, kmi4))
-    kmi4.active = True
-    _log.output(f'register gt keymap item: {kmi4}')
+    kmi_pan1 = km.keymap_items.new(idname=GTConfig.gt_move_wrapper,
+                                   type='MIDDLEMOUSE',
+                                   value='PRESS', head=True)
+    _tracker_keymaps.append((km, kmi_pan1))
+    kmi_pan1.active = True
+    _log.output(f'register fb keymap item: {kmi_pan1}')
+
+    kmi_pan2 = km.keymap_items.new(idname=GTConfig.gt_move_wrapper,
+                                   type='MOUSEROTATE',
+                                   value='ANY', head=True)
+    _tracker_keymaps.append((km, kmi_pan2))
+    kmi_pan2.active = True
+    _log.output(f'register fb keymap item: {kmi_pan2}')
+
+    if use_trackpad:
+        kmi_pan_detector = km.keymap_items.new(idname=GTConfig.gt_pan_detector,
+                                               type='TRACKPADPAN',
+                                               value='ANY', head=True)
+        _tracker_keymaps.append((km, kmi_pan_detector))
+        kmi_pan_detector.active = True
+        _log.output(f'register fb keymap item: {kmi_pan_detector}')
+
+        kmi_pan3 = km.keymap_items.new(idname='view3d.move',
+                                       type='TRACKPADPAN',
+                                       value='ANY', head=True)
+        _tracker_keymaps.append((km, kmi_pan3))
+        kmi_pan3.active = True
+        _log.output(f'register fb keymap item: {kmi_pan3}')
+
+        set_native_pan_operator_kmi(kmi_pan3)
 
     _log.output('geotracker_keymaps_register end >>>')
 
 
-def facetracker_keymaps_register() -> None:
+def facetracker_keymaps_register(use_trackpad: bool = True) -> None:
     _log.yellow('facetracker_keymaps_register start')
     facetracker_keymaps_unregister()
 
@@ -98,12 +137,36 @@ def facetracker_keymaps_register() -> None:
     _tracker_keymaps.append((km, kmi3))
     _log.output(f'register ft keymap item: {kmi3}')
 
-    kmi4 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
-                               type='MIDDLEMOUSE',
-                               value='PRESS', head=True)
-    _tracker_keymaps.append((km, kmi4))
-    kmi4.active = True
-    _log.output(f'register ft keymap item: {kmi4}')
+    kmi_pan1 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
+                                   type='MIDDLEMOUSE',
+                                   value='PRESS', head=True)
+    _tracker_keymaps.append((km, kmi_pan1))
+    kmi_pan1.active = True
+    _log.output(f'register fb keymap item: {kmi_pan1}')
+
+    kmi_pan2 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
+                                   type='MOUSEROTATE',
+                                   value='ANY', head=True)
+    _tracker_keymaps.append((km, kmi_pan2))
+    kmi_pan2.active = True
+    _log.output(f'register fb keymap item: {kmi_pan2}')
+
+    if use_trackpad:
+        kmi_pan_detector = km.keymap_items.new(idname=FTConfig.ft_pan_detector,
+                                               type='TRACKPADPAN',
+                                               value='ANY', head=True)
+        _tracker_keymaps.append((km, kmi_pan_detector))
+        kmi_pan_detector.active = True
+        _log.output(f'register fb keymap item: {kmi_pan_detector}')
+
+        kmi_pan3 = km.keymap_items.new(idname='view3d.move',
+                                       type='TRACKPADPAN',
+                                       value='ANY', head=True)
+        _tracker_keymaps.append((km, kmi_pan3))
+        kmi_pan3.active = True
+        _log.output(f'register fb keymap item: {kmi_pan3}')
+
+        set_native_pan_operator_kmi(kmi_pan3)
 
     _log.output('facetracker_keymaps_register end >>>')
 
@@ -119,6 +182,7 @@ def tracker_keymaps_unregister() -> None:
     except Exception as err:
         _log.error(f'tracker_keymaps_unregister Exception:\n{str(err)}')
     _tracker_keymaps.clear()
+    set_native_pan_operator_kmi(None)
     _log.output('tracker_keymaps_unregister end >>>')
 
 
@@ -137,27 +201,36 @@ def facebuilder_keymaps_register(use_trackpad: bool = True) -> None:
 
     km = keyconfig.keymaps.new(name=category_name, space_type=space_type)
 
-    kmi1 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
-                               type='MIDDLEMOUSE',
-                               value='PRESS', head=True)
-    _facebuilder_keymaps.append((km, kmi1))
-    kmi1.active = True
-    _log.output(f'register fb keymap item: {kmi1}')
+    kmi_pan1 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
+                                   type='MIDDLEMOUSE',
+                                   value='PRESS', head=True)
+    _facebuilder_keymaps.append((km, kmi_pan1))
+    kmi_pan1.active = True
+    _log.output(f'register fb keymap item: {kmi_pan1}')
+
+    kmi_pan2 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
+                                   type='MOUSEROTATE',
+                                   value='ANY', head=True)
+    _facebuilder_keymaps.append((km, kmi_pan2))
+    kmi_pan2.active = True
+    _log.output(f'register fb keymap item: {kmi_pan2}')
 
     if use_trackpad:
-        kmi2 = km.keymap_items.new(idname='view3d.move',
-                                   type='TRACKPADPAN',
-                                   value='ANY', head=True)
-        _facebuilder_keymaps.append((km, kmi2))
-        kmi2.active = True
-        _log.output(f'register fb keymap item: {kmi2}')
+        kmi_pan_detector = km.keymap_items.new(idname=FBConfig.fb_pan_detector,
+                                               type='TRACKPADPAN',
+                                               value='ANY', head=True)
+        _facebuilder_keymaps.append((km, kmi_pan_detector))
+        kmi_pan_detector.active = True
+        _log.output(f'register fb keymap item: {kmi_pan_detector}')
 
-    kmi3 = km.keymap_items.new(idname=FBConfig.fb_move_wrapper,
-                               type='MOUSEROTATE',
-                               value='ANY', head=True)
-    _facebuilder_keymaps.append((km, kmi3))
-    kmi3.active = True
-    _log.output(f'register fb keymap item: {kmi3}')
+        kmi_pan3 = km.keymap_items.new(idname='view3d.move',
+                                       type='TRACKPADPAN',
+                                       value='ANY', head=True)
+        _facebuilder_keymaps.append((km, kmi_pan3))
+        kmi_pan3.active = True
+        _log.output(f'register fb keymap item: {kmi_pan3}')
+
+        set_native_pan_operator_kmi(kmi_pan3)
 
     _log.output('facebuilder_keymaps_register end >>>')
 
@@ -172,4 +245,5 @@ def facebuilder_keymaps_unregister() -> None:
         except Exception as err:
             _log.error(f'facebuilder_keymaps_unregister Exception:\n{str(err)}')
     _facebuilder_keymaps.clear()
+    set_native_pan_operator_kmi(None)
     _log.output('facebuilder_keymaps_unregister end >>>')

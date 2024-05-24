@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import re
-
 from bpy.props import (
     StringProperty,
     IntProperty,
@@ -70,6 +68,7 @@ from .facebuilder_acts import (remove_pins_act,
                                center_geo_act)
 from .prechecks import common_fb_checks
 from .integration import FB_OT_ExportToCC
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -1166,8 +1165,8 @@ class FB_OT_ResetView(ButtonOperator, Operator):
 
 class FB_OT_MoveWrapper(Operator):
     bl_idname = FBConfig.fb_move_wrapper
-    bl_label = 'move wrapper'
-    bl_description = 'KeenTools move wrapper operator'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
@@ -1195,6 +1194,28 @@ class FB_OT_MoveWrapper(Operator):
 
         op = get_operator('view3d.move')
         return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class FB_OT_PanDetector(Operator):
+    bl_idname = FBConfig.fb_pan_detector
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
+        return {'PASS_THROUGH'}
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
@@ -1238,4 +1259,5 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_RotateHeadForward,
                        FB_OT_RotateHeadBackward,
                        FB_OT_ResetView,
-                       FB_OT_MoveWrapper)
+                       FB_OT_MoveWrapper,
+                       FB_OT_PanDetector)
