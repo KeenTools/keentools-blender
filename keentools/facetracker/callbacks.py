@@ -65,7 +65,9 @@ _constraint_warning_message = \
 
 class Owner:
     def __del__(self):
-        _log.error('!!! OWNER OBJECT DESTROYED !!!')
+        if _log:
+            _log.error('!!! OWNER OBJECT DESTROYED !!!')
+
 
 _old_focal_lens_mm: float = 50.0
 _camobj_lens_watcher_owner = Owner()
