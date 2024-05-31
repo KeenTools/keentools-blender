@@ -93,7 +93,7 @@ def _can_load():
 
 if not _can_load():
     class KTCannotLoadPreferences(AddonPreferences):
-        bl_idname = Config.addon_name
+        bl_idname = Config.package
 
         def draw(self, context):
             layout = self.layout

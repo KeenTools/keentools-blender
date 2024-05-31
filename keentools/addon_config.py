@@ -54,7 +54,8 @@ class Config:
 
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
-    addon_name = __package__  # the same as module name
+    addon_name = 'KeenTools'  # human readable
+    package = __package__  # the same as module name
 
     old_facebuilder_addon_name = 'keentools_facebuilder'  # to remove
 
@@ -240,7 +241,7 @@ def is_blender_supported() -> bool:
 
 
 def get_addon_preferences() -> Any:
-    return bpy.context.preferences.addons[Config.addon_name].preferences
+    return bpy.context.preferences.addons[Config.package].preferences
 
 
 def supported_gpu_backend() -> bool:

@@ -356,7 +356,7 @@ def _product_prop_prefix(product: int) -> str:
 
 
 class KTAddonPreferences(AddonPreferences):
-    bl_idname = Config.addon_name
+    bl_idname = Config.package
 
     facebuilder_enabled: BoolProperty(
         name='Enable KeenTools FaceBuilder',

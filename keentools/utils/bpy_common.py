@@ -280,7 +280,7 @@ def bpy_all_scene_objects() -> List:
 
 
 def bpy_show_addon_preferences():
-    bpy.ops.preferences.addon_show(module=Config.addon_name)
+    bpy.ops.preferences.addon_show(module=Config.package)
 
 
 def bpy_view_camera():
