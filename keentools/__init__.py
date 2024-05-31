@@ -30,6 +30,8 @@ bl_info = {
     "category": "Interface"
 }
 
+bl_info_copy = bl_info
+
 
 import os
 import sys
@@ -53,7 +55,8 @@ logging.config.fileConfig(os.path.join(base_dir,
     disable_existing_loggers=False)
 _log = logging.getLogger(__name__)
 txt = get_system_info()
-txt.append('Addon: {}'.format(bl_info['name']))
+txt.append('Addon: {}'.format(bl_info_copy['name']))
+txt.append('Package: {}'.format(__package__))
 _log.info('\n---\nSystem Info:\n' + '\n'.join(txt) + '\n---\n')
 
 
@@ -186,7 +189,7 @@ else:
 
 
     def register():
-        _log.debug(f'--- START KEENTOOLS ADDON {bl_info["version"]} '
+        _log.debug(f'--- START KEENTOOLS ADDON {bl_info_copy["version"]} '
                    f'REGISTER ---')
         stop_timers(False)
         _log.debug('START REGISTER CLASSES')
@@ -202,13 +205,13 @@ else:
         _log.info('FaceTracker classes have been registered')
         add_timeline_panel()
         _log.info('Common timeline panel has been registered')
-        _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} '
+        _log.debug(f'=== KEENTOOLS ADDON {bl_info_copy["version"]} '
                    f'REGISTERED ===\n\n')
         output_import_statistics()
 
 
     def unregister():
-        _log.debug(f'--- START KEENTOOLS ADDON {bl_info["version"]} '
+        _log.debug(f'--- START KEENTOOLS ADDON {bl_info_copy["version"]} '
                    f'UNREGISTER ---')
         stop_timers(True)
         _log.debug('START UNREGISTER CLASSES')
@@ -224,7 +227,7 @@ else:
             _log.debug('UNREGISTER CLASS: \n{}'.format(str(cls)))
             unregister_class(cls)
         _log.info('KeenTools addon classes have been unregistered')
-        _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} '
+        _log.debug(f'=== KEENTOOLS ADDON {bl_info_copy["version"]} '
                    f'UNREGISTERED ===\n\n')
 
 
