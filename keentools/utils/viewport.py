@@ -77,7 +77,7 @@ class KTViewport:
         self._work_area = area
 
     def clear_work_area(self) -> None:
-        self.set_work_area(None)
+        self.set_work_area(area=None)
 
     def pins(self) -> Any:
         return self._pins
@@ -137,6 +137,12 @@ class KTViewport:
         area = self.get_work_area()
         if area:
             area.tag_redraw()
+
+    def check_work_area_exists(self) -> bool:
+        area = self.get_work_area()
+        if not area or len(area.regions) == 0:
+            return False
+        return True
 
     def is_working(self) -> bool:
         wf = self.wireframer()

@@ -190,7 +190,7 @@ class GTViewport(KTViewport):
     def register_handlers(self, *, area: Any) -> None:
         _log.yellow(f'{self.__class__.__name__}.register_handlers start')
         self.unregister_handlers()
-        self.set_work_area(area)
+        self.set_work_area(area=area)
         self.mask2d().register_handler(area=area)
         self.residuals().register_handler(area=area)
         self.points3d().register_handler(area=area)
