@@ -42,6 +42,7 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
 from ...tracker.calc_timer import CalcTimer
+from ...common.viewport import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -83,7 +84,9 @@ class PrecalcTimer(CalcTimer):
 
         progress, message = self._runner.current_progress()
         _log.output(f'precalc runner_state: {progress} {message}')
-        analysing_screen_message(message, product=self.product)
+
+        vp = self.get_viewport()
+        analysing_screen_message(message, viewport=vp)
 
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
@@ -151,7 +154,9 @@ class PrecalcTimer(CalcTimer):
 
         self.set_current_state(self.runner_state)
         # self._area_header('Precalc is calculating... Please wait')
-        analysing_screen_message('Initialization', product=self.product)
+
+        vp = self.get_viewport()
+        analysing_screen_message('Initialization', viewport=vp)
 
         _func = self.timer_func
         if not bpy_background_mode():
@@ -202,9 +207,13 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
 
     _log.output('precalc_with_runner_act start')
     area = context.area
-    vp = settings.loader().viewport()
-    if not settings.pinmode:
-        vp.texter().register_handler(area=area)
+
+    if settings.pinmode:
+        old_vp = settings.loader().viewport()
+        old_vp.hide_all_shaders()
+
+    tvp = CommonLoader.text_viewport()
+    tvp.start_viewport(area=area)
 
     rw, rh = bpy_render_frame()
     runner = KTClassLoader.PrecalcRunner_class()(
@@ -212,7 +221,7 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
         geotracker.precalc_start, geotracker.precalc_end,
         KTClassLoader.GeoTracker_class().license_manager(), True)
 
-    pt = PrecalcTimer(area, runner, product=product)
+    pt = PrecalcTimer(area, runner, product=product, viewport=tvp)
     if pt.start():
         _log.output('Precalc started')
     else:

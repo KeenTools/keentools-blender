@@ -83,7 +83,8 @@ class CalcTimer(TimerMixin):
         return get_settings(self.product)
 
     def __init__(self, area: Optional[Area] = None,
-                 runner: Optional[Any] = None, *, product: int):
+                 runner: Optional[Any] = None, *, product: int,
+                 viewport: Optional[Any] = None):
         self.product = product
         self.current_state: Callable = self.timeline_state
 
@@ -93,6 +94,7 @@ class CalcTimer(TimerMixin):
         self._runner: Any = runner
         self._start_time: float = 0.0
         self._area: Area = area
+        self._viewport: Any = viewport
 
         self.interrupt_operator_name = GTConfig.gt_interrupt_modal_idname \
             if product == ProductType.GEOTRACKER \
@@ -126,6 +128,9 @@ class CalcTimer(TimerMixin):
     def get_area(self) -> Area:
         return self._area
 
+    def get_viewport(self) -> Any:
+        return self._viewport
+
     def _area_header(self, txt: Optional[str] = None) -> None:
         area = self.get_area()
         area.header_text_set(txt)
@@ -136,13 +141,17 @@ class CalcTimer(TimerMixin):
         self.remove_timer(self)
         settings = self.get_settings()
         settings.stop_calculating()
-        revert_default_screen_message(unregister=not settings.pinmode,
-                                      product=self.product)
+
+        vp = self.get_viewport()
+        vp.stop_viewport()
 
         if not settings.pinmode:
             area = self.get_area()
             settings.viewport_state.show_ui_elements(area)
             exit_area_localview(area)
+        else:
+            old_vp = settings.loader().viewport()
+            old_vp.unhide_all_shaders()
 
         settings.user_interrupts = True
         bpy_set_current_frame(self._start_frame)

@@ -392,6 +392,18 @@ class GTViewport(KTViewport):
         self.residuals().unhide_shader()
         _log.output(f'{self.__class__.__name__}.unhide_pins_and_residuals end >>>')
 
+    def hide_all_shaders(self):
+        _log.yellow(f'{self.__class__.__name__}.hide_all_shaders start')
+        self.mask2d().hide_shader()
+        self.residuals().hide_shader()
+        self.points3d().hide_shader()
+        self.points2d().hide_shader()
+        self.texter().hide_shader()
+        self.wireframer().hide_shader()
+        self.timeliner().hide_shader()
+        self.selector().hide_shader()
+        _log.output(f'{self.__class__.__name__}.hide_all_shaders end >>>')
+
     def unhide_all_shaders(self):
         _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
         self.mask2d().unhide_shader()
