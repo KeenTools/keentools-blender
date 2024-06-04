@@ -96,6 +96,7 @@ class Config:
     kt_report_bug_idname = operators + '.report_bug'
 
     kt_warning_idname = operators + '.common_addon_warning'
+    kt_interrupt_modal_idname = operators + '.interrupt_modal'
 
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'

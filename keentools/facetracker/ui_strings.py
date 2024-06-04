@@ -326,10 +326,6 @@ buttons = {
         'Revert default rendering',
         'Setup scene rendering settings to match default render view'
     ),
-    FTConfig.ft_interrupt_modal_idname: Button(
-        'FaceTracker Interruptor',
-        'Interrupt current operation by Esc'
-    ),
     FTConfig.ft_move_wrapper: Button(
         'Pan View (FaceTracker)',
         'KeenTools Viewport Pan override operator (FaceTracker)'

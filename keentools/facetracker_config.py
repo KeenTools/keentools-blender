@@ -84,7 +84,6 @@ class FTConfig:
 
     ft_toggle_lock_view_idname = operators + '.toggle_lock_view'
     ft_exit_pinmode_idname = operators + '.exit_pinmode_btn'
-    ft_interrupt_modal_idname = operators + '.interrupt_modal'
     ft_stop_calculating_idname = operators + '.stop_calculating_btn'
     ft_set_key_idname = operators + '.set_key_btn'
     ft_reset_tone_exposure_idname = operators + '.reset_tone_exposure'

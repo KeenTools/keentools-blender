@@ -25,6 +25,7 @@ from bpy.props import StringProperty, IntProperty
 from .kt_logging import KTLogger
 from .version import BVersion
 from ..addon_config import (Config,
+                            get_settings,
                             show_user_preferences,
                             show_tool_preferences,
                             product_name,
@@ -37,6 +38,7 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                collapse_all_modules,
                                mark_old_modules)
 from .bpy_common import (bpy_localview,
+                         bpy_background_mode,
                          bpy_show_addon_preferences,
                          bpy_url_open,
                          bpy_window_manager,
@@ -295,9 +297,54 @@ class KT_OT_ReportBug(Operator):
         return {'FINISHED'}
 
 
+class KT_OT_InterruptModal(Operator):
+    bl_idname = Config.kt_interrupt_modal_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        if self.product == ProductType.UNDEFINED:
+            _log.error(f'{self.__class__.__name__}: '
+                       f'Wrong product type {self.product}')
+            return {'CANCELLED'}
+
+        settings = get_settings(self.product)
+        settings.user_interrupts = False
+
+        if not bpy_background_mode():
+            context.window_manager.modal_handler_add(self)
+            _log.output(f'{product_name(self.product)} INTERRUPTOR START')
+        else:
+            _log.info(f'{product_name(self.product)} Interruptor '
+                      f'skipped by background mode')
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        settings = get_settings(self.product)
+
+        if settings.user_interrupts:
+            _log.red(f'{product_name(self.product)} Interruptor '
+                        f'has been stopped by value')
+            _log.output(f'{self.__class__.__name__} modal end >>>')
+            return {'FINISHED'}
+
+        if event.type == 'ESC' and event.value == 'PRESS':
+            settings.user_interrupts = True
+            _log.red(f'Exit {product_name(self.product)} Interruptor by ESC')
+            _log.output(f'{self.__class__.__name__} modal end >>>')
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
+
+
 CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_OpenURL,
                        KT_OT_AddonSearch,
                        KT_OT_ExitLocalview,
                        KT_OT_ShareFeedback,
-                       KT_OT_ReportBug)
+                       KT_OT_ReportBug,
+                       KT_OT_InterruptModal)

@@ -24,7 +24,8 @@ import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import (gt_settings,
+from ..addon_config import (Config,
+                            gt_settings,
                             ft_settings,
                             get_operator,
                             ProductType,
@@ -79,11 +80,9 @@ class TimerMixin:
 
 
 class CalcTimer(TimerMixin):
-    def get_settings(self) -> Any:
-        return get_settings(self.product)
-
     def __init__(self, area: Optional[Area] = None,
-                 runner: Optional[Any] = None, *, product: int,
+                 runner: Optional[Any] = None, *,
+                 product: int = ProductType.UNDEFINED,
                  viewport: Optional[Any] = None):
         self.product = product
         self.current_state: Callable = self.timeline_state
@@ -96,11 +95,7 @@ class CalcTimer(TimerMixin):
         self._area: Area = area
         self._viewport: Any = viewport
 
-        self.interrupt_operator_name = GTConfig.gt_interrupt_modal_idname \
-            if product == ProductType.GEOTRACKER \
-            else FTConfig.ft_interrupt_modal_idname
-
-        settings = self.get_settings()
+        settings = get_settings(product)
         self._started_in_pinmode: bool = settings.pinmode
         self._start_frame: int = bpy_current_frame()
         self._error_message: str = ''
@@ -139,7 +134,7 @@ class CalcTimer(TimerMixin):
         _log.debug('finish_calc_mode start')
         self._runner.cancel()
         self.remove_timer(self)
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         settings.stop_calculating()
 
         vp = self.get_viewport()
@@ -160,7 +155,7 @@ class CalcTimer(TimerMixin):
                   time.time() - self._start_time))
 
     def common_checks(self) -> bool:
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         _log.output(f'common_checks: state={self.current_state_name()} '
                     f'target={self._target_frame} '
                     f'current={bpy_current_frame()}')
@@ -218,19 +213,11 @@ class CalcTimer(TimerMixin):
 
 
 class _CommonTimer(TimerMixin):
-    @classmethod
-    def get_settings(cls) -> Any:
-        return gt_settings()
-
-    @classmethod
-    def user_interrupt_operator_name(cls):
-        return GTConfig.gt_interrupt_modal_idname
-
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False,
                  *, success_callback: Optional[Callable] = None,
                  error_callback: Optional[Callable] = None,
-                 product: int):
+                 product: int = ProductType.UNDEFINED):
 
         self.product = product
         self.current_state: Callable = self.timeline_state
@@ -282,7 +269,7 @@ class _CommonTimer(TimerMixin):
         return 0, 1
 
     def timeline_state(self) -> Optional[float]:
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
@@ -295,7 +282,7 @@ class _CommonTimer(TimerMixin):
         return self._interval
 
     def computation_state(self) -> Optional[float]:
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
@@ -368,7 +355,7 @@ class _CommonTimer(TimerMixin):
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
         revert_default_screen_message(product=self.product)
         self._stop_user_interrupt_operator()
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         loader = settings.loader()
         loader.save_geotracker()
         settings.stop_calculating()
@@ -380,11 +367,11 @@ class _CommonTimer(TimerMixin):
         return None
 
     def _start_user_interrupt_operator(self) -> None:
-        op = get_operator(self.user_interrupt_operator_name())
-        op('INVOKE_DEFAULT')
+        op = get_operator(Config.kt_interrupt_modal_idname)
+        op('INVOKE_DEFAULT', product=self.product)
 
     def _stop_user_interrupt_operator(self) -> None:
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         settings.user_interrupts = True
 
     def _safe_resume(self) -> _ComputationState:
@@ -407,7 +394,7 @@ class _CommonTimer(TimerMixin):
                     current_stage=current_stage + 1,
                     total_stages=total_stages,
                     product=self.product)
-                settings = self.get_settings()
+                settings = get_settings(self.product)
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
                 return _ComputationState.RUNNING
@@ -428,7 +415,7 @@ class _CommonTimer(TimerMixin):
         overall = self._overall_func()
         _log.output(f'--- {self._operation_name} statistics ---')
         _log.output(f'Total calc frames: {overall}')
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         gt = settings.loader().kt_geotracker()
         _log.output(f'KEYFRAMES: {gt.keyframes()}')
         _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
@@ -447,10 +434,11 @@ class _CommonTimer(TimerMixin):
         self._start_time = time.time()
         if not bpy_background_mode():
             self._start_user_interrupt_operator()
+
         operation_calculation_screen_message(self._operation_name,
                                              self._operation_help,
                                              product=self.product)
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         settings.start_calculating(self._calc_mode)
 
         _func = self.timer_func
@@ -468,7 +456,7 @@ class TrackTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
                  error_callback: Optional[Callable] = None,
-                 product: int = ProductType.GEOTRACKER):
+                 product: int = ProductType.UNDEFINED):
         super().__init__(computation, from_frame,
                          success_callback=success_callback,
                          error_callback=error_callback,
@@ -480,14 +468,6 @@ class TrackTimer(_CommonTimer):
 
 
 class FTTrackTimer(TrackTimer):
-    @classmethod
-    def get_settings(cls) -> Any:
-        return ft_settings()
-
-    @classmethod
-    def user_interrupt_operator_name(cls):
-        return FTConfig.ft_interrupt_modal_idname
-
     def create_shape_keyframe(self):
         create_relative_shape_keyframe(bpy_current_frame())
 
@@ -496,7 +476,7 @@ class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
                  error_callback: Optional[Callable] = None,
-                 product: int):
+                 product: int = ProductType.UNDEFINED):
         super().__init__(computation, from_frame, revert_current_frame=True,
                          success_callback=success_callback,
                          error_callback=error_callback, product=product)
@@ -511,14 +491,6 @@ class RefineTimer(_CommonTimer):
 
 
 class FTRefineTimer(RefineTimer):
-    @classmethod
-    def get_settings(cls) -> Any:
-        return ft_settings()
-
-    @classmethod
-    def user_interrupt_operator_name(cls):
-        return FTConfig.ft_interrupt_modal_idname
-
     def create_shape_keyframe(self):
         _log.red(f'{self.__class__.__name__} create_shape_keyframe')
         create_relative_shape_keyframe(bpy_current_frame())
@@ -527,7 +499,8 @@ class FTRefineTimer(RefineTimer):
 class RefineTimerFast(RefineTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
-                 error_callback: Optional[Callable] = None, product: int):
+                 error_callback: Optional[Callable] = None,
+                 product: int = ProductType.UNDEFINED):
         super().__init__(computation, from_frame,
                          success_callback=success_callback,
                          error_callback=error_callback, product=product)
@@ -535,10 +508,4 @@ class RefineTimerFast(RefineTimer):
 
 
 class FTRefineTimerFast(RefineTimerFast):
-    @classmethod
-    def get_settings(cls) -> Any:
-        return ft_settings()
-
-    @classmethod
-    def user_interrupt_operator_name(cls):
-        return FTConfig.ft_interrupt_modal_idname
+    pass

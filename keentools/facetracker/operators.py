@@ -671,40 +671,6 @@ class FT_OT_SplitVideoExec(Operator):
         return {'FINISHED'}
 
 
-class FT_OT_InterruptModal(Operator):
-    bl_idname = FTConfig.ft_interrupt_modal_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = ft_settings()
-        settings.user_interrupts = False
-
-        if not bpy_background_mode():
-            context.window_manager.modal_handler_add(self)
-            _log.output('FT INTERRUPTOR START')
-        else:
-            _log.info('FaceTracker Interruptor skipped by background mode')
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        settings = ft_settings()
-
-        if settings.user_interrupts:
-            _log.output('FT Interruptor has been stopped by value')
-            settings.user_interrupts = True
-            return {'FINISHED'}
-
-        if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit FT Interruptor by ESC')
-            settings.user_interrupts = True
-            return {'FINISHED'}
-
-        return {'PASS_THROUGH'}
-
-
 class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_idname = FTConfig.ft_default_pin_settings_idname
     bl_label = buttons[bl_idname].label
@@ -994,7 +960,6 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_StopCalculating,
                   FT_OT_AutoNamePrecalc,
                   FT_OT_SplitVideoExec,
-                  FT_OT_InterruptModal,
                   FT_OT_ExitPinMode,
                   FT_OT_AddonSetupDefaults,
                   FT_OT_DefaultPinSettings,

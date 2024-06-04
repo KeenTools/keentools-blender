@@ -314,10 +314,6 @@ buttons = {
         'Revert default rendering',
         'Setup scene rendering settings to match default render view'
     ),
-    GTConfig.gt_interrupt_modal_idname: Button(
-        'GeoTracker Interruptor',
-        'Interrupt current operation by Esc'
-    ),
     GTConfig.gt_move_wrapper: Button(
         'Pan View (GeoTracker)',
         'KeenTools Viewport Pan override operator (GeoTracker)'

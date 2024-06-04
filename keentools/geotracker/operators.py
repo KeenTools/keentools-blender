@@ -740,42 +740,6 @@ class GT_OT_StopCalculating(Operator):
         return {'FINISHED'}
 
 
-class GT_OT_InterruptModal(Operator):
-    bl_idname = GTConfig.gt_interrupt_modal_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = gt_settings()
-        settings.user_interrupts = False
-
-        if not bpy_background_mode():
-            context.window_manager.modal_handler_add(self)
-            _log.output('GT INTERRUPTOR START')
-        else:
-            _log.info('GeoTracker Interruptor skipped by background mode')
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        settings = gt_settings()
-
-        if settings.user_interrupts:
-            _log.output('GT Interruptor has been stopped by value')
-            settings.user_interrupts = True
-            _log.output(f'{self.__class__.__name__} execute end >>>')
-            return {'FINISHED'}
-
-        if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit GT Interruptor by ESC')
-            settings.user_interrupts = True
-            _log.output(f'{self.__class__.__name__} execute end >>>')
-            return {'FINISHED'}
-
-        return {'PASS_THROUGH'}
-
-
 class GT_OT_ResetToneGain(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reset_tone_exposure_idname
     bl_label = buttons[bl_idname].label
@@ -2124,7 +2088,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_TogglePins,
                   GT_OT_ExportAnimatedEmpty,
                   GT_OT_ExitPinMode,
-                  GT_OT_InterruptModal,
                   GT_OT_StopCalculating,
                   GT_OT_ResetToneGain,
                   GT_OT_ResetToneGamma,
