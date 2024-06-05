@@ -42,7 +42,7 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
 from ...tracker.calc_timer import CalcTimer
-from ...common.viewport import CommonLoader
+from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)

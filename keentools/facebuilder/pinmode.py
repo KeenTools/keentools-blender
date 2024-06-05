@@ -56,6 +56,7 @@ from .ui_strings import buttons
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
 from .prechecks import common_fb_checks
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -116,6 +117,18 @@ class FB_OT_PinMode(Operator):
 
     _shift_pressed: bool = False
 
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(FBConfig.fb_pinmode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
+
     @classmethod
     def _set_shift_pressed(cls, val: bool) -> None:
         cls._shift_pressed = val
@@ -164,7 +177,7 @@ class FB_OT_PinMode(Operator):
             _log.error('FB DELETE PIN PROBLEM')
             unregister_fb_undo_handler()
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         update_head_mesh_non_neutral(fb, head)
@@ -416,6 +429,7 @@ class FB_OT_PinMode(Operator):
             vp.create_batch_2d(area)
             vp.register_handlers(area=area)
 
+            self.init_bus()
             context.window_manager.modal_handler_add(self)
 
             _log.output('START FB SHADER STOPPER')
@@ -506,7 +520,21 @@ class FB_OT_PinMode(Operator):
 
         return False
 
+    def on_finish(self) -> None:
+        _log.output(f'{self.__class__.__name__}.on_finish')
+        facebuilder_keymaps_unregister()
+        self.release_bus()
+
+    def cancel(self, context) -> None:
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.on_finish()
+
     def modal(self, context: Any, event: Any) -> Set:
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
+            return {'FINISHED'}
+
         settings = fb_settings()
 
         if self.pinmode_id != settings.pinmode_id:
@@ -515,7 +543,7 @@ class FB_OT_PinMode(Operator):
             unregister_fb_undo_handler()
             exit_area_localview(context.area)
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         headnum = settings.current_headnum
@@ -525,7 +553,7 @@ class FB_OT_PinMode(Operator):
             unregister_fb_undo_handler()
             exit_area_localview(context.area)
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         vp = FBLoader.viewport()
@@ -569,7 +597,7 @@ class FB_OT_PinMode(Operator):
             unregister_fb_undo_handler()
             FBLoader.out_pinmode(headnum)
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         vp.create_batch_2d(context.area)

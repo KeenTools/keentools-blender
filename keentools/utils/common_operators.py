@@ -44,6 +44,7 @@ from .bpy_common import (bpy_localview,
                          bpy_window_manager,
                          bpy_ops)
 from ..ui_strings import buttons
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -304,6 +305,27 @@ class KT_OT_InterruptModal(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     product: IntProperty(default=ProductType.UNDEFINED)
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(
+            Config.kt_interrupt_modal_idname, product=self.product)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
+
+    def cancel(self, context):
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.release_bus()
+
+    def execute(self, context):
+        _log.magenta(f'{self.__class__.__name__} execute ***')
+        self.release_bus()
+        return {'FINISHED'}
 
     def invoke(self, context, event):
         _log.green(f'{self.__class__.__name__} invoke')
@@ -316,6 +338,7 @@ class KT_OT_InterruptModal(Operator):
         settings.user_interrupts = False
 
         if not bpy_background_mode():
+            self.init_bus()
             context.window_manager.modal_handler_add(self)
             _log.output(f'{product_name(self.product)} INTERRUPTOR START')
         else:
@@ -324,16 +347,25 @@ class KT_OT_InterruptModal(Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{product_name(self.product)} Interruptor '
+                     f'has been stopped by message bus')
+            _log.output(f'{self.__class__.__name__} modal end >>>')
+            return {'FINISHED'}
+
         settings = get_settings(self.product)
 
         if settings.user_interrupts:
             _log.red(f'{product_name(self.product)} Interruptor '
                         f'has been stopped by value')
+            self.release_bus()
             _log.output(f'{self.__class__.__name__} modal end >>>')
             return {'FINISHED'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
             settings.user_interrupts = True
+            self.release_bus()
             _log.red(f'Exit {product_name(self.product)} Interruptor by ESC')
             _log.output(f'{self.__class__.__name__} modal end >>>')
             return {'FINISHED'}

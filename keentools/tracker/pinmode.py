@@ -54,6 +54,7 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
 from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
                                     subscribe_movie_clip_color_space_watcher)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -78,6 +79,16 @@ def _playback_message(area: Area, *, product: int) -> None:
 class PinMode(Operator):
     _shift_pressed: bool = False
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(GTConfig.gt_pinmode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
 
     @classmethod
     def get_settings(cls) -> Any:
@@ -437,13 +448,29 @@ class PinMode(Operator):
 
         self._start_new_pinmode(context)
         loader.start_shader_timer(settings.pinmode_id)
+
+        self.init_bus()
         context.window_manager.modal_handler_add(self)
         loader.register_undo_redo_handlers()
         vp.unhide_all_shaders()
         _log.red(f'{self.__class__.__name__} Start pinmode -- modal >>>')
         return {'RUNNING_MODAL'}
 
+    def on_finish(self) -> None:
+        _log.output(f'{self.__class__.__name__}.on_finish')
+        self.unregister_hotkeys()
+        self.release_bus()
+
+    def cancel(self, context) -> None:
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.on_finish()
+
     def modal(self, context: Any, event: Any) -> Set:
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
+            return {'FINISHED'}
+
         settings = self.get_settings()
         product = settings.product_type()
         loader = settings.loader()
@@ -451,15 +478,17 @@ class PinMode(Operator):
 
         if self.pinmode_id != settings.pinmode_id:
             _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
+
+            self.on_finish()
             _log.red(f'{self.__class__.__name__} Extreme pinmode stop -- finished >>>')
-            self.unregister_hotkeys()
             return {'FINISHED'}
 
         if not context.space_data:
             _log.output('VIEWPORT IS CLOSED')
             loader.out_pinmode()
+
+            self.on_finish()
             _log.red(f'{self.__class__.__name__} viewport closed -- finished >>>')
-            self.unregister_hotkeys()
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
@@ -469,8 +498,9 @@ class PinMode(Operator):
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 loader.out_pinmode()
+
+                self.on_finish()
                 _log.red(f'{self.__class__.__name__} camera rotated -- finished >>>')
-                self.unregister_hotkeys()
                 return {'FINISHED'}
 
         _playback_message(context.area, product=product)
@@ -509,7 +539,8 @@ class PinMode(Operator):
                 return {'PASS_THROUGH'}
             _log.output('Exit pinmode by ESC')
             loader.out_pinmode()
-            self.unregister_hotkeys()
+
+            self.on_finish()
             _log.red(f'{self.__class__.__name__} Exit by ESC -- finished >>>')
             return {'FINISHED'}
 

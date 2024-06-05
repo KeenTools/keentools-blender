@@ -46,6 +46,8 @@ class GT_OT_PinMode(PinMode):
 
     movepin_operator_idname: str = GTConfig.gt_movepin_idname
 
+    bus_id: IntProperty(default=-1)
+
     @classmethod
     def get_settings(cls) -> Any:
         return gt_settings()

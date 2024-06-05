@@ -146,11 +146,3 @@ class KTTextViewport:
         self.clear_work_area()
         _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')
         return ActionStatus(True, 'ok')
-
-
-class CommonLoader:
-    _text_viewport: Any = KTTextViewport()
-
-    @classmethod
-    def text_viewport(cls) -> Any:
-        return cls._text_viewport
