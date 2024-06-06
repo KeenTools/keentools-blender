@@ -90,6 +90,7 @@ class KTMessageBus:
 class CommonLoader:
     _text_viewport: Any = KTTextViewport()
     _message_bus: Any = KTMessageBus()
+    _viewports: Any = KTMessageBus()
 
     @classmethod
     def text_viewport(cls) -> Any:
@@ -98,3 +99,7 @@ class CommonLoader:
     @classmethod
     def message_bus(cls) -> Any:
         return cls._message_bus
+
+    @classmethod
+    def viewports(cls) -> Any:
+        return cls._viewports

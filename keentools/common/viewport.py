@@ -132,10 +132,21 @@ class KTTextViewport:
         self.texter().unregister_handler()
         _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
+    def hide_all_shaders(self):
+        _log.yellow(f'{self.__class__.__name__}.hide_all_shaders start')
+        self.texter().hide_shader()
+        _log.output(f'{self.__class__.__name__}.hide_all_shaders end >>>')
+
+    def unhide_all_shaders(self):
+        _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
+        self.texter().unhide_shader()
+        _log.output(f'{self.__class__.__name__}.unhide_all_shaders end >>>')
+
     def start_viewport(self, *, area: Any) -> ActionStatus:
         _log.green(f'{self.__class__.__name__}.start_viewport start')
         if not self.register_handlers(area=area):
             return ActionStatus(False, 'Could not register handlers')
+        self.unhide_all_shaders()
         self.tag_redraw()
         _log.output(f'{self.__class__.__name__}.start_viewport end >>>')
         return ActionStatus(True, 'ok')

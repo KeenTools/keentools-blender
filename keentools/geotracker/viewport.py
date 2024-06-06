@@ -26,6 +26,7 @@ from ..addon_config import (Config,
                             gt_settings,
                             get_operator,
                             ErrorType,
+                            ActionStatus,
                             ProductType)
 from ..geotracker_config import GTConfig
 from ..utils.coords import (get_camera_border,
@@ -54,6 +55,7 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
 from ..preferences.user_preferences import UserPreferences
+from ..utils.ui_redraw import force_ui_redraw
 
 
 _log = KTLogger(__name__)
@@ -419,3 +421,28 @@ class GTViewport(KTViewport):
     def needs_to_be_drawn(self):
         return self.points2d().needs_to_be_drawn() or \
                self.residuals().needs_to_be_drawn()
+
+    def start_viewport(self, *, area: Any) -> ActionStatus:
+        _log.green(f'{self.__class__.__name__}.start_viewport start')
+
+        if not self.load_all_shaders():
+            msg = 'Problem with loading shaders (see console)'
+            _log.error(msg)
+            _log.output(f'{self.__class__.__name__}.start_viewport loading shaders error >>>')
+            return ActionStatus(False, msg)
+
+        self.register_handlers(area=area)
+        self.unhide_all_shaders()
+        self.tag_redraw()
+        force_ui_redraw('DOPESHEET_EDITOR')
+        _log.output(f'{self.__class__.__name__}.start_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    def stop_viewport(self) -> ActionStatus:
+        _log.green(f'{self.__class__.__name__}.stop_viewport start')
+        area = self.get_work_area()
+        self.unregister_handlers()
+        if area:
+            area.tag_redraw()
+        _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
