@@ -40,6 +40,7 @@ from ..utils.detect_faces import (get_detected_faces,
                                   sort_detected_faces,
                                   not_enough_face_features_warning)
 from ..utils.images import np_array_from_background_image
+from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -94,7 +95,6 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
     current_frame = bpy_current_frame()
     ft = _get_builder()
 
-
     loader = _get_loader()
     loader.safe_keyframe_add(bpy_current_frame(), update=True)
     try:
@@ -112,7 +112,8 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
         return None
 
     if result_flag:
-        ft.spring_pins_back(current_frame)
+        ft.add_preset_pins_and_solve(current_frame)
+        create_relative_shape_keyframe(current_frame)
         _log.output(f'auto_pins_added kid: {current_frame}')
     else:
         _log.output(f'detect_face_pose failed kid: {current_frame}')
