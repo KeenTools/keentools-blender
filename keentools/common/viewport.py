@@ -21,8 +21,8 @@ from typing import List, Optional, Any, Dict
 from bpy.types import Area, SpaceView3D
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ActionStatus
 from ..utils.screen_text import KTScreenText
+from ..utils.viewport import KTViewport
 
 
 _log = KTLogger(__name__)
@@ -31,12 +31,9 @@ _log = KTLogger(__name__)
 _text_opacity: float = 1.0
 
 
-def _area_is_wrong(area: Optional[Area]) -> bool:
-    return not area or len(area.regions) == 0
-
-
-class KTTextViewport:
+class KTTextViewport(KTViewport):
     def __init__(self, main_text: str = 'KTTextViewport'):
+        super().__init__()
         self._work_area: Optional[Area] = None
         self._texter = KTScreenText(SpaceView3D)
         default_text: List[Dict] = [
@@ -52,108 +49,5 @@ class KTTextViewport:
         self._texter.set_default_text(default_text)
         self._texter.set_message(default_text)
 
-    def texter(self) -> Any:
-        return self._texter
-
-    def get_work_area(self) -> Optional[Area]:
-        return self._work_area
-
-    def set_work_area(self, area: Area) -> bool:
-        if _area_is_wrong(area):
-            self._work_area = None
-            return False
-        else:
-            self._work_area = area
-            return True
-
-    def clear_work_area(self) -> None:
-        self.set_work_area(area=None)
-
-    def tag_redraw(self) -> None:
-        area = self.get_work_area()
-        if area:
-            area.tag_redraw()
-
-    def check_work_area_exists(self, auto_unregister: bool = False) -> bool:
-        area = self.get_work_area()
-        if area is None:
-            return False
-        if _area_is_wrong(area):
-            if auto_unregister:
-                _log.red(f'{self.__class__.__name__}.check_work_area_exists: '
-                         f'auto unregister')
-                self.set_work_area(area=None)
-                self.unregister_handlers()
-            return False
-        return True
-
-    def is_working(self, auto_unregister: bool = False) -> bool:
-        if not self.check_work_area_exists(auto_unregister=auto_unregister):
-            return False
-        texter = self.texter()
-        if not texter:
-            return False
-        if not texter.is_working():
-            if auto_unregister:
-                _log.red(f'{self.__class__.__name__}.is_working: '
-                         f'auto unregister')
-                self.unregister_handlers()
-            return False
-        return True
-
-    def set_visible(self, state: bool) -> None:
-        self.texter().set_visible(state)
-
-    def message_to_screen(self, msg: List,
-                          register_area: Optional[Area] = None) -> None:
-        texter = self.texter()
-        if register_area is not None:
-            texter.register_handler(area=register_area)
-        texter.set_message(msg)
-
-    def revert_default_screen_message(self) -> None:
-        texter = self.texter()
-        texter.set_message(texter.get_default_text())
-
-    def register_handlers(self, *, area: Any) -> bool:
-        _log.yellow(f'{self.__class__.__name__}.register_handlers start')
-        self.unregister_handlers()
-        if self.set_work_area(area=area):
-            self.texter().register_handler(area=area)
-        else:
-            _log.error(f'{self.__class__.__name__}: '
-                       f'Viewport area does not exist')
-            return False
-        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
-        return True
-
-    def unregister_handlers(self) -> None:
-        _log.yellow(f'{self.__class__.__name__}.unregister_handlers start')
-        self.texter().unregister_handler()
-        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
-
-    def hide_all_shaders(self):
-        _log.yellow(f'{self.__class__.__name__}.hide_all_shaders start')
-        self.texter().hide_shader()
-        _log.output(f'{self.__class__.__name__}.hide_all_shaders end >>>')
-
-    def unhide_all_shaders(self):
-        _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
-        self.texter().unhide_shader()
-        _log.output(f'{self.__class__.__name__}.unhide_all_shaders end >>>')
-
-    def start_viewport(self, *, area: Any) -> ActionStatus:
-        _log.green(f'{self.__class__.__name__}.start_viewport start')
-        if not self.register_handlers(area=area):
-            return ActionStatus(False, 'Could not register handlers')
-        self.unhide_all_shaders()
-        self.tag_redraw()
-        _log.output(f'{self.__class__.__name__}.start_viewport end >>>')
-        return ActionStatus(True, 'ok')
-
-    def stop_viewport(self) -> ActionStatus:
-        _log.green(f'{self.__class__.__name__}.stop_viewport start')
-        self.unregister_handlers()
-        self.clear_work_area()
-        _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')
-        return ActionStatus(True, 'ok')
+    def get_all_shader_objects(self) -> List:
+        return [self._texter]

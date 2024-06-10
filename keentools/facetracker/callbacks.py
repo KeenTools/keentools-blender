@@ -459,7 +459,7 @@ def update_mask_2d(geotracker, context: Any) -> None:
     total_redraw_ui()
     settings.reload_mask_2d()
     vp = settings.loader().viewport()
-    if vp.is_working():
+    if vp.viewport_is_working():
         vp.create_batch_2d(vp.get_work_area())
     _log.output('update_mask_2d end >>>')
 

@@ -66,7 +66,7 @@ class KTShaderBase:
     def is_visible(self) -> bool:
         return self.is_shader_visible
 
-    def set_visible(self, flag: bool=True) -> None:
+    def set_shader_visible(self, flag: bool = True) -> None:
         self.is_shader_visible = flag
 
     def get_target_class(self) -> Any:
@@ -75,7 +75,7 @@ class KTShaderBase:
     def set_target_class(self, target_class: Any) -> None:
         self.target_class = target_class
 
-    def is_working(self) -> bool:
+    def shader_is_working(self) -> bool:
         return not (self.draw_handler is None)
 
     def init_shaders(self) -> Optional[bool]:
@@ -120,11 +120,11 @@ class KTShaderBase:
 
     def hide_shader(self) -> None:
         _log.output(f'{self.__class__.__name__}.hide_shader')
-        self.set_visible(False)
+        self.set_shader_visible(False)
 
     def unhide_shader(self) -> None:
         _log.output(f'{self.__class__.__name__}.unhide_shader')
-        self.set_visible(True)
+        self.set_shader_visible(True)
 
     def get_statistics(self) -> str:
         return 'No statistics defined'

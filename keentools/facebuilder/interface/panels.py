@@ -311,7 +311,7 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
-            if not FBLoader.viewport().wireframer().is_working():
+            if not FBLoader.viewport().viewport_is_working():
                 row = layout.row()
                 row.scale_y = 2.0
                 row.alert = True

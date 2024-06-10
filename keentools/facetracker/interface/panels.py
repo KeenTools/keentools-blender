@@ -449,7 +449,7 @@ class FT_PT_TrackingPanel(AllVisible):
             row.operator(FTConfig.ft_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not FTLoader.viewport().is_working():
+            if not FTLoader.viewport().viewport_is_working():
                 _start_pinmode_escaper(context)
         else:
             op = row.operator(FTConfig.ft_pinmode_idname,

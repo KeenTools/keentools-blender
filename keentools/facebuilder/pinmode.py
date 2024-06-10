@@ -150,7 +150,8 @@ class FB_OT_PinMode(Operator):
                                      value: bool=True) -> None:
         vp = FBLoader.viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
-        vp.set_visible(flag)
+        vp.set_shaders_visible(flag)
+        vp.texter().set_shader_visible(True)
         if flag:
             vp.revert_default_screen_message(unregister=False)
         else:
@@ -308,7 +309,7 @@ class FB_OT_PinMode(Operator):
             return {'CANCELLED'}
 
         # Stopped shaders mean that we need to restart pinmode
-        if not vp.wireframer().is_working():
+        if not vp.viewport_is_working():
             settings.pinmode = False
 
         if settings.wrong_pinmode_id():
@@ -592,8 +593,8 @@ class FB_OT_PinMode(Operator):
             self._undo_detected(context.area)
 
         vp = FBLoader.viewport()
-        if not (vp.wireframer().is_working()):
-            _log.error('WIREFRAME IS OFF')
+        if not vp.viewport_is_working():
+            _log.error('VIEWPORT DOES NOT WORK')
             unregister_fb_undo_handler()
             FBLoader.out_pinmode(headnum)
 

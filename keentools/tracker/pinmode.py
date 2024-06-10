@@ -348,7 +348,8 @@ class PinMode(Operator):
         product = settings.product_type()
         vp = settings.loader().viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
-        vp.set_visible(flag)
+        vp.set_shaders_visible(flag)
+        vp.texter().set_shader_visible(True)
         if flag:
             revert_default_screen_message(product=product)
         else:
@@ -406,11 +407,11 @@ class PinMode(Operator):
         vp.pins().on_start()
         self._change_wireframe_visibility(toggle=False, value=True)
 
-        if settings.pinmode and not vp.is_working():
+        if settings.pinmode and not vp.viewport_is_working():
             _log.error(f'VIEWPORT DOES NOT WORK IN PINMODE -- FIX IT')
             settings.pinmode = False
 
-        if settings.pinmode and old_geotracker_num == new_geotracker_num and vp.is_working():
+        if settings.pinmode and old_geotracker_num == new_geotracker_num and vp.viewport_is_working():
             _log.output(f'SAME GEOTRACKER. NOTHING TO DO: {new_geotracker_num}')
             _log.red(f'{self.__class__.__name__} cancelled 6 >>>')
             return {'CANCELLED'}

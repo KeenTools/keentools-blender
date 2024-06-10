@@ -769,7 +769,7 @@ class Loader:
         area = cls.get_work_area()
         txt += f'area: {area}\n'
         txt += f'check_localview(area): {check_localview(area)}\n'
-        txt += f'viewport is working: {cls.viewport().is_working()}\n'
+        txt += f'viewport is working: {cls.viewport().viewport_is_working()}\n'
         txt += f'cls._check_shader_timer.is_active(): ' \
                f'{cls.check_shader_timer.is_active()}\n'
         txt += f'is_registered(bpy.app.handlers.undo_post, undo_redo_handler): ' \

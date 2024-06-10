@@ -585,7 +585,7 @@ class GT_PT_TrackingPanel(AllVisible):
             row.operator(GTConfig.gt_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not GTLoader.viewport().is_working():
+            if not GTLoader.viewport().viewport_is_working():
                 _start_pinmode_escaper(context)
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,

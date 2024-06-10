@@ -27,7 +27,8 @@ from ..addon_config import fb_settings, ActionStatus
 from ..facebuilder_config import FBConfig
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             focal_by_projection_matrix_mm,
-                            calc_model_mat)
+                            calc_model_mat,
+                            check_area_is_wrong)
 from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)
 from ..utils.attrs import mark_keentools_object, get_obj_collection
@@ -92,10 +93,6 @@ class FBLoader:
     def wireframer(cls) -> Any:
         vp = cls.viewport()
         return vp.wireframer()
-
-    @classmethod
-    def viewport_is_active(cls) -> bool:
-        return cls.wireframer().is_working()
 
     @classmethod
     def new_builder(cls) -> Any:

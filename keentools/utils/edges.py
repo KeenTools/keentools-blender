@@ -430,7 +430,8 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
 
 class KTEdgeShaderAll2D(KTEdgeShader2D):
     def __init__(self, target_class: Any,
-                 line_color: Tuple[float, float, float, float]):
+                 line_color: Tuple[float, float, float, float],
+                 *, area: Optional[Area] = None):
         super().__init__(target_class)
         self.keyframes: List[int] = []
         self.state: Tuple[float, float] = (-1000.0, -1000.0)
