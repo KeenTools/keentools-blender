@@ -43,6 +43,9 @@ from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
 from ...utils.icons import KTIcons
+from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
+                                        COMMON_FB_PT_Model,
+                                        COMMON_FB_PT_OptionsPanel)
 
 
 _log = KTLogger(__name__)
@@ -191,7 +194,15 @@ def _draw_expression_settings(layout, head):
     col.prop(head, 'lock_neck_movement')
 
 
-class Common:
+def poll_fb_common() -> bool:
+    if not facebuilder_enabled():
+        return False
+    if not pkt_is_installed():
+        return False
+    return _show_all_panels()
+
+
+class AllVisible:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = Config.fb_tab_category
@@ -199,31 +210,21 @@ class Common:
 
     @classmethod
     def poll(cls, context):
-        return facebuilder_enabled()
-
-
-class CommonClosed(Common):
-    bl_options = {'DEFAULT_CLOSED'}
-
-
-class AllVisible(Common):
-    @classmethod
-    def poll(cls, context):
-        if not facebuilder_enabled():
-            return False
-        if not pkt_is_installed():
-            return False
-        return _show_all_panels()
+        return poll_fb_common()
 
 
 class AllVisibleClosed(AllVisible):
     bl_options = {'DEFAULT_CLOSED'}
 
 
-class FB_PT_HeaderPanel(Common, Panel):
+class FB_PT_HeaderPanel(AllVisible, Panel):
     bl_idname = FBConfig.fb_header_panel_idname
     bl_label = '{} {}'.format(
             FBConfig.fb_tool_name, Config.addon_version)
+
+    @classmethod
+    def poll(cls, context):
+        return facebuilder_enabled()
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -370,10 +371,9 @@ class FB_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
     bl_category = Config.fb_tab_category
 
 
-class FB_PT_OptionsPanel(AllVisible, Panel):
+class FB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
     bl_idname = FBConfig.fb_options_panel_idname
     bl_label = 'Options'
-    bl_options = {'DEFAULT_CLOSED'}
     bl_parent_id = FBConfig.fb_views_panel_idname
 
     @classmethod
@@ -385,182 +385,25 @@ class FB_PT_OptionsPanel(AllVisible, Panel):
             return False
         return True
 
-    def draw(self, context):
-        settings = fb_settings()
-        if settings is None:
-            return
-        layout = self.layout
 
-        if not settings.pinmode:
-            return
-
-        head = settings.get_head(settings.current_headnum)
-        if not head:
-            return
-
-        if settings.pinmode:
-            _draw_camera_info(layout)
-
-        col = layout.column(align=True)
-        col.label(text='Mesh rigidity')
-
-        row = col.row(align=True)
-        row.enabled = settings.pinmode
-        row.prop(settings, 'shape_rigidity')
-
-        if head.should_use_emotions():
-            row = col.row(align=True)
-            row.prop(settings, 'expression_rigidity')
-            row.enabled = head.should_use_emotions()
-
-        if not head.lock_blinking and head.should_use_emotions():
-            row = col.row(align=True)
-            row.prop(settings, 'blinking_rigidity')
-            row.enabled = not head.lock_blinking and head.should_use_emotions()
-
-        if not head.lock_neck_movement and head.should_use_emotions():
-            row =  col.row(align=True)
-            row.prop(settings, 'neck_movement_rigidity')
-            row.enabled = not head.lock_neck_movement and head.should_use_emotions()
-
-
-class FB_PT_ViewsPanel(AllVisible, Panel):
+class FB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
+    bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_views_panel_idname
     bl_label = 'Views'
 
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            FBConfig.fb_help_views_idname,
-            text='', icon='QUESTION', emboss=False)
-
-    def _draw_camera_list(self, headnum, layout):
-        settings = fb_settings()
-        if settings is None:
-            return
-        head = settings.get_head(headnum)
-
-        if head is not None and not head.has_cameras():
-            self._draw_add_images_button(headnum, layout, scale=2.0)
-            return
-
-        col = layout.column(align=True)
-        col.prop(head, 'use_emotions')
-        _draw_expression_settings(col, head)
-
-        common_col = layout.column(align=True)
-        for i, camera in enumerate(head.cameras):
-            row = common_col.row(align=True)
-            row.scale_y = Config.btn_scale_y
-            view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
-
-            if settings.current_camnum == i and settings.pinmode:
-                row.operator(FBConfig.fb_select_current_camera_idname,
-                             text='Back to 3D', icon='LOOP_BACK',
-                             depress=True)
-            else:
-                op = row.operator(
-                    FBConfig.fb_select_camera_idname,
-                    text=camera.get_image_name(), icon=view_icon)
-                op.headnum = headnum
-                op.camnum = i
-
-            col = row.column(align=True)
-            op = col.operator(
-                FBConfig.fb_proper_view_menu_exec_idname,
-                text='', icon='COLLAPSEMENU')
-            op.headnum = headnum
-            op.camnum = i
-
-        self._draw_add_images_button(headnum, common_col,
-                                     scale=Config.btn_scale_y, icon='ADD')
-
-    def _draw_add_images_button(self, headnum, layout, scale=2.0,
-                                icon='OUTLINER_OB_IMAGE'):
-        col = layout.column(align=True)
-        col.scale_y = scale
-        op = col.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
-                          text='Add Images' if icon != 'ADD' else '', icon=icon)
-        op.headnum = headnum
-
-    def draw(self, context):
-        settings = fb_settings()
-        if settings is None:
-            return
-        layout = self.layout
-
-        state, headnum = what_is_state()
-        if headnum < 0:
-            return
-
-        head = settings.get_head(headnum)
-        if not head.blenshapes_are_relevant():
-            _draw_update_blendshapes_panel(layout)
-        self._draw_camera_list(headnum, layout)
-
-        if settings.pinmode:
-            col = layout.column(align=True)
-            _draw_align_button(col, scale=2.0, depress=False)
-            col.operator(FBConfig.fb_reset_view_idname)
-
-        if head.headobj and head.headobj.users == 1:
-            _start_geomobj_delete_handler()
+    @classmethod
+    def poll(cls, context):
+        return poll_fb_common()
 
 
-class FB_PT_Model(AllVisibleClosed, Panel):
+class FB_PT_Model(COMMON_FB_PT_Model, Panel):
+    bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_model_panel_idname
     bl_label = 'Model'
 
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            FBConfig.fb_help_model_idname,
-            text='', icon='QUESTION', emboss=False)
-
-    def draw(self, context):
-        layout = self.layout
-        settings = fb_settings()
-        if settings is None:
-            return
-
-        state, headnum = what_is_state()
-        if headnum < 0:
-            return
-
-        head = settings.get_head(headnum)
-        if not head:
-            return
-
-        row = layout.split(factor=0.35)
-        row.label(text='Topology')
-        row.prop(head, 'model_type', text='')
-        layout.prop(head, 'tex_uv_shape')
-
-        if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
-            _draw_update_blendshapes_panel(layout)
-
-        if head.should_use_emotions():
-            col = layout.column(align=True)
-            col.label(text='Resulting expression in 3D:')
-            col.prop(head, 'expression_view', text='')
-
-        if FBLoader.is_not_loaded():
-            return
-        fb = FBLoader.get_builder()
-        col = layout.column(align=True)
-        col.label(text='Model parts')
-        col.separator(factor=0.4)
-        names = fb.mask_names()
-        for i, mask in enumerate(fb.masks()):
-            if i % 2 == 0:
-                row = col.row(align=True)
-            row.prop(head, 'masks', index=i, text=names[i])
-
-        layout.prop(head, 'model_scale')
+    @classmethod
+    def poll(cls, context):
+        return poll_fb_common()
 
 
 class FB_PT_TexturePanel(AllVisibleClosed, Panel):
@@ -576,7 +419,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             text='', icon='QUESTION', emboss=False)
 
     @classmethod
-    def get_area_mode(cls, context):
+    def get_area_mode(cls, context):  # TODO: Remove as unused
         area = context.area
         for space in area.spaces:
             if space.type == 'VIEW_3D':

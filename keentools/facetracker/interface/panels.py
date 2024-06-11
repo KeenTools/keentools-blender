@@ -25,7 +25,7 @@ from bpy.types import Area, Panel, UIList
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
-                             ft_settings,
+                             ft_settings, fb_settings,
                              facetracker_enabled,
                              addon_pinmode,
                              ProductType)
@@ -40,6 +40,9 @@ from ..ftloader import FTLoader
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.icons import KTIcons
+from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
+                                        COMMON_FB_PT_Model,
+                                        COMMON_FB_PT_OptionsPanel)
 
 
 _log = KTLogger(__name__)
@@ -216,6 +219,51 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('FaceTracker')
         _ft_grace_timer.start()
+
+
+class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
+    bl_category = Config.ft_tab_category
+    bl_idname = FTConfig.ft_fb_views_panel_idname
+    bl_label = 'FaceBuilder Views'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        facetracker = settings.get_current_geotracker_item()
+        return facetracker.geomobj and facetracker.camobj
+
+
+class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
+    bl_idname = FTConfig.ft_fb_options_panel_idname
+    bl_label = 'Options'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FTConfig.ft_fb_views_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        settings = fb_settings()
+        if settings is None:
+            return False
+        if not settings.pinmode:
+            return False
+        return True
+
+
+class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
+    bl_idname = FTConfig.ft_fb_model_panel_idname
+    bl_label = 'Model'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FTConfig.ft_fb_views_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        return True
 
 
 class FT_PT_InputsPanel(AllVisible):

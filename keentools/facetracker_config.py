@@ -141,6 +141,9 @@ class FTConfig:
 
     # Panel ids
     ft_facetrackers_panel_idname = _PT + 'facetrackers_panel'
+    ft_fb_views_panel_idname = _PT + 'fb_views_panel'
+    ft_fb_options_panel_idname = _PT + 'fb_options_panel'
+    ft_fb_model_panel_idname = _PT + 'fb_model_panel'
     ft_input_panel_idname = _PT + 'input_panel'
     ft_masks_panel_idname = _PT + 'masks_panel'
     ft_analyze_panel_idname = _PT + 'analyze_panel'

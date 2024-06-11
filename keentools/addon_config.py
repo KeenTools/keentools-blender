@@ -44,7 +44,7 @@ class Config:
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
-    ft_tab_category = 'GeoTracker'
+    ft_tab_category = 'FaceTracker'
 
     kt_testing_tab_category = 'KeenTools Testing'
 
