@@ -41,7 +41,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_set_current_frame,
                                 bpy_msgbus_subscribe_rna,
                                 bpy_msgbus_clear_by_owner,
-                                bpy_object_name)
+                                bpy_object_name,
+                                bpy_object_is_in_scene)
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
@@ -215,6 +216,12 @@ def update_camobj(geotracker, context: Any) -> None:
             mark_object_keyframes(geotracker.camobj, product=product)
 
     _log.output('update_camobj end >>>')
+
+
+def poll_is_facebuilder_mesh(self: Any, obj: Optional[Object]) -> bool:
+    if not obj or not obj.type == 'MESH' or not bpy_object_is_in_scene(obj):
+        return False
+    return is_facebuilder_head_topology(obj)
 
 
 def update_geomobj(geotracker, context: Any) -> None:

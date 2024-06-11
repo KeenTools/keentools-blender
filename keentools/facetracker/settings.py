@@ -27,13 +27,13 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ProductType, fb_settings
 from .ftloader import FTLoader
-from ..utils.bpy_common import (bpy_poll_is_mesh,
-                                bpy_poll_is_camera)
+from ..utils.bpy_common import bpy_poll_is_camera
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
 from .callbacks import (update_camobj,
+                        poll_is_facebuilder_mesh,
                         update_geomobj,
                         update_movieclip,
                         update_precalc_path,
@@ -81,7 +81,7 @@ class FaceTrackerItem(TrackerItem):
         description='Select target geometry from the list '
                     'of objects in your Scene',
         type=Object,
-        poll=bpy_poll_is_mesh,
+        poll=poll_is_facebuilder_mesh,
         update=update_geomobj)
     camobj: PointerProperty(
         name='Camera',
