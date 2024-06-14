@@ -135,6 +135,7 @@ class FBCameraItem(PropertyGroup):
     cam_image: PointerProperty(
         name='Image', type=Image, update=update_cam_image
     )
+    cam_image_frame: IntProperty(default=-1)
     image_width: IntProperty(default=-1)
     image_height: IntProperty(default=-1)
 
@@ -226,11 +227,16 @@ class FBCameraItem(PropertyGroup):
         data = self.camobj.data
         data.show_background_images = True
         if len(data.background_images) == 0:
-            b = data.background_images.new()
+            bim = data.background_images.new()
         else:
-            b = data.background_images[0]
-        b.image = self.cam_image
-        b.rotation = self.orientation * math.pi / 2
+            bim = data.background_images[0]
+        bim.image = self.cam_image
+        bim.rotation = self.orientation * math.pi / 2
+
+        if self.cam_image_frame >= 0:
+            bim.image_user.frame_duration = 1
+            bim.image_user.use_cyclic = True
+            bim.image_user.frame_offset = self.cam_image_frame - 1
 
     def calculate_background_scale(self) -> float:
         if self.image_width <= 0 or self.image_height <= 0:

@@ -89,7 +89,7 @@ class FTLoader(Loader):
 
     @classmethod
     def _deserialize_global_options(cls):
-        _log.yellow(f'_deserialize_global_options start')
+        _log.yellow(f'ft _deserialize_global_options start')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
@@ -102,15 +102,21 @@ class FTLoader(Loader):
                 geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
                 geotracker.smoothing_xy_translations_coeff = gt.get_smoothing_xy_translations_coeff()
                 geotracker.smoothing_face_args_coeff = gt.get_smoothing_face_args_coeff()
+                _log.output('locks')
                 geotracker.locks = gt.fixed_dofs()
 
+                _log.output('lock_blinking')
                 geotracker.lock_blinking = gt.blinking_locked()
+                _log.output('lock_neck_movement')
                 geotracker.lock_neck_movement = gt.neck_movement_locked()
+                _log.output('rigidity')
                 geotracker.rigidity = gt.rigidity()
+                _log.output('blinking_rigidity')
                 geotracker.blinking_rigidity = gt.blinking_rigidity()
+                _log.output('neck_movement_rigidity')
                 geotracker.neck_movement_rigidity = gt.neck_movement_rigidity()
             except Exception as err:
-                _log.error(f'_deserialize_global_options:\n{str(err)}')
-        _log.output('_deserialize_global_options end >>>')
+                _log.error(f'ft _deserialize_global_options:\n{str(err)}')
+        _log.output('ft _deserialize_global_options end >>>')
 
 FTLoader.init_handlers()

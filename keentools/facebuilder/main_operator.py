@@ -26,6 +26,8 @@ from bpy.types import Operator
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             fb_settings,
+                            gt_settings,
+                            ft_settings,
                             get_operator,
                             show_user_preferences,
                             show_tool_preferences)
@@ -69,6 +71,7 @@ from .facebuilder_acts import (remove_pins_act,
 from .prechecks import common_fb_checks
 from .integration import FB_OT_ExportToCC
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -183,6 +186,8 @@ class FB_OT_SelectCamera(ButtonOperator, Operator):
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
+    detect_face: BoolProperty(default=False)
+
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         check_status = common_fb_checks(object_mode=True,
@@ -205,8 +210,8 @@ class FB_OT_SelectCamera(ButtonOperator, Operator):
         pinmode_op = get_operator(FBConfig.fb_pinmode_idname)
         if not bpy_background_mode():
             try:
-                pinmode_op('INVOKE_DEFAULT',
-                           headnum=self.headnum, camnum=self.camnum)
+                pinmode_op('INVOKE_DEFAULT', headnum=self.headnum,
+                           camnum=self.camnum, detect_face=self.detect_face)
             except Exception as err:
                 msg = f'{str(err)}'
                 self.report({'ERROR'}, msg)
@@ -1188,7 +1193,7 @@ class FB_OT_MoveWrapper(Operator):
         if not settings:
             return {'CANCELLED'}
 
-        work_area = settings.loader().get_work_area()
+        work_area = CommonLoader.get_current_viewport_area()
         if work_area != context.area:
             return {'PASS_THROUGH'}
 
@@ -1212,7 +1217,7 @@ class FB_OT_PanDetector(Operator):
         if not settings:
             return {'CANCELLED'}
 
-        work_area = settings.loader().get_work_area()
+        work_area = CommonLoader.get_current_viewport_area()
         if viewport_native_pan_operator_activate(work_area == context.area):
             return {'CANCELLED'}
         return {'PASS_THROUGH'}

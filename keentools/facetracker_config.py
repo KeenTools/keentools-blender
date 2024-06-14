@@ -124,8 +124,9 @@ class FTConfig:
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
     ft_share_feedback_idname = operators + '.share_feedback'
-    ft_move_wrapper = operators + '.move_wrapper'
-    ft_pan_detector = operators + '.pan_detector'
+    ft_move_wrapper_idname = operators + '.move_wrapper'
+    ft_pan_detector_idname = operators + '.pan_detector'
+    ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
 
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'
@@ -156,6 +157,7 @@ class FTConfig:
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
     ft_support_panel_idname = _PT + 'support_panel'
+    ft_choose_snapshot_frame_idname = _PT + 'choose_snapshot_frame_panel'
 
     # Help ids
     ft_help_inputs_idname = operators + '.help_inputs'

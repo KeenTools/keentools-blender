@@ -137,14 +137,14 @@ def facetracker_keymaps_register(use_trackpad: bool = True) -> None:
     _tracker_keymaps.append((km, kmi3))
     _log.output(f'register ft keymap item: {kmi3}')
 
-    kmi_pan1 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
+    kmi_pan1 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper_idname,
                                    type='MIDDLEMOUSE',
                                    value='PRESS', head=True)
     _tracker_keymaps.append((km, kmi_pan1))
     kmi_pan1.active = True
     _log.output(f'register fb keymap item: {kmi_pan1}')
 
-    kmi_pan2 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper,
+    kmi_pan2 = km.keymap_items.new(idname=FTConfig.ft_move_wrapper_idname,
                                    type='MOUSEROTATE',
                                    value='ANY', head=True)
     _tracker_keymaps.append((km, kmi_pan2))
@@ -152,7 +152,7 @@ def facetracker_keymaps_register(use_trackpad: bool = True) -> None:
     _log.output(f'register fb keymap item: {kmi_pan2}')
 
     if use_trackpad:
-        kmi_pan_detector = km.keymap_items.new(idname=FTConfig.ft_pan_detector,
+        kmi_pan_detector = km.keymap_items.new(idname=FTConfig.ft_pan_detector_idname,
                                                type='TRACKPADPAN',
                                                value='ANY', head=True)
         _tracker_keymaps.append((km, kmi_pan_detector))

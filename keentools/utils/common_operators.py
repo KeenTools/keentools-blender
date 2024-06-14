@@ -45,6 +45,7 @@ from .bpy_common import (bpy_localview,
                          bpy_ops)
 from ..ui_strings import buttons
 from ..common.loader import CommonLoader
+from ..common.actor import KT_OT_Actor
 
 
 _log = KTLogger(__name__)
@@ -379,4 +380,5 @@ CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_ExitLocalview,
                        KT_OT_ShareFeedback,
                        KT_OT_ReportBug,
+                       KT_OT_Actor,
                        KT_OT_InterruptModal)

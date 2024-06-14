@@ -22,7 +22,7 @@ import numpy as np
 from copy import deepcopy
 
 import bpy
-from bpy.props import IntProperty, StringProperty
+from bpy.props import IntProperty, StringProperty, BoolProperty
 from bpy.types import Operator, Area
 
 from ..utils.kt_logging import KTLogger
@@ -57,6 +57,7 @@ from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
 from .prechecks import common_fb_checks
 from ..common.loader import CommonLoader
+from ..utils.ui_redraw import total_redraw_ui
 
 
 _log = KTLogger(__name__)
@@ -114,6 +115,8 @@ class FB_OT_PinMode(Operator):
     camnum: IntProperty(default=0)
 
     pinmode_id: StringProperty(default='')
+
+    detect_face: BoolProperty(default=False)
 
     _shift_pressed: bool = False
 
@@ -450,7 +453,8 @@ class FB_OT_PinMode(Operator):
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
         if first_start:
-            if len(head.cameras) == 1 and not camera.has_pins():
+            if (len(head.cameras) == 1 and not camera.has_pins()) or self.detect_face:
+                total_redraw_ui()
                 op = get_operator(FBConfig.fb_pickmode_starter_idname)
                 op('INVOKE_DEFAULT',
                    headnum=settings.current_headnum,

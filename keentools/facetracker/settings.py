@@ -62,6 +62,7 @@ from .callbacks import (update_camobj,
                         update_blinking_rigidity,
                         update_neck_movement_rigidity)
 from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)

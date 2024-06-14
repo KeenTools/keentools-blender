@@ -326,11 +326,11 @@ buttons = {
         'Revert default rendering',
         'Setup scene rendering settings to match default render view'
     ),
-    FTConfig.ft_move_wrapper: Button(
+    FTConfig.ft_move_wrapper_idname: Button(
         'Pan View (FaceTracker)',
         'KeenTools Viewport Pan override operator (FaceTracker)'
     ),
-    FTConfig.ft_pan_detector: Button(
+    FTConfig.ft_pan_detector_idname: Button(
         'Pan View detect (FaceTracker)',
         'KeenTools Viewport Pan override operator (FaceTracker)'
     ),

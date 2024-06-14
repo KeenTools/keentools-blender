@@ -98,6 +98,8 @@ class Config:
     kt_warning_idname = operators + '.common_addon_warning'
     kt_interrupt_modal_idname = operators + '.interrupt_modal'
 
+    kt_actor_idname = operators + '.actor'
+
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
     kt_download_notification_panel_idname = _PT + 'download_notification'
