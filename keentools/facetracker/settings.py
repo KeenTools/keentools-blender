@@ -352,20 +352,16 @@ class FTSceneSettings(TRSceneSetting):
     wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['facetracker'][0],
         min=0.0, max=1.0,
         update=update_wireframe_image)
 
     wireframe_special_color: FloatVectorProperty(
         description='Color of special parts in pin-mode',
         name='Wireframe Special Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['facetracker'][1],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_special_color'))
+        update=update_wireframe_image)
 
     wireframe_midline_color: FloatVectorProperty(
         description='Color of midline in pin-mode',
@@ -380,7 +376,8 @@ class FTSceneSettings(TRSceneSetting):
     show_specials: BoolProperty(
         description='Use different colors for important head parts '
                     'on the mesh',
-        name='Highlight facial features', default=True, update=update_wireframe_image)
+        name='Highlight facial features', default=True,
+        update=update_wireframe_image)
 
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',
