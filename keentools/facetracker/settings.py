@@ -366,12 +366,9 @@ class FTSceneSettings(TRSceneSetting):
     wireframe_midline_color: FloatVectorProperty(
         description='Color of midline in pin-mode',
         name='Wireframe Midline Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
-                                               UserPreferences.type_color),
+        default=Config.ft_midline_color,
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_midline_color'))
+        update=update_wireframe_image)
 
     show_specials: BoolProperty(
         description='Use different colors for important head parts '

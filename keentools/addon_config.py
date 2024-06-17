@@ -144,6 +144,7 @@ class Config:
 
     # FaceBuilder Default Colors
     fb_midline_color = (0.960784, 0.007843, 0.615686)
+    ft_midline_color = (0.05, 1.0, 0.0)
     fb_color_schemes = {
         'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
         'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
