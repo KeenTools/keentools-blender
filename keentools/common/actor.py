@@ -25,6 +25,7 @@ from bpy.props import StringProperty, IntProperty
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, fb_settings, ft_settings, get_operator
 from ..facebuilder_config import FBConfig
+from ..facetracker_config import FTConfig
 from ..utils.localview import exit_area_localview
 from ..common.loader import CommonLoader
 from ..utils.bpy_common import bpy_current_frame, bpy_new_image, bpy_view_camera
@@ -58,6 +59,10 @@ class KT_OT_Actor(Operator):
             if not geotracker:
                 return {'CANCELLED'}
 
+            if not geotracker.camobj:
+                self.report({'INFO'}, 'No Camera in FaceTracker')
+                return {'CANCELLED'}
+
             op = get_operator(FBConfig.fb_add_head_operator_idname)
             op('EXEC_DEFAULT')
 
@@ -67,24 +72,26 @@ class KT_OT_Actor(Operator):
             geotracker.geomobj = head.headobj
             head.use_emotions = True
 
-            vp = CommonLoader.text_viewport()
-            default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Choose frame on timeline then press Take snapshot button'
-            default_txt[0]['color'] = (1., 0., 1., 0.85)
-            vp.message_to_screen(default_txt)
-
-            op = get_operator('keentools_ft.choose_frame_mode')
-            op('INVOKE_DEFAULT')
-            CommonLoader.set_ft_head_mode('CHOOSE_FRAME')
+            op = get_operator(Config.kt_actor_idname)
+            op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
 
         elif self.action == 'ft_take_snapshot_mode':
+            settings = ft_settings()
+            geotracker = settings.get_current_geotracker_item()
+            if not geotracker:
+                return {'CANCELLED'}
+
+            if not geotracker.camobj:
+                self.report({'INFO'}, 'No Camera in FaceTracker')
+                return {'CANCELLED'}
+
             vp = CommonLoader.text_viewport()
             default_txt = deepcopy(vp.texter().get_default_text())
             default_txt[0]['text'] = 'Choose frame on timeline then press Take snapshot button'
             default_txt[0]['color'] = (1., 0., 1., 0.85)
             vp.message_to_screen(default_txt)
 
-            op = get_operator('keentools_ft.choose_frame_mode')
+            op = get_operator(FTConfig.ft_choose_frame_mode_idname)
             op('INVOKE_DEFAULT')
             CommonLoader.set_ft_head_mode('CHOOSE_FRAME')
 
@@ -155,6 +162,11 @@ class KT_OT_Actor(Operator):
             settings = ft_settings()
             geotracker = settings.get_current_geotracker_item()
             if not geotracker or not geotracker.geomobj:
+                self.report({'INFO'}, 'No Head object')
+                return {'CANCELLED'}
+
+            if not geotracker.camobj:
+                self.report({'INFO'}, 'No Camera object in FaceTracker')
                 return {'CANCELLED'}
 
             settings_fb = fb_settings()

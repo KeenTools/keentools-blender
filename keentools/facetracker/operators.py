@@ -939,16 +939,16 @@ class FT_OT_PanDetector(Operator):
 
 
 class FT_OT_ChooseFrameMode(Operator):
-    bl_idname = 'keentools_ft.choose_frame_mode'
-    bl_label = 'Choose frame mode'
-    bl_description = 'Choose frame mode description'
+    bl_idname = FTConfig.ft_choose_frame_mode_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     bus_id: IntProperty(default=-1)
 
     def init_bus(self) -> None:
         message_bus = CommonLoader.message_bus()
-        self.bus_id = message_bus.register_item('keentools_ft.choose_frame_mode')
+        self.bus_id = message_bus.register_item(FTConfig.ft_choose_frame_mode_idname)
         _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
     def release_bus(self) -> None:
@@ -979,7 +979,6 @@ class FT_OT_ChooseFrameMode(Operator):
         facebuilder_keymaps_register()
 
         _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
-
         self.init_bus()
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}

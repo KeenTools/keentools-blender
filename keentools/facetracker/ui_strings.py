@@ -334,6 +334,10 @@ buttons = {
         'Pan View detect (FaceTracker)',
         'KeenTools Viewport Pan override operator (FaceTracker)'
     ),
+    FTConfig.ft_choose_frame_mode_idname: Button(
+        'Choose frame mode',
+        'Choose frame mode description'
+    ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
         'Clear menu',
