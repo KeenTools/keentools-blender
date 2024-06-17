@@ -19,6 +19,8 @@
 from typing import Any, List, Dict, Optional, Set
 from dataclasses import dataclass
 
+from bpy.types import Area
+
 from ..utils.kt_logging import KTLogger
 from .viewport import KTTextViewport
 from ..addon_config import fb_settings, gt_settings, ft_settings
@@ -152,7 +154,7 @@ class CommonLoader:
         vp.stop_viewport()
 
     @classmethod
-    def get_current_viewport_area(cls):
+    def get_current_viewport_area(cls) -> Optional[Area]:
         settings = fb_settings()
         if settings.pinmode:
             return settings.loader().viewport().get_work_area()
@@ -163,3 +165,21 @@ class CommonLoader:
         if settings.pinmode:
             return settings.loader().viewport().get_work_area()
         return CommonLoader.text_viewport().get_work_area()
+
+    @classmethod
+    def check_localview_without_pinmode(cls, area: Optional[Area]) -> bool:
+        if (not area or not area.spaces or not area.spaces.active or
+                not area.spaces.active.local_view):
+            return False
+        settings = fb_settings()
+        if settings and settings.pinmode:
+            return False
+        settings = gt_settings()
+        if settings and settings.pinmode:
+            return False
+        settings = ft_settings()
+        if settings and settings.pinmode:
+            return False
+        if cls.ft_head_mode() == 'CHOOSE_FRAME':
+            return False
+        return True

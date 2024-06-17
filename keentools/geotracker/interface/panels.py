@@ -43,6 +43,7 @@ from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 from ...utils.icons import KTIcons
+from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -90,7 +91,7 @@ def _start_geomobj_delete_handler() -> None:
 
 
 def _exit_from_localview_button(layout, context):
-    if addon_pinmode() or not check_context_localview(context):
+    if not CommonLoader.check_localview_without_pinmode(context.area):
         return
     settings = gt_settings()
     if settings.is_calculating():

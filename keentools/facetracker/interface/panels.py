@@ -29,6 +29,7 @@ from ...addon_config import (Config,
                              facetracker_enabled,
                              addon_pinmode,
                              ProductType)
+from ...facebuilder_config import FBConfig
 from ...facetracker_config import FTConfig
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
@@ -59,7 +60,7 @@ def _pinmode_escaper(area: Area) -> None:
 
 
 def _exit_from_localview_button(layout, context):
-    if addon_pinmode() or not check_context_localview(context):
+    if not CommonLoader.check_localview_without_pinmode(context.area):
         return
     settings = ft_settings()
     if settings.is_calculating():
@@ -254,9 +255,13 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
                                 icon='OUTLINER_OB_IMAGE'):
         col = layout.column(align=True)
         col.scale_y = scale
-        op = col.operator(Config.kt_actor_idname,
-                          text='Add Snapshot' if icon != 'ADD' else '', icon=icon)
+        row = col.row(align=True)
+        op = row.operator(Config.kt_actor_idname,
+                          text='Add Snapshot' if icon != 'ADD' else 'snapshot', icon=icon)
         op.action = 'ft_take_snapshot_mode'
+        op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
+                          text='from file', icon='IMAGE')
+        op.headnum = headnum
 
 
 class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):

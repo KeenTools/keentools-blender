@@ -46,6 +46,7 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
+from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -100,11 +101,12 @@ def _start_pinmode_escaper(context):
 
 
 def _exit_from_localview_button(layout, context):
-    if not addon_pinmode() and check_context_localview(context):
-        col = layout.column()
-        col.alert = True
-        col.scale_y = 2.0
-        col.operator(Config.kt_exit_localview_idname)
+    if not CommonLoader.check_localview_without_pinmode(context.area):
+        return
+    col = layout.column()
+    col.alert = True
+    col.scale_y = 2.0
+    col.operator(Config.kt_exit_localview_idname)
 
 
 def _geomobj_delete_handler() -> None:
