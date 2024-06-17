@@ -944,6 +944,8 @@ class FT_OT_ChooseFrameMode(Operator):
     bl_description = 'Choose frame mode description'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    bus_id: IntProperty(default=-1)
+
     def init_bus(self) -> None:
         message_bus = CommonLoader.message_bus()
         self.bus_id = message_bus.register_item('keentools_ft.choose_frame_mode')

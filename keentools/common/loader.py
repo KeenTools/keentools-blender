@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Any, List, Dict, Optional, Set
+from dataclasses import dataclass
 
 from ..utils.kt_logging import KTLogger
 from .viewport import KTTextViewport
@@ -27,17 +28,22 @@ from ..facebuilder_config import FBConfig
 _log = KTLogger(__name__)
 
 
+@dataclass(frozen=True)
+class MessageBusItem:
+    item_type: str
+    info: Dict
+    messages: List
+
+
 class KTMessageBus:
     def __init__(self):
-        # Bus item format
-        # id: int -> {item_type: str, info: Dict, messages: List[Dict]}
         self._items: Dict = dict()
         self._last_id: int = 0
 
     def register_item(self, item_type: str, **kwargs) -> int:
         id = self._last_id
         self._last_id += 1
-        self._items[id] = {'item_type': item_type, 'info': kwargs, 'messages': []}
+        self._items[id] = MessageBusItem(item_type, kwargs, list())
         _log.output(f'register_item:\n{self._items}')
         return id
 
@@ -52,7 +58,7 @@ class KTMessageBus:
 
     def check_type(self, item_type: str) -> bool:
         for item in self._items:
-            if item['item_type'] == item_type:
+            if item.item_type == item_type:
                 return True
         return False
 
@@ -63,11 +69,11 @@ class KTMessageBus:
 
     def get_by_type(self, item_type: str) -> Optional[Dict]:
         return {x: self._items[x] for x in self._items
-                if self._items[x]['item_type'] == item_type}
+                if self._items[x].item_type == item_type}
 
     def get_by_type_filter(self, filter_set: Set) -> Optional[Dict]:
         return {x: self._items[x] for x in self._items
-                if self._items[x]['item_type'] in filter_set}
+                if self._items[x].item_type in filter_set}
 
     def remove_by_id(self, id: int) -> Optional[Dict]:
         item = self._items.pop(id, None)
@@ -77,28 +83,28 @@ class KTMessageBus:
     def remove_by_type(self, item_type: str) -> int:
         prev_len = len(self._items)
         self._items = {x: self._items[x] for x in self._items
-                       if self._items[x]['item_type'] != item_type}
+                       if self._items[x].item_type != item_type}
         _log.output(f'remove_by_type:\n{self._items}')
         return prev_len - len(self._items)
 
     def remove_by_type_filter(self, filter_set: Set) -> int:
         prev_len = len(self._items)
         self._items = {x: self._items[x] for x in self._items
-                       if self._items[x]['item_type'] not in filter_set}
+                       if self._items[x].item_type not in filter_set}
         _log.output(f'remove_by_type_filter:\n{self._items}')
         return prev_len - len(self._items)
 
     def add_message_by_id(self, id: int, message: Dict) -> bool:
         if not self.check_id(id):
             return False
-        self._items[id]['messages'].append(message)
+        self._items[id].messages.append(message)
         return True
 
     def add_message_by_type(self, item_type: str, message: Dict) -> int:
         count = 0
         for id in self._items:
-            if self._items[id]['item_type'] == item_type:
-                self._items[id]['messages'].append(message)
+            if self._items[id].item_type == item_type:
+                self._items[id].messages.append(message)
                 count += 1
         return count
 

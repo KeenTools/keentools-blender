@@ -454,7 +454,7 @@ class FB_OT_PinMode(Operator):
 
         if first_start:
             if (len(head.cameras) == 1 and not camera.has_pins()) or self.detect_face:
-                total_redraw_ui()
+                total_redraw_ui()  # for proper background image data loading
                 op = get_operator(FBConfig.fb_pickmode_starter_idname)
                 op('INVOKE_DEFAULT',
                    headnum=settings.current_headnum,
