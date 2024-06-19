@@ -84,7 +84,6 @@ class FTConfig:
 
     ft_toggle_lock_view_idname = operators + '.toggle_lock_view'
     ft_exit_pinmode_idname = operators + '.exit_pinmode_btn'
-    ft_interrupt_modal_idname = operators + '.interrupt_modal'
     ft_stop_calculating_idname = operators + '.stop_calculating_btn'
     ft_set_key_idname = operators + '.set_key_btn'
     ft_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
@@ -125,8 +124,9 @@ class FTConfig:
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
     ft_share_feedback_idname = operators + '.share_feedback'
-    ft_move_wrapper = operators + '.move_wrapper'
-    ft_pan_detector = operators + '.pan_detector'
+    ft_move_wrapper_idname = operators + '.move_wrapper'
+    ft_pan_detector_idname = operators + '.pan_detector'
+    ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
 
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'
@@ -142,6 +142,9 @@ class FTConfig:
 
     # Panel ids
     ft_facetrackers_panel_idname = _PT + 'facetrackers_panel'
+    ft_fb_views_panel_idname = _PT + 'fb_views_panel'
+    ft_fb_options_panel_idname = _PT + 'fb_options_panel'
+    ft_fb_model_panel_idname = _PT + 'fb_model_panel'
     ft_input_panel_idname = _PT + 'input_panel'
     ft_masks_panel_idname = _PT + 'masks_panel'
     ft_analyze_panel_idname = _PT + 'analyze_panel'
@@ -154,6 +157,7 @@ class FTConfig:
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
     ft_support_panel_idname = _PT + 'support_panel'
+    ft_choose_snapshot_frame_idname = _PT + 'choose_snapshot_frame_panel'
 
     # Help ids
     ft_help_inputs_idname = operators + '.help_inputs'

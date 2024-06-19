@@ -26,6 +26,7 @@ from ..addon_config import (Config,
                             gt_settings,
                             get_operator,
                             ErrorType,
+                            ActionStatus,
                             ProductType)
 from ..geotracker_config import GTConfig
 from ..utils.coords import (get_camera_border,
@@ -54,6 +55,7 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
 from ..preferences.user_preferences import UserPreferences
+from ..utils.ui_redraw import force_ui_redraw
 
 
 _log = KTLogger(__name__)
@@ -144,79 +146,33 @@ class GTViewport(KTViewport):
         region_3d.view_camera_offset = offset
         return True
 
-    def get_all_viewport_shader_objects(self) -> List:
+    def get_all_shader_objects(self) -> List:
         return [self._texter,
-                self._points2d,
                 self._points3d,
                 self._residuals,
+                self._points2d,
                 self._wireframer,
                 self._rectangler,
                 self._timeliner,
                 self._selector,
                 self._mask2d]
 
-    def load_all_shaders(self) -> bool:
-        _log.blue('GT load_all_shaders start')
-        if bpy_background_mode():
-            _log.red('load_all_shaders bpy_background_mode True end >>>')
-            return True
-        tmp_log = '--- GT Shaders ---'
-        show_tmp_log = False
-        _log.blue(tmp_log)
-        try:
-            for item in self.get_all_viewport_shader_objects():
-                item_type = f'* {item.__class__.__name__}'
-                tmp_log += '\n' + item_type + ' -- '
+    def register_handlers(self, *, area: Any) -> bool:
+        _log.cyan(f'{self.__class__.__name__}.register_handlers start')
+        status = super().register_handlers(area=area)
+        if status:
+            self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
+        else:
+            _log.error(f'{self.__class__.__name__}: '
+                       f'Could not register viewport handlers')
+        _log.cyan(f'{self.__class__.__name__}.register_handlers end >>>')
+        return status
 
-                _log.blue(item_type)
-                res = item.init_shaders()
-
-                tmp_log += 'skipped' if res is None else f'{res}'
-                if res is not None:
-                    show_tmp_log = True
-        except Exception as err:
-            _log.error(f'GT viewport shaders Exception:\n{tmp_log}\n---\n'
-                       f'{str(err)}\n===')
-            warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
-            return False
-
-        _log.blue('--- End of GT Shaders ---')
-        if show_tmp_log:
-            _log.info(tmp_log)
-        _log.output('GT load_all_shaders end >>>')
-        return True
-
-    def register_handlers(self, *, area: Any) -> None:
-        _log.yellow(f'{self.__class__.__name__}.register_handlers start')
-        self.unregister_handlers()
-        self.set_work_area(area)
-        self.mask2d().register_handler(area=area)
-        self.residuals().register_handler(area=area)
-        self.points3d().register_handler(area=area)
-        self.points2d().register_handler(area=area)
-        self.texter().register_handler(area=area)
-        self.wireframer().register_handler(area=area)
-        self.rectangler().register_handler(area=area)
-        self.timeliner().register_handler()
-        self.selector().register_handler(area=area)
-        self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
-        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
-
-    def unregister_handlers(self):
-        _log.yellow(f'{self.__class__.__name__}.unregister_handlers start')
+    def unregister_handlers(self) -> None:
+        _log.cyan(f'{self.__class__.__name__}.unregister_handlers start')
         self.unregister_draw_update_timer()
-        self.selector().unregister_handler()
-        self.timeliner().unregister_handler()
-        self.wireframer().unregister_handler()
-        self.rectangler().unregister_handler()
-        self.texter().unregister_handler()
-        self.points2d().unregister_handler()
-        self.points3d().unregister_handler()
-        self.residuals().unregister_handler()
-        self.mask2d().unregister_handler()
-        self.clear_work_area()
-        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
+        super().unregister_handlers()
+        _log.cyan(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
     def mask2d(self) -> KTRasterMask:
         return self._mask2d
@@ -392,6 +348,18 @@ class GTViewport(KTViewport):
         self.residuals().unhide_shader()
         _log.output(f'{self.__class__.__name__}.unhide_pins_and_residuals end >>>')
 
+    def hide_all_shaders(self):
+        _log.yellow(f'{self.__class__.__name__}.hide_all_shaders start')
+        self.mask2d().hide_shader()
+        self.residuals().hide_shader()
+        self.points3d().hide_shader()
+        self.points2d().hide_shader()
+        self.texter().hide_shader()
+        self.wireframer().hide_shader()
+        self.timeliner().hide_shader()
+        self.selector().hide_shader()
+        _log.output(f'{self.__class__.__name__}.hide_all_shaders end >>>')
+
     def unhide_all_shaders(self):
         _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
         self.mask2d().unhide_shader()
@@ -407,3 +375,28 @@ class GTViewport(KTViewport):
     def needs_to_be_drawn(self):
         return self.points2d().needs_to_be_drawn() or \
                self.residuals().needs_to_be_drawn()
+
+    def start_viewport(self, *, area: Any) -> ActionStatus:
+        _log.green(f'{self.__class__.__name__}.start_viewport start')
+
+        if not self.load_all_shaders():
+            msg = 'Problem with loading shaders (see console)'
+            _log.error(msg)
+            _log.output(f'{self.__class__.__name__}.start_viewport loading shaders error >>>')
+            return ActionStatus(False, msg)
+
+        self.register_handlers(area=area)
+        self.unhide_all_shaders()
+        self.tag_redraw()
+        force_ui_redraw('DOPESHEET_EDITOR')
+        _log.output(f'{self.__class__.__name__}.start_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    def stop_viewport(self) -> ActionStatus:
+        _log.green(f'{self.__class__.__name__}.stop_viewport start')
+        area = self.get_work_area()
+        self.unregister_handlers()
+        if area:
+            area.tag_redraw()
+        _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')

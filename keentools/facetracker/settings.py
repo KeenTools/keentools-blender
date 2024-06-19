@@ -27,13 +27,13 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ProductType, fb_settings
 from .ftloader import FTLoader
-from ..utils.bpy_common import (bpy_poll_is_mesh,
-                                bpy_poll_is_camera)
+from ..utils.bpy_common import bpy_poll_is_camera
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
 from .callbacks import (update_camobj,
+                        poll_is_facebuilder_mesh,
                         update_geomobj,
                         update_movieclip,
                         update_precalc_path,
@@ -62,6 +62,7 @@ from .callbacks import (update_camobj,
                         update_blinking_rigidity,
                         update_neck_movement_rigidity)
 from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -81,7 +82,7 @@ class FaceTrackerItem(TrackerItem):
         description='Select target geometry from the list '
                     'of objects in your Scene',
         type=Object,
-        poll=bpy_poll_is_mesh,
+        poll=poll_is_facebuilder_mesh,
         update=update_geomobj)
     camobj: PointerProperty(
         name='Camera',
@@ -351,35 +352,29 @@ class FTSceneSettings(TRSceneSetting):
     wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['facetracker'][0],
         min=0.0, max=1.0,
         update=update_wireframe_image)
 
     wireframe_special_color: FloatVectorProperty(
         description='Color of special parts in pin-mode',
         name='Wireframe Special Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['facetracker'][1],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_special_color'))
+        update=update_wireframe_image)
 
     wireframe_midline_color: FloatVectorProperty(
         description='Color of midline in pin-mode',
         name='Wireframe Midline Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
-                                               UserPreferences.type_color),
+        default=Config.ft_midline_color,
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_midline_color'))
+        update=update_wireframe_image)
 
     show_specials: BoolProperty(
         description='Use different colors for important head parts '
                     'on the mesh',
-        name='Highlight facial features', default=True, update=update_wireframe_image)
+        name='Highlight facial features', default=True,
+        update=update_wireframe_image)
 
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',

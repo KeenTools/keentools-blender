@@ -25,10 +25,11 @@ from bpy.types import Area, Panel, UIList
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
-                             ft_settings,
+                             ft_settings, fb_settings,
                              facetracker_enabled,
                              addon_pinmode,
                              ProductType)
+from ...facebuilder_config import FBConfig
 from ...facetracker_config import FTConfig
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
@@ -40,6 +41,10 @@ from ..ftloader import FTLoader
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.icons import KTIcons
+from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
+                                        COMMON_FB_PT_Model,
+                                        COMMON_FB_PT_OptionsPanel)
+from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -55,7 +60,7 @@ def _pinmode_escaper(area: Area) -> None:
 
 
 def _exit_from_localview_button(layout, context):
-    if addon_pinmode() or not check_context_localview(context):
+    if not CommonLoader.check_localview_without_pinmode(context.area):
         return
     settings = ft_settings()
     if settings.is_calculating():
@@ -98,10 +103,13 @@ def _start_geomobj_delete_handler() -> None:
     bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
 
 
+def _fb_head_in_ft_mode_active() -> bool:
+    return CommonLoader.ft_head_mode() != 'NONE'
+
+
 class View3DPanel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    # bl_options = {'DEFAULT_CLOSED'}
     bl_category = FTConfig.ft_tab_category
 
     @classmethod
@@ -115,6 +123,8 @@ class AllVisible(View3DPanel):
         if not facetracker_enabled():
             return False
         if not pkt_is_installed():
+            return False
+        if CommonLoader.ft_head_mode() != 'NONE':
             return False
         settings = ft_settings()
         if not settings.current_tracker_num() >= 0:
@@ -218,7 +228,115 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         _ft_grace_timer.start()
 
 
-class FT_PT_InputsPanel(AllVisible):
+def _fb_view_panel_active() -> bool:
+    return CommonLoader.ft_head_mode() == 'EDIT_HEAD'
+
+
+class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
+    bl_category = Config.ft_tab_category
+    bl_idname = FTConfig.ft_fb_views_panel_idname
+    bl_label = 'FaceBuilder Views'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not _fb_view_panel_active():
+            return False
+        if not settings.current_tracker_num() >= 0:
+            return False
+        facetracker = settings.get_current_geotracker_item()
+        return facetracker.geomobj and facetracker.camobj
+
+    def _draw_add_images_button(self, headnum, layout, scale=2.0,
+                                icon='OUTLINER_OB_IMAGE'):
+        col = layout.column(align=True)
+        col.scale_y = scale
+        row = col.row(align=True)
+        op = row.operator(Config.kt_actor_idname,
+                          text='Add Snapshot' if icon != 'ADD' else 'snapshot', icon=icon)
+        op.action = 'ft_take_snapshot_mode'
+        op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
+                          text='from file', icon='IMAGE')
+        op.headnum = headnum
+
+
+class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
+    bl_idname = FTConfig.ft_fb_options_panel_idname
+    bl_label = 'Options'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FTConfig.ft_fb_views_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        settings = fb_settings()
+        if settings is None:
+            return False
+        if not settings.pinmode:
+            return False
+        return True
+
+
+class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
+    bl_idname = FTConfig.ft_fb_model_panel_idname
+    bl_label = 'Model'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FTConfig.ft_fb_views_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+
+def _draw_create_head_ui(layout, geotracker):
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.scale_y = 2.0
+    op = row.operator(Config.kt_actor_idname,
+                      text='Create FaceBuilder Head', icon='USER')
+    op.action = 'ft_create_head_now'
+
+    op = col.operator(Config.kt_actor_idname, text='Cancel', icon='X')
+    op.action = 'ft_cancel_create_head'
+
+
+class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
+    bl_idname = FTConfig.ft_choose_snapshot_frame_idname
+    bl_label = 'Take snapshot mode'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        return CommonLoader.ft_head_mode() == 'CHOOSE_FRAME'
+
+    def draw(self, context: Any) -> None:
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.scale_y = 2.0
+        op = row.operator(Config.kt_actor_idname,
+                          text='Take current frame', icon='IMAGE')
+        op.action = 'ft_take_snapshot'
+
+        op = col.operator(Config.kt_actor_idname, text='Cancel', icon='X')
+        op.action = 'ft_cancel_take_snapshot'
+
+
+class FT_PT_InputsPanel(View3DPanel):
     bl_idname = FTConfig.ft_input_panel_idname
     bl_label = 'Inputs'
 
@@ -231,7 +349,7 @@ class FT_PT_InputsPanel(AllVisible):
         settings = ft_settings()
         if not settings.current_tracker_num() >= 0:
             return False
-        return True
+        return not _fb_head_in_ft_mode_active()
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -241,7 +359,7 @@ class FT_PT_InputsPanel(AllVisible):
                      text='', icon='QUESTION', emboss=False)
 
     def _draw_main_inputs(self, layout, geotracker):
-        factor = 0.35
+        factor = 0.3
         split = layout.split(factor=factor, align=True)
         split.label(text='Clip')
 
@@ -262,11 +380,21 @@ class FT_PT_InputsPanel(AllVisible):
             op.product = ProductType.FACETRACKER
 
         split = layout.split(factor=factor, align=True)
-        split.label(text='Geometry')
+        split.label(text='Head')
 
-        row = split.row()
+        col = split.column(align=True)
+        row = col.row(align=True)
         row.alert = not geotracker.geomobj
-        row.prop(geotracker, 'geomobj', text='')
+
+        split2 = row.split(factor=0.7, align=True)
+        split2.prop(geotracker, 'geomobj', text='')
+
+        if not geotracker.geomobj:
+            op = split2.operator(Config.kt_actor_idname, text='New')
+            op.action = 'ft_create_new_head'
+        else:
+            op = split2.operator(Config.kt_actor_idname, text='Edit')
+            op.action = 'ft_edit_head'
 
         split = layout.split(factor=factor, align=True)
         split.label(text='Camera')
@@ -345,7 +473,7 @@ class FT_PT_InputsPanel(AllVisible):
             self._draw_analyze_btn(col, geotracker)
 
 
-class FT_PT_CameraPanel(AllVisible):
+class FT_PT_CameraPanel(View3DPanel):
     bl_idname = FTConfig.ft_camera_panel_idname
     bl_label = 'Camera'
     bl_options = {'DEFAULT_CLOSED'}
@@ -360,7 +488,7 @@ class FT_PT_CameraPanel(AllVisible):
         if not settings.current_tracker_num() >= 0:
             return False
         geotracker = settings.get_current_geotracker_item()
-        return not not geotracker.camobj
+        return not not geotracker.camobj and not _fb_head_in_ft_mode_active()
 
     def _camera_lens_row(self, layout: Any, cam_data: Any) -> None:
         row = layout.row(align=True)
@@ -449,7 +577,7 @@ class FT_PT_TrackingPanel(AllVisible):
             row.operator(FTConfig.ft_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not FTLoader.viewport().is_working():
+            if not FTLoader.viewport().viewport_is_working():
                 _start_pinmode_escaper(context)
         else:
             op = row.operator(FTConfig.ft_pinmode_idname,
@@ -578,7 +706,7 @@ class FT_PT_TrackingPanel(AllVisible):
             self._tracking_center_block(settings, layout)
 
 
-class FT_PT_OptionsPanel(AllVisible, Panel):
+class FT_PT_OptionsPanel(View3DPanel):
     bl_idname = FTConfig.ft_options_panel_idname
     bl_label = 'Options'
     bl_options = {'DEFAULT_CLOSED'}
@@ -1079,7 +1207,7 @@ class FT_PT_TexturePanel(AllVisible):
             _draw_calculating_indicator(layout)
 
 
-class FT_PT_SupportPanel(AllVisible, Panel):
+class FT_PT_SupportPanel(View3DPanel):
     bl_idname = FTConfig.ft_support_panel_idname
     bl_label = 'Support'
 
@@ -1092,7 +1220,7 @@ class FT_PT_SupportPanel(AllVisible, Panel):
         settings = ft_settings()
         if not settings.current_tracker_num() >= 0:
             return False
-        return True
+        return not _fb_head_in_ft_mode_active()
 
     def draw(self, context):
         layout = self.layout

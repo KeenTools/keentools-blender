@@ -46,6 +46,7 @@ _log = KTLogger(__name__)
 
 
 def prepare_camera(area: Area, *, product: int) -> None:
+    _log.yellow(f'prepare_camera product={product} start')
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
@@ -55,13 +56,16 @@ def prepare_camera(area: Area, *, product: int) -> None:
 
     geotracker.setup_background_image()
     geotracker.reload_background_image()
+    _log.output('prepare_camera end >>>')
 
 
 def revert_camera(area: Area, *, product: int) -> None:
+    _log.yellow(f'revert_camera product={product} start')
     settings = get_settings(product)
     if not settings.pinmode:
         settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
+    _log.output('revert_camera end >>>')
 
 
 def get_alone_object_in_selection_by_type(*,

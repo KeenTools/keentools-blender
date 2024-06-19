@@ -62,70 +62,39 @@ class FBViewport(KTViewport):
     def product_type(self) -> int:
         return ProductType.FACEBUILDER
 
-    def get_all_viewport_shader_objects(self) -> List:
+    def get_all_shader_objects(self) -> List:
         return [self._texter,
-                self._points2d,
                 self._points3d,
                 self._residuals,
+                self._points2d,
                 self._wireframer,
                 self._rectangler]
 
-    def load_all_shaders(self) -> bool:
-        _log.yellow('FB load_all_shaders start')
-        if bpy_background_mode():
-            _log.red('load_all_shaders bpy_background_mode True end >>>')
-            return True
-        tmp_log = '--- FB Shaders ---'
-        show_tmp_log = False
-        _log.blue(tmp_log)
-        try:
-            for item in self.get_all_viewport_shader_objects():
-                item_type = f'* {item.__class__.__name__}'
-                tmp_log += '\n' + item_type + ' -- '
-
-                _log.blue(item_type)
-                res = item.init_shaders()
-
-                tmp_log += 'skipped' if res is None else f'{res}'
-                if res is not None:
-                    show_tmp_log = True
-        except Exception as err:
-            _log.error(f'FB viewport shaders Exception:\n{tmp_log}\n---\n'
-                       f'{str(err)}\n===')
-            warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
+    def viewport_is_working(self) -> bool:
+        if not super().viewport_is_working():
             return False
+        wireframer = self.wireframer()
+        if not wireframer:
+            return False
+        return wireframer.shader_is_working()
 
-        _log.blue('--- End of FB Shaders ---')
-        if show_tmp_log:
-            _log.info(tmp_log)
-        _log.output('FB load_all_shaders end >>>')
-        return True
-
-    def register_handlers(self, *, area: Any) -> None:
-        _log.yellow(f'{self.__class__.__name__}.register_handlers start')
-        self.unregister_handlers()
-        self.set_work_area(area=area)
-        self.residuals().register_handler(area=area)
-        self.rectangler().register_handler(area=area)
-        self.points3d().register_handler(area=area)
-        self.points2d().register_handler(area=area)
-        self.texter().register_handler(area=area)
-        self.wireframer().register_handler(area=area)
-        self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
-        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
+    def register_handlers(self, *, area: Any) -> bool:
+        _log.cyan(f'{self.__class__.__name__}.register_handlers start')
+        _log.output('call super().register_handler')
+        status = super().register_handlers(area=area)
+        if status:
+            self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
+        else:
+            _log.error(f'{self.__class__.__name__}: '
+                       f'Could not register viewport handlers')
+        _log.cyan(f'{self.__class__.__name__}.register_handlers end >>>')
+        return status
 
     def unregister_handlers(self) -> None:
-        _log.yellow(f'{self.__class__.__name__}.unregister_handlers start')
+        _log.cyan(f'{self.__class__.__name__}.unregister_handlers start')
         self.unregister_draw_update_timer()
-        self.wireframer().unregister_handler()
-        self.texter().unregister_handler()
-        self.points2d().unregister_handler()
-        self.points3d().unregister_handler()
-        self.rectangler().unregister_handler()
-        self.residuals().unregister_handler()
-        self.clear_work_area()
-        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
+        super().unregister_handlers()
+        _log.cyan(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
     def update_surface_points(
             self, fb: Any, headobj: Object, keyframe: int = -1,

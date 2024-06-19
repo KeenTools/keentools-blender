@@ -23,7 +23,7 @@ import os
 import bpy
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator, ActionStatus, get_settings
+from ...addon_config import Config, get_operator, ActionStatus, get_settings
 
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
@@ -42,6 +42,7 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
 from ...tracker.calc_timer import CalcTimer
+from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -50,7 +51,7 @@ _log = KTLogger(__name__)
 class PrecalcTimer(CalcTimer):
     def finish_error_state(self) -> None:
         self.finish_calc_mode()
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         geotracker.precalc_message = self._error_message
         _log.error(f'precalc error message: {self._error_message}')
@@ -59,7 +60,7 @@ class PrecalcTimer(CalcTimer):
     def runner_state(self) -> Optional[float]:
         _log.output('runner_state call')
 
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         if self._runner.is_finished():
             _log.output('runner is_finished')
             err = self._runner.exception()
@@ -83,7 +84,9 @@ class PrecalcTimer(CalcTimer):
 
         progress, message = self._runner.current_progress()
         _log.output(f'precalc runner_state: {progress} {message}')
-        analysing_screen_message(message, product=self.product)
+
+        vp = self.get_viewport()
+        analysing_screen_message(message, viewport=vp)
 
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
@@ -146,17 +149,20 @@ class PrecalcTimer(CalcTimer):
     def start(self) -> bool:
         self._start_time = time.time()
         prepare_camera(self.get_area(), product=self.product)
-        settings = self.get_settings()
+        settings = get_settings(self.product)
         settings.start_calculating('PRECALC')
 
         self.set_current_state(self.runner_state)
         # self._area_header('Precalc is calculating... Please wait')
-        analysing_screen_message('Initialization', product=self.product)
+
+        vp = self.get_viewport()
+        analysing_screen_message('Initialization', viewport=vp)
 
         _func = self.timer_func
         if not bpy_background_mode():
-            op = get_operator(self.interrupt_operator_name)
-            op('INVOKE_DEFAULT')
+            op = get_operator(Config.kt_interrupt_modal_idname)
+            op('INVOKE_DEFAULT', product=self.product)
+
             bpy_timer_register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
             _log.output(f'timer registered: {res}')
@@ -202,9 +208,13 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
 
     _log.output('precalc_with_runner_act start')
     area = context.area
-    vp = settings.loader().viewport()
-    if not settings.pinmode:
-        vp.texter().register_handler(area=area)
+
+    if settings.pinmode:
+        old_vp = settings.loader().viewport()
+        old_vp.hide_all_shaders()
+
+    text_viewport = CommonLoader.text_viewport()
+    text_viewport.start_viewport(area=area)
 
     rw, rh = bpy_render_frame()
     runner = KTClassLoader.PrecalcRunner_class()(
@@ -212,7 +222,7 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
         geotracker.precalc_start, geotracker.precalc_end,
         KTClassLoader.GeoTracker_class().license_manager(), True)
 
-    pt = PrecalcTimer(area, runner, product=product)
+    pt = PrecalcTimer(area, runner, product=product, viewport=text_viewport)
     if pt.start():
         _log.output('Precalc started')
     else:

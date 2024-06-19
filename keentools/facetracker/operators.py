@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, List, Set
 import os
 
 from bpy.types import Operator, Object
@@ -45,8 +46,9 @@ from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_start_frame,
-                                bpy_end_frame)
-from ..utils.manipulate import force_undo_push
+                                bpy_end_frame,
+                                bpy_view_camera)
+from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
 from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
@@ -74,6 +76,10 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 create_soft_empties_from_selected_pins_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
+from ..common.loader import CommonLoader
+from ..preferences.hotkeys import (facebuilder_keymaps_register,
+                                   facebuilder_keymaps_unregister)
+from ..utils.localview import exit_area_localview
 
 
 _log = KTLogger(__name__)
@@ -671,40 +677,6 @@ class FT_OT_SplitVideoExec(Operator):
         return {'FINISHED'}
 
 
-class FT_OT_InterruptModal(Operator):
-    bl_idname = FTConfig.ft_interrupt_modal_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = ft_settings()
-        settings.user_interrupts = False
-
-        if not bpy_background_mode():
-            context.window_manager.modal_handler_add(self)
-            _log.output('FT INTERRUPTOR START')
-        else:
-            _log.info('FaceTracker Interruptor skipped by background mode')
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        settings = ft_settings()
-
-        if settings.user_interrupts:
-            _log.output('FT Interruptor has been stopped by value')
-            settings.user_interrupts = True
-            return {'FINISHED'}
-
-        if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit FT Interruptor by ESC')
-            settings.user_interrupts = True
-            return {'FINISHED'}
-
-        return {'PASS_THROUGH'}
-
-
 class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_idname = FTConfig.ft_default_pin_settings_idname
     bl_label = buttons[bl_idname].label
@@ -912,7 +884,7 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
 
 class FT_OT_MoveWrapper(Operator):
-    bl_idname = FTConfig.ft_move_wrapper
+    bl_idname = FTConfig.ft_move_wrapper_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -945,7 +917,7 @@ class FT_OT_MoveWrapper(Operator):
 
 
 class FT_OT_PanDetector(Operator):
-    bl_idname = FTConfig.ft_pan_detector
+    bl_idname = FTConfig.ft_pan_detector_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -963,6 +935,84 @@ class FT_OT_PanDetector(Operator):
         work_area = settings.loader().get_work_area()
         if viewport_native_pan_operator_activate(work_area == context.area):
             return {'CANCELLED'}
+        return {'PASS_THROUGH'}
+
+
+class FT_OT_ChooseFrameMode(Operator):
+    bl_idname = FTConfig.ft_choose_frame_mode_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(FTConfig.ft_choose_frame_mode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
+
+    def invoke(self, context: Any, event: Any) -> Set:
+        _log.red(f'{self.__class__.__name__} invoke')
+
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        if not geotracker.geomobj or not geotracker.camobj:
+            return {'CANCELLED'}
+        if not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        CommonLoader.stop_fb_viewport()
+        CommonLoader.stop_fb_pinmode()
+
+        area = context.area
+        switch_to_camera(area, geotracker.camobj,
+                         geotracker.animatable_object())
+
+        CommonLoader.text_viewport().start_viewport(area=area)
+        facebuilder_keymaps_register()
+
+        _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
+        self.init_bus()
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def on_finish(self) -> None:
+        _log.output(f'{self.__class__.__name__}.on_finish')
+        facebuilder_keymaps_unregister()
+        CommonLoader.text_viewport().stop_viewport()
+        self.release_bus()
+
+    def cancel(self, context) -> None:
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.on_finish()
+
+    def modal(self, context: Any, event: Any) -> Set:
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
+            return {'FINISHED'}
+
+        if CommonLoader.ft_head_mode() != 'CHOOSE_FRAME':
+            self.on_finish()
+            return {'FINISHED'}
+
+        # Quit when camera rotated by user
+        if context.space_data.region_3d.view_perspective != 'CAMERA':
+            bpy_view_camera()
+
+        if event.value == 'PRESS' and event.type == 'ESC':
+            _log.error(f'ESC in {self.__class__.__name__}')
+            exit_area_localview(context.area)
+            self.on_finish()
+            return {'FINISHED'}
+
         return {'PASS_THROUGH'}
 
 
@@ -994,7 +1044,6 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_StopCalculating,
                   FT_OT_AutoNamePrecalc,
                   FT_OT_SplitVideoExec,
-                  FT_OT_InterruptModal,
                   FT_OT_ExitPinMode,
                   FT_OT_AddonSetupDefaults,
                   FT_OT_DefaultPinSettings,
@@ -1004,4 +1053,5 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_RemoveFocalKeyframes,
                   FT_OT_ExportAnimatedEmpty,
                   FT_OT_MoveWrapper,
-                  FT_OT_PanDetector)
+                  FT_OT_PanDetector,
+                  FT_OT_ChooseFrameMode)

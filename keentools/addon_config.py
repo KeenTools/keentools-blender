@@ -44,7 +44,7 @@ class Config:
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
-    ft_tab_category = 'GeoTracker'
+    ft_tab_category = 'FaceTracker'
 
     kt_testing_tab_category = 'KeenTools Testing'
 
@@ -96,6 +96,9 @@ class Config:
     kt_report_bug_idname = operators + '.report_bug'
 
     kt_warning_idname = operators + '.common_addon_warning'
+    kt_interrupt_modal_idname = operators + '.interrupt_modal'
+
+    kt_actor_idname = operators + '.actor'
 
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
@@ -141,6 +144,7 @@ class Config:
 
     # FaceBuilder Default Colors
     fb_midline_color = (0.960784, 0.007843, 0.615686)
+    ft_midline_color = (0.05, 1.0, 0.0)
     fb_color_schemes = {
         'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
         'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
@@ -150,6 +154,7 @@ class Config:
         'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
         'black': ((0.039, 0.04, 0.039), (0.0, 0.0, 0.85098)),
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        'facetracker': ((0.0, 0.0, 0.85098), (0.039, 0.04, 0.039)),
         'default': ((0.039, 0.04, 0.039), (0.0, 0.0, 0.85098))
     }
 

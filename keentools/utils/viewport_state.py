@@ -27,6 +27,15 @@ from .kt_logging import KTLogger
 _log = KTLogger(__name__)
 
 
+_default_overlay_state: Dict = {'show_floor': True, 'show_axis_x': True,
+                                'show_axis_y': True, 'show_axis_z': False,
+                                'show_cursor': True}
+
+_switched_off_overlay_state: Dict = {'show_floor': False, 'show_axis_x': False,
+                                     'show_axis_y': False, 'show_axis_z': False,
+                                     'show_cursor': False}
+
+
 def get_area_overlay(area: Area) -> Optional[Any]:
     if not area or not area.spaces.active:
         return None
@@ -71,16 +80,47 @@ def _get_viewport_ui_state(area: Area) -> Dict:
 
 def force_show_ui_overlays(area: Area) -> None:
     _log.output('force_show_ui_overlays')
-    _setup_viewport_ui_state(area, {'show_floor': 1, 'show_axis_x': 1,
-                                    'show_axis_y': 1, 'show_axis_z': 0,
-                                    'show_cursor': 1})
+    _setup_viewport_ui_state(area, _default_overlay_state)
 
 
 def force_hide_ui_overlays(area: Area) -> None:
     _log.output('force_hide_ui_overlays')
-    _setup_viewport_ui_state(area, {'show_floor': 0, 'show_axis_x': 0,
-                                    'show_axis_y': 0, 'show_axis_z': 0,
-                                    'show_cursor': 0})
+    _setup_viewport_ui_state(area, _switched_off_overlay_state)
+
+
+def _check_ui_overlays_like_in_dict(area: Area, state_dict: Dict) -> bool:
+    _log.output('_check_ui_overlays_like_in_dict')
+
+    try:
+        python_obj = _get_ui_space_data(area)
+        if python_obj is None:
+            _log.error(f'_check_ui_overlays_like_in_dict: '
+                       f'overlay does not exist. area={area}')
+            return False
+
+        for name in state_dict:
+            if not hasattr(python_obj, name):
+                _log.error(f'_check_ui_overlays_like_in_dict: '
+                           f'Area has no {name} key. area={area}')
+                return False
+            if getattr(python_obj, name) != state_dict[name]:
+                return False
+
+    except Exception as err:
+        _log.error(f'EXCEPTION _check_ui_overlays_like_in_dict: {str(err)}')
+        return False
+
+    return True
+
+
+def check_ui_overlays_are_hidden(area: Area) -> bool:
+    _log.output('check_ui_overlays_are_hidden')
+    return _check_ui_overlays_like_in_dict(area, _switched_off_overlay_state)
+
+
+def check_ui_overlays_are_default(area: Area) -> bool:
+    _log.output('check_ui_overlays_are_default')
+    return _check_ui_overlays_like_in_dict(area, _default_overlay_state)
 
 
 class ViewportStateItem(PropertyGroup):

@@ -80,7 +80,6 @@ class GTConfig:
 
     gt_toggle_lock_view_idname = operators + '.toggle_lock_view'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
-    gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
     gt_set_key_idname = operators + '.set_key_btn'
     gt_reset_tone_exposure_idname = operators + '.reset_tone_exposure'

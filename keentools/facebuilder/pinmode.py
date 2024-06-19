@@ -22,7 +22,7 @@ import numpy as np
 from copy import deepcopy
 
 import bpy
-from bpy.props import IntProperty, StringProperty
+from bpy.props import IntProperty, StringProperty, BoolProperty
 from bpy.types import Operator, Area
 
 from ..utils.kt_logging import KTLogger
@@ -56,6 +56,8 @@ from .ui_strings import buttons
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
 from .prechecks import common_fb_checks
+from ..common.loader import CommonLoader
+from ..utils.ui_redraw import total_redraw_ui
 
 
 _log = KTLogger(__name__)
@@ -114,7 +116,21 @@ class FB_OT_PinMode(Operator):
 
     pinmode_id: StringProperty(default='')
 
+    detect_face: BoolProperty(default=False)
+
     _shift_pressed: bool = False
+
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(FBConfig.fb_pinmode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
 
     @classmethod
     def _set_shift_pressed(cls, val: bool) -> None:
@@ -137,7 +153,8 @@ class FB_OT_PinMode(Operator):
                                      value: bool=True) -> None:
         vp = FBLoader.viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
-        vp.set_visible(flag)
+        vp.set_shaders_visible(flag)
+        vp.texter().set_shader_visible(True)
         if flag:
             vp.revert_default_screen_message(unregister=False)
         else:
@@ -164,7 +181,7 @@ class FB_OT_PinMode(Operator):
             _log.error('FB DELETE PIN PROBLEM')
             unregister_fb_undo_handler()
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         update_head_mesh_non_neutral(fb, head)
@@ -295,7 +312,7 @@ class FB_OT_PinMode(Operator):
             return {'CANCELLED'}
 
         # Stopped shaders mean that we need to restart pinmode
-        if not vp.wireframer().is_working():
+        if not vp.viewport_is_working():
             settings.pinmode = False
 
         if settings.wrong_pinmode_id():
@@ -416,6 +433,7 @@ class FB_OT_PinMode(Operator):
             vp.create_batch_2d(area)
             vp.register_handlers(area=area)
 
+            self.init_bus()
             context.window_manager.modal_handler_add(self)
 
             _log.output('START FB SHADER STOPPER')
@@ -435,7 +453,8 @@ class FB_OT_PinMode(Operator):
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
         if first_start:
-            if len(head.cameras) == 1 and not camera.has_pins():
+            if (len(head.cameras) == 1 and not camera.has_pins()) or self.detect_face:
+                total_redraw_ui()  # for proper background image data loading
                 op = get_operator(FBConfig.fb_pickmode_starter_idname)
                 op('INVOKE_DEFAULT',
                    headnum=settings.current_headnum,
@@ -506,7 +525,21 @@ class FB_OT_PinMode(Operator):
 
         return False
 
+    def on_finish(self) -> None:
+        _log.output(f'{self.__class__.__name__}.on_finish')
+        facebuilder_keymaps_unregister()
+        self.release_bus()
+
+    def cancel(self, context) -> None:
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.on_finish()
+
     def modal(self, context: Any, event: Any) -> Set:
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
+            return {'FINISHED'}
+
         settings = fb_settings()
 
         if self.pinmode_id != settings.pinmode_id:
@@ -515,7 +548,7 @@ class FB_OT_PinMode(Operator):
             unregister_fb_undo_handler()
             exit_area_localview(context.area)
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         headnum = settings.current_headnum
@@ -525,7 +558,7 @@ class FB_OT_PinMode(Operator):
             unregister_fb_undo_handler()
             exit_area_localview(context.area)
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         vp = FBLoader.viewport()
@@ -564,12 +597,12 @@ class FB_OT_PinMode(Operator):
             self._undo_detected(context.area)
 
         vp = FBLoader.viewport()
-        if not (vp.wireframer().is_working()):
-            _log.error('WIREFRAME IS OFF')
+        if not vp.viewport_is_working():
+            _log.error('VIEWPORT DOES NOT WORK')
             unregister_fb_undo_handler()
             FBLoader.out_pinmode(headnum)
 
-            facebuilder_keymaps_unregister()
+            self.on_finish()
             return {'FINISHED'}
 
         vp.create_batch_2d(context.area)

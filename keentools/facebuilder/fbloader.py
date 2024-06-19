@@ -27,7 +27,8 @@ from ..addon_config import fb_settings, ActionStatus
 from ..facebuilder_config import FBConfig
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             focal_by_projection_matrix_mm,
-                            calc_model_mat)
+                            calc_model_mat,
+                            check_area_is_wrong)
 from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)
 from ..utils.attrs import mark_keentools_object, get_obj_collection
@@ -92,10 +93,6 @@ class FBLoader:
     def wireframer(cls) -> Any:
         vp = cls.viewport()
         return vp.wireframer()
-
-    @classmethod
-    def viewport_is_active(cls) -> bool:
-        return cls.wireframer().is_working()
 
     @classmethod
     def new_builder(cls) -> Any:
@@ -587,7 +584,8 @@ class FBLoader:
 
     @classmethod
     def add_background_to_camera(cls, headnum: int, camnum: int,
-                                 img: Optional[Any]) -> None:
+                                 img: Optional[Any],
+                                 cam_image_frame: int = -1) -> None:
         _log.yellow(f'{cls.__name__} add_background_to_camera start')
         settings = fb_settings()
         head = settings.get_head(headnum)
@@ -595,16 +593,18 @@ class FBLoader:
 
         cam_data = camera.camobj.data
         if len(cam_data.background_images) == 0:
-            b = cam_data.background_images.new()
+            bim = cam_data.background_images.new()
         else:
-            b = cam_data.background_images[0]
+            bim = cam_data.background_images[0]
 
         if img is not None:
-            b.image = img
-            settings.get_camera(headnum, camnum).cam_image = img
-        b.frame_method = 'CROP'
-        b.show_on_foreground = False
-        b.alpha = 1.0
+            bim.image = img
+            camera.cam_image = img
+            camera.cam_image_frame = cam_image_frame
+
+        bim.frame_method = 'CROP'
+        bim.show_on_foreground = False
+        bim.alpha = 1.0
 
         w = 0
         h = 0
@@ -619,7 +619,8 @@ class FBLoader:
         _log.output(f'{cls.__name__} add_background_to_camera end >>>')
 
     @classmethod
-    def add_new_camera(cls, headnum: int, img: Optional[Any]) -> Object:
+    def add_new_camera(cls, headnum: int, img: Optional[Any],
+                       cam_image_frame: int = -1) -> Object:
         _log.yellow(f'{cls.__name__} add_new_camera start')
         settings = fb_settings()
         head = settings.get_head(headnum)
@@ -630,7 +631,7 @@ class FBLoader:
         camera = head.cameras.add()
         camera.camobj = cam_ob
 
-        cls.add_background_to_camera(headnum, camnum, img)
+        cls.add_background_to_camera(headnum, camnum, img, cam_image_frame)
 
         fb = cls.get_builder()
         kid = cls.get_next_keyframe()
@@ -645,10 +646,11 @@ class FBLoader:
         return camera
 
     @classmethod
-    def add_new_camera_with_image(cls, headnum: int, img_path: str) -> Object:
+    def add_new_camera_with_image(cls, headnum: int, img_path: str,
+                                  cam_image_frame: int = -1) -> Object:
         _log.yellow(f'{cls.__name__} add_new_camera_with_image')
         img = bpy_load_image(img_path)
-        return cls.add_new_camera(headnum, img)
+        return cls.add_new_camera(headnum, img, cam_image_frame)
 
     @classmethod
     def _update_wireframe(cls, obj: Object, keyframe: int) -> None:

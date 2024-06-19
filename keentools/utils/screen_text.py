@@ -79,6 +79,9 @@ class KTScreenText(KTShaderBase):
             self.unregister_handler()
             return
 
+        if not self.is_visible():
+            return
+
         if not self.work_area or self.work_area != bpy_context().area:
             return
 

@@ -282,6 +282,10 @@ def get_area_region(area: Area) -> Optional[Any]:
     return area.regions[-1]
 
 
+def check_area_is_wrong(area: Optional[Area]) -> bool:
+    return not area or len(area.regions) == 0
+
+
 def blender_zoom_formula(factor: float) -> float:
     if factor < 0:
         factor = 0

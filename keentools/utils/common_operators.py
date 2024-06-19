@@ -25,6 +25,7 @@ from bpy.props import StringProperty, IntProperty
 from .kt_logging import KTLogger
 from .version import BVersion
 from ..addon_config import (Config,
+                            get_settings,
                             show_user_preferences,
                             show_tool_preferences,
                             product_name,
@@ -37,11 +38,14 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                collapse_all_modules,
                                mark_old_modules)
 from .bpy_common import (bpy_localview,
+                         bpy_background_mode,
                          bpy_show_addon_preferences,
                          bpy_url_open,
                          bpy_window_manager,
                          bpy_ops)
 from ..ui_strings import buttons
+from ..common.loader import CommonLoader
+from ..common.actor import KT_OT_Actor
 
 
 _log = KTLogger(__name__)
@@ -295,9 +299,86 @@ class KT_OT_ReportBug(Operator):
         return {'FINISHED'}
 
 
+class KT_OT_InterruptModal(Operator):
+    bl_idname = Config.kt_interrupt_modal_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(
+            Config.kt_interrupt_modal_idname, product=self.product)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
+
+    def cancel(self, context):
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.release_bus()
+
+    def execute(self, context):
+        _log.magenta(f'{self.__class__.__name__} execute ***')
+        self.release_bus()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        if self.product == ProductType.UNDEFINED:
+            _log.error(f'{self.__class__.__name__}: '
+                       f'Wrong product type {self.product}')
+            return {'CANCELLED'}
+
+        settings = get_settings(self.product)
+        settings.user_interrupts = False
+
+        if not bpy_background_mode():
+            self.init_bus()
+            context.window_manager.modal_handler_add(self)
+            _log.output(f'{product_name(self.product)} INTERRUPTOR START')
+        else:
+            _log.info(f'{product_name(self.product)} Interruptor '
+                      f'skipped by background mode')
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{product_name(self.product)} Interruptor '
+                     f'has been stopped by message bus')
+            _log.output(f'{self.__class__.__name__} modal end >>>')
+            return {'FINISHED'}
+
+        settings = get_settings(self.product)
+
+        if settings.user_interrupts:
+            _log.red(f'{product_name(self.product)} Interruptor '
+                        f'has been stopped by value')
+            self.release_bus()
+            _log.output(f'{self.__class__.__name__} modal end >>>')
+            return {'FINISHED'}
+
+        if event.type == 'ESC' and event.value == 'PRESS':
+            settings.user_interrupts = True
+            self.release_bus()
+            _log.red(f'Exit {product_name(self.product)} Interruptor by ESC')
+            _log.output(f'{self.__class__.__name__} modal end >>>')
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
+
+
 CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_OpenURL,
                        KT_OT_AddonSearch,
                        KT_OT_ExitLocalview,
                        KT_OT_ShareFeedback,
-                       KT_OT_ReportBug)
+                       KT_OT_ReportBug,
+                       KT_OT_Actor,
+                       KT_OT_InterruptModal)

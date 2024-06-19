@@ -79,9 +79,10 @@ def how_to_show_wireframe_screen_message(product: int) -> None:
     vp.message_to_screen(default_txt)
 
 
-def analysing_screen_message(message: str, *, product: int) -> None:
-    vp = _get_viewport(product)
-    vp.message_to_screen(
+def analysing_screen_message(message: str, *, viewport: Any) -> None:
+    if not viewport:
+        return
+    viewport.message_to_screen(
         [{'text': 'Analysing... Please wait', 'y': 60,
           'color': (1.0, 0.0, 0.0, _text_opacity)},
          {'text': message, 'y': 30,

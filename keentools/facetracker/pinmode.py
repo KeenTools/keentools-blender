@@ -28,6 +28,7 @@ from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
 from ..preferences.hotkeys import (facetracker_keymaps_register,
                                    facetracker_keymaps_unregister)
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -46,6 +47,13 @@ class FT_OT_PinMode(PinMode):
     camera_clip_end: FloatProperty(default=1000.0)
 
     movepin_operator_idname: str = FTConfig.ft_movepin_idname
+
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(FTConfig.ft_pinmode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
     @classmethod
     def get_settings(cls) -> Any:

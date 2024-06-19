@@ -22,11 +22,11 @@ from typing import List, Optional, Any, Callable, Tuple
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ProductType
+from ..addon_config import Config, ActionStatus, ProductType, get_operator, ErrorType
 from ..preferences.user_preferences import UserPreferences
 from .points import KTScreenPins
-from .coords import get_pixel_relative_size
-from ..utils.bpy_common import bpy_window, bpy_window_manager
+from .coords import get_pixel_relative_size, check_area_is_wrong
+from ..utils.bpy_common import bpy_window, bpy_window_manager, bpy_background_mode
 
 
 _log = KTLogger(__name__)
@@ -70,14 +70,60 @@ class KTViewport:
     def product_type(self) -> int:
         return ProductType.UNDEFINED
 
+    def get_all_shader_objects(self) -> List:
+        return [self._texter,
+                self._points3d,
+                self._residuals,
+                self._points2d,
+                self._wireframer,
+                self._rectangler]
+
+    def load_all_shaders(self) -> bool:
+        _log.green(f'{self.__class__.__name__}.load_all_shaders start')
+        if bpy_background_mode():
+            _log.red('load_all_shaders bpy_background_mode True end >>>')
+            return True
+        tmp_log = f'--- {self.__class__.__name__} Shaders ---'
+        show_tmp_log = False
+        _log.blue(tmp_log)
+        try:
+            for shader_object in self.get_all_shader_objects():
+                item_type = f'* {shader_object.__class__.__name__}'
+                tmp_log += '\n' + item_type + ' -- '
+
+                _log.blue(item_type)
+                res = shader_object.init_shaders()
+
+                tmp_log += 'skipped' if res is None else f'{res}'
+                if res is not None:
+                    show_tmp_log = True
+        except Exception as err:
+            _log.error(f'{self.__class__.__name__} '
+                       f'viewport shaders Exception:\n{tmp_log}\n---\n'
+                       f'{str(err)}\n===')
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
+            return False
+
+        _log.blue(f'--- End of {self.__class__.__name__} Shaders ---')
+        if show_tmp_log:
+            _log.info(tmp_log)
+        _log.output(f'{self.__class__.__name__}.load_all_shaders end >>>')
+        return True
+
     def get_work_area(self) -> Optional[Area]:
         return self._work_area
 
-    def set_work_area(self, area: Area) -> None:
-        self._work_area = area
+    def set_work_area(self, area: Area) -> bool:
+        if check_area_is_wrong(area):
+            self._work_area = None
+            return False
+        else:
+            self._work_area = area
+            return True
 
     def clear_work_area(self) -> None:
-        self.set_work_area(None)
+        self.set_work_area(area=None)
 
     def pins(self) -> Any:
         return self._pins
@@ -138,17 +184,15 @@ class KTViewport:
         if area:
             area.tag_redraw()
 
-    def is_working(self) -> bool:
-        wf = self.wireframer()
-        if wf is None:
+    def viewport_is_working(self) -> bool:
+        if check_area_is_wrong(self.get_work_area()):
             return False
-        return wf.is_working()
-
-    def set_visible(self, state: bool) -> None:
-        self.wireframer().set_visible(state)
-        self.points2d().set_visible(state)
-        self.points3d().set_visible(state)
-        self.residuals().set_visible(state)
+        texter = self.texter()
+        if not texter:
+            return False
+        if not texter.shader_is_working():
+            return False
+        return True
 
     def message_to_screen(self, msg: List,
                           register_area: Optional[Area] = None) -> None:
@@ -182,3 +226,59 @@ class KTViewport:
             self._prev_area_state = area_state
             return True
         return False
+
+    def register_handlers(self, *, area: Any) -> bool:
+        _log.blue(f'{self.__class__.__name__}.register_handlers start')
+        self.unregister_handlers()
+        if self.set_work_area(area=area):
+            for shader_object in self.get_all_shader_objects():
+                if not shader_object:
+                    continue
+                shader_object.register_handler(area=area)
+        else:
+            _log.error(f'{self.__class__.__name__}: '
+                       f'Viewport area does not exist')
+            return False
+        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
+        return True
+
+    def unregister_handlers(self) -> None:
+        _log.blue(f'{self.__class__.__name__}.unregister_handlers start')
+        for shader_object in self.get_all_shader_objects():
+            if not shader_object:
+                continue
+            shader_object.unregister_handler()
+        self.clear_work_area()
+        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
+
+    def set_shaders_visible(self, state: bool) -> None:
+        for shader_object in self.get_all_shader_objects():
+            if not shader_object:
+                continue
+            shader_object.set_shader_visible(state)
+
+    def hide_all_shaders(self) -> None:
+        _log.yellow(f'{self.__class__.__name__}.hide_all_shaders start')
+        self.set_shaders_visible(False)
+        _log.output(f'{self.__class__.__name__}.hide_all_shaders end >>>')
+
+    def unhide_all_shaders(self) -> None:
+        _log.yellow(f'{self.__class__.__name__}.unhide_all_shaders start')
+        self.set_shaders_visible(True)
+        _log.output(f'{self.__class__.__name__}.unhide_all_shaders end >>>')
+
+    def start_viewport(self, *, area: Any) -> ActionStatus:
+        _log.green(f'{self.__class__.__name__}.start_viewport start')
+        if not self.register_handlers(area=area):
+            return ActionStatus(False, 'Could not register handlers')
+        self.unhide_all_shaders()
+        self.tag_redraw()
+        _log.output(f'{self.__class__.__name__}.start_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    def stop_viewport(self) -> ActionStatus:
+        _log.green(f'{self.__class__.__name__}.stop_viewport start')
+        self.unregister_handlers()
+        self.clear_work_area()
+        _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
