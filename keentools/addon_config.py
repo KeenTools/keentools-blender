@@ -441,11 +441,10 @@ def stop_fb_pinmode():
     settings = fb_settings()
     if not settings:
         return
-    headnum = settings.current_headnum
     loader = settings.loader()
-    if not settings.is_proper_headnum(headnum):
-        loader.out_pinmode(headnum)
-    settings.viewport_state.show_ui_elements(loader.get_work_area())
+    area = loader.get_work_area()
+    loader.out_pinmode_without_save()
+    settings.viewport_state.show_ui_elements(area)
     settings.reset_pinmode_id()
     settings.pinmode = False
 
@@ -468,17 +467,17 @@ def calculation_in_progress(facebuilder: bool = True,
                             geotracker: bool = True,
                             facetracker: bool = True) -> ActionStatus:
     if geotracker:
-        gts = gt_settings()
-        if gts and gts.is_calculating():
+        settings_gt = gt_settings()
+        if settings_gt and settings_gt.is_calculating():
             return ActionStatus(False, 'GeoTracker calculation is in progress')
 
     if facetracker:
-        fts = ft_settings()
-        if fts and fts.is_calculating():
+        settings_ft = ft_settings()
+        if settings_ft and settings_ft.is_calculating():
             return ActionStatus(False, 'FaceTracker calculation is in progress')
 
     if facebuilder:
-        fbs = fb_settings()
-        if fbs and fbs.is_calculating():
+        settings_fb = fb_settings()
+        if settings_fb and settings_fb.is_calculating():
             return ActionStatus(False, 'FaceBuilder calculation is in progress')
     return ActionStatus(True, 'No calculation is in progress')

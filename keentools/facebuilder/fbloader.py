@@ -47,6 +47,7 @@ from ..utils.bpy_common import (bpy_create_object,
 from ..utils.fb_wireframe_image import create_wireframe_image
 from .prechecks import common_fb_checks
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -69,7 +70,7 @@ def _create_mesh_from_pydata(mesh_name: str,
 
 def force_stop_fb_shaders() -> None:
     _log.yellow('force_stop_fb_shaders start')
-    FBLoader.stop_viewport_shaders()
+    CommonLoader.stop_fb_viewport()
     force_ui_redraw('VIEW_3D')
     _log.yellow('force_stop_fb_shaders end >>>')
 
@@ -172,34 +173,30 @@ class FBLoader:
         _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 
     @classmethod
-    def out_pinmode_without_save(cls, headnum: int) -> None:
+    def out_pinmode_without_save(cls) -> None:
+        settings = fb_settings()
+        headnum = settings.current_headnum
+
         _log.yellow(f'out_pinmode_without_save start: h={headnum}')
         area = FBLoader.get_work_area()
         cls.stop_viewport_shaders()
 
-        settings = fb_settings()
-        head = settings.get_head(headnum)
-        if head and head.headobj:
-            head.headobj.hide_set(False)
-            if area is None:
-                area = bpy_context().area
-                _log.output('working area was redefined from context')
-            _log.output(f'out_pinmode_without_save area={area}')
-            settings.viewport_state.show_ui_elements(area)
+        if settings.is_proper_headnum(headnum):
+            head = settings.get_head(headnum)
+            if head and head.headobj:
+                head.headobj.hide_set(False)
+                if area is None:
+                    area = bpy_context().area
+                    _log.output('working area was redefined from context')
+                _log.output(f'out_pinmode_without_save area={area}')
+                settings.viewport_state.show_ui_elements(area)
+
+                camera = head.get_camera(settings.current_camnum)
+                if camera:
+                    camera.reset_tone_mapping()
 
         settings.pinmode = False
-        _log.output('OUT PINMODE')
-        camera = head.get_camera(settings.current_camnum)
-        if camera:
-            camera.reset_tone_mapping()
         _log.output(f'out_pinmode_without_save end >>>')
-
-    @classmethod
-    def out_pinmode(cls, headnum: int) -> None:
-        _log.yellow(f'{cls.__name__} out_pinmode start: h={headnum}')
-        cls.save_pinmode_state(headnum)
-        cls.out_pinmode_without_save(headnum)
-        _log.output(f'{cls.__name__} out_pinmode end >>>')
 
     @classmethod
     def save_fb_serial_str(cls, headnum: int) -> None:
@@ -464,12 +461,12 @@ class FBLoader:
 
     @classmethod
     def solve(cls, headnum: int, camnum: int) -> bool:
-        def _exception_handling(headnum, msg, license_err=True):
+        def _exception_handling(msg, license_err=True):
             _log.error(msg)
             if settings.pinmode:
                 settings.force_out_pinmode = True
                 settings.license_error = license_err
-                cls.out_pinmode(headnum)
+                cls.out_pinmode_without_save()
 
         _log.green(f'{cls.__name__} solve start')
         settings = fb_settings()
@@ -489,16 +486,16 @@ class FBLoader:
             fb.solve_for_current_pins(kid)
             update_camera_focal(camera, fb)
         except pkt_module().UnlicensedException:
-            _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
+            _exception_handling('SOLVE LICENSE EXCEPTION')
             _log.output(f'{cls.__name__} solve False 1 end >>>')
             return False
         except pkt_module().InvalidArgumentException:
-            _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
+            _exception_handling('SOLVE NO KEYFRAME EXCEPTION',
                                 license_err=False)
             _log.output(f'{cls.__name__} solve False 2 end >>>')
             return False
         except Exception as err:
-            _exception_handling(headnum, f'SOLVE UNKNOWN EXCEPTION: {str(err)}',
+            _exception_handling(f'SOLVE UNKNOWN EXCEPTION: {str(err)}',
                                 license_err=False)
             _log.output(f'{cls.__name__} solve False 3 end >>>')
             return False
