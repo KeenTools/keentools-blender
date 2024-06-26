@@ -1072,10 +1072,14 @@ class FT_PT_ScenePanel(AllVisible):
             row = col.split(factor=0.4, align=True)
             row.label(text='Orientation')
             row.prop(settings, 'export_locator_orientation', text='')
-        row = col.split(factor=0.4, align=True)
-        row.prop(settings, 'export_linked_locator')
-        op = row.operator(FTConfig.ft_export_animated_empty_idname)
-        op.product = ProductType.FACETRACKER
+
+        if settings.export_locator_selector == 'SAVE_FACS':
+            col.operator(FTConfig.ft_save_facs_idname)
+        else:
+            row = col.split(factor=0.4, align=True)
+            row.prop(settings, 'export_linked_locator')
+            op = row.operator(FTConfig.ft_export_animated_empty_idname)
+            op.product = ProductType.FACETRACKER
 
 
 class FT_UL_selected_frame_list(UIList):

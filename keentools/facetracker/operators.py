@@ -27,6 +27,8 @@ from bpy.props import (BoolProperty,
                        StringProperty,
                        EnumProperty,
                        PointerProperty)
+from bpy_extras.io_utils import ExportHelper
+from bpy.path import ensure_ext
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -73,7 +75,8 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 refine_async_action,
                                                 refine_all_async_action,
                                                 create_animated_empty_action,
-                                                create_soft_empties_from_selected_pins_action)
+                                                create_soft_empties_from_selected_pins_action,
+                                                save_facs_as_csv_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
 from ..common.loader import CommonLoader
@@ -883,6 +886,102 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
         return {'CANCELLED'}
 
 
+class FT_OT_SaveFACS(Operator, ExportHelper):
+    bl_idname = FTConfig.ft_save_facs_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    filter_glob: StringProperty(
+        default='*.csv',
+        options={'HIDDEN'}
+    )
+
+    check_existing: BoolProperty(
+        name='Check Existing',
+        description='Check and warn on overwriting existing files',
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    filename_ext: StringProperty(default='.csv')
+
+    filepath: StringProperty(
+        default='',
+        subtype='FILE_PATH'
+    )
+
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+
+    use_tracked_only: BoolProperty(name='Tracked frames only', default=False)
+
+    def check(self, context):
+        change_ext = False
+
+        filepath = self.filepath
+        sp = os.path.splitext(filepath)
+
+        if sp[1] in {'.csv', '.'}:
+            filepath = sp[0]
+
+        filepath = ensure_ext(filepath, self.filename_ext)
+
+        if filepath != self.filepath:
+            self.filepath = filepath
+            change_ext = True
+
+        return change_ext
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Frame range:')
+        row = layout.row()
+        row.prop(self, 'from_frame', expand=True)
+        row.prop(self, 'to_frame', expand=True)
+
+        layout.prop(self, 'use_tracked_only', expand=True)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        _log.info(f'FACS path: {self.filepath}')
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            _log.error('Current FaceTracker is wrong')
+            return {'CANCELLED'}
+
+        if os.path.exists(self.filepath) and os.path.isdir(self.filepath):
+            _log.error(f'Wrong file destination: {self.filepath}')
+            self.report({'ERROR'}, 'Wrong file destination!')
+            return {'CANCELLED'}
+
+        if self.to_frame < self.from_frame:
+            msg = 'Wrong frame range'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        act_status = save_facs_as_csv_action(filepath=self.filepath,
+                                             from_frame=self.from_frame,
+                                             to_frame=self.to_frame,
+                                             use_tracked_only=self.use_tracked_only)
+
+        if not act_status:
+            msg = act_status.error_message
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        self.from_frame = bpy_start_frame()
+        self.to_frame = bpy_end_frame()
+        return super().invoke(context, event)
+
+
 class FT_OT_MoveWrapper(Operator):
     bl_idname = FTConfig.ft_move_wrapper_idname
     bl_label = buttons[bl_idname].label
@@ -1052,6 +1151,7 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_RemoveFocalKeyframe,
                   FT_OT_RemoveFocalKeyframes,
                   FT_OT_ExportAnimatedEmpty,
+                  FT_OT_SaveFACS,
                   FT_OT_MoveWrapper,
                   FT_OT_PanDetector,
                   FT_OT_ChooseFrameMode)

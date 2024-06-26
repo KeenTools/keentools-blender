@@ -338,6 +338,10 @@ buttons = {
         'Choose frame mode',
         'Choose frame mode description'
     ),
+    FTConfig.ft_save_facs_idname: Button(
+        'Save FACS animation',
+        'Save FACS as a CSV file'
+    ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
         'Clear menu',
