@@ -719,7 +719,7 @@ class FB_OT_ShowTexture(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(context.area)
 
         mat = show_texture_in_mat(head.preview_texture_name(),
@@ -750,7 +750,7 @@ class FB_OT_ShowSolid(ButtonOperator, Operator):
 
         settings = fb_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(context.area)
         switch_to_mode('SOLID')
         _log.output(f'{self.__class__.__name__} execute end >>>')
@@ -892,7 +892,7 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
 
         settings = fb_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(context.area)
 
         return export_head_to_fbx(self)

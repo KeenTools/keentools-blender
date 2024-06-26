@@ -103,8 +103,7 @@ def select_by_headnum(headnum: int) -> Any:
 
 
 def out_pinmode() -> None:
-    settings = fb_settings()
-    FBLoader.out_pinmode(settings.current_headnum)
+    FBLoader.out_pinmode_without_save()
 
 
 def update_pins(headnum: int, camnum: int) -> None:

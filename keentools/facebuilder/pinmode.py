@@ -365,7 +365,7 @@ class FB_OT_PinMode(Operator):
         except Exception as err:
             _log.red('FB MODEL CANNOT BE LOADED IN PINMODE')
 
-            FBLoader.out_pinmode_without_save(self.headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(area)
 
             _log.error(f'DESERIALIZE load_model_throw_exception: \n{str(err)}')
@@ -384,7 +384,7 @@ class FB_OT_PinMode(Operator):
                        f'{len(headobj.data.vertices)} != '
                        f'{len(fb.applied_args_vertices())}')
 
-            FBLoader.out_pinmode_without_save(self.headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(area)
 
             warn = get_operator(Config.kt_warning_idname)
@@ -476,23 +476,22 @@ class FB_OT_PinMode(Operator):
 
     def _modal_should_finish(self, context: Any, event: Any) -> bool:
         settings = fb_settings()
-        headnum = settings.current_headnum
 
         # Quit if Screen changed or out from localview
         if context.area is None or not check_context_localview(context):
             _log.output('CONTEXT LOST')
-            FBLoader.out_pinmode(headnum)
+            FBLoader.out_pinmode_without_save()
             return True
 
-        if headnum < 0:
+        if not settings.is_proper_headnum(settings.current_headnum):
             _log.error('HEAD LOST')
-            FBLoader.out_pinmode(headnum)
+            FBLoader.out_pinmode_without_save()
             return True
 
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
             _log.output('FORCE PINMODE OUT')
-            FBLoader.out_pinmode(headnum)
+            FBLoader.out_pinmode_without_save()
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
@@ -510,11 +509,11 @@ class FB_OT_PinMode(Operator):
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 _log.output(context.space_data.region_3d.view_perspective)
-                FBLoader.out_pinmode(headnum)
+                FBLoader.out_pinmode_without_save()
                 return True
 
         if event.type == 'ESC' and event.value == 'RELEASE':
-            FBLoader.out_pinmode(headnum)
+            FBLoader.out_pinmode_without_save()
             # --- PROFILING ---
             if FBLoader.viewport().profiling:
                 pr = FBLoader.viewport().pr
@@ -600,7 +599,7 @@ class FB_OT_PinMode(Operator):
         if not vp.viewport_is_working():
             _log.error('VIEWPORT DOES NOT WORK')
             unregister_fb_undo_handler()
-            FBLoader.out_pinmode(headnum)
+            FBLoader.out_pinmode_without_save()
 
             self.on_finish()
             return {'FINISHED'}

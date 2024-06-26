@@ -168,11 +168,12 @@ class GTViewport(KTViewport):
         _log.cyan(f'{self.__class__.__name__}.register_handlers end >>>')
         return status
 
-    def unregister_handlers(self) -> None:
+    def unregister_handlers(self) -> Area:
         _log.cyan(f'{self.__class__.__name__}.unregister_handlers start')
         self.unregister_draw_update_timer()
-        super().unregister_handlers()
+        area = super().unregister_handlers()
         _log.cyan(f'{self.__class__.__name__}.unregister_handlers end >>>')
+        return area
 
     def mask2d(self) -> KTRasterMask:
         return self._mask2d
@@ -394,8 +395,7 @@ class GTViewport(KTViewport):
 
     def stop_viewport(self) -> ActionStatus:
         _log.green(f'{self.__class__.__name__}.stop_viewport start')
-        area = self.get_work_area()
-        self.unregister_handlers()
+        area = self.unregister_handlers()
         if area:
             area.tag_redraw()
         _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')

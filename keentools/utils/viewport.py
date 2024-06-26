@@ -184,8 +184,19 @@ class KTViewport:
         if area:
             area.tag_redraw()
 
+    def check_handlers_registered(self) -> bool:
+        for shader_object in self.get_all_shader_objects():
+            if shader_object.shader_is_working():
+                return True
+        if self._draw_update_timer_handler is not None:
+            return True
+        return False
+
+    def check_work_area_exists(self) -> bool:
+        return not check_area_is_wrong(self.get_work_area())
+
     def viewport_is_working(self) -> bool:
-        if check_area_is_wrong(self.get_work_area()):
+        if not self.check_work_area_exists():
             return False
         texter = self.texter()
         if not texter:
@@ -242,14 +253,16 @@ class KTViewport:
         _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
         return True
 
-    def unregister_handlers(self) -> None:
+    def unregister_handlers(self) -> Area:
         _log.blue(f'{self.__class__.__name__}.unregister_handlers start')
         for shader_object in self.get_all_shader_objects():
             if not shader_object:
                 continue
             shader_object.unregister_handler()
+        area = self.get_work_area()
         self.clear_work_area()
         _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
+        return area
 
     def set_shaders_visible(self, state: bool) -> None:
         for shader_object in self.get_all_shader_objects():
@@ -278,7 +291,8 @@ class KTViewport:
 
     def stop_viewport(self) -> ActionStatus:
         _log.green(f'{self.__class__.__name__}.stop_viewport start')
-        self.unregister_handlers()
-        self.clear_work_area()
+        area = self.unregister_handlers()
+        if area:
+            area.tag_redraw()
         _log.output(f'{self.__class__.__name__}.stop_viewport end >>>')
         return ActionStatus(True, 'ok')
