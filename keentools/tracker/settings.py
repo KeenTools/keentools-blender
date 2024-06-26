@@ -453,9 +453,7 @@ class TRSceneSetting(PropertyGroup):
         def _object_is_not_in_use(obj: Optional[Object]):
             if obj is None:
                 return False
-            if obj.users <= 1:
-                return True
-            if obj.users == 2 and not bpy_object_is_in_scene(obj):
+            if obj.users <= 1 or not bpy_object_is_in_scene(obj):
                 return True
             return False
 
