@@ -251,6 +251,9 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         facetracker = settings.get_current_geotracker_item()
         return facetracker.geomobj and facetracker.camobj
 
+    def _back_to_button_title(self) -> str:
+        return 'Back to FaceTracker'
+
     def _draw_add_images_button(self, headnum, layout, scale=2.0,
                                 icon='OUTLINER_OB_IMAGE'):
         col = layout.column(align=True)

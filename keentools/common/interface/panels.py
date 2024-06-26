@@ -160,6 +160,9 @@ class COMMON_FB_PT_ViewsPanel:
             FBConfig.fb_help_views_idname,
             text='', icon='QUESTION', emboss=False)
 
+    def _back_to_button_title(self) -> str:
+        return 'Back to 3D'
+
     def _draw_camera_list(self, headnum, layout):
         settings = fb_settings()
         if settings is None:
@@ -182,8 +185,8 @@ class COMMON_FB_PT_ViewsPanel:
 
             if settings.current_camnum == i and settings.pinmode:
                 row.operator(FBConfig.fb_select_current_camera_idname,
-                             text='Back to 3D', icon='LOOP_BACK',
-                             depress=True)
+                             text=self._back_to_button_title(),
+                             icon='LOOP_BACK', depress=True)
             else:
                 op = row.operator(
                     FBConfig.fb_select_camera_idname,
