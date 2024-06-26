@@ -290,6 +290,9 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
     def poll(cls, context):
         return True
 
+    def _draw_topology_is_needed(self) -> bool:
+        return False
+
 
 def _draw_create_head_ui(layout, geotracker):
     col = layout.column(align=True)

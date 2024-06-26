@@ -318,6 +318,9 @@ class COMMON_FB_PT_Model:
             FBConfig.fb_help_model_idname,
             text='', icon='QUESTION', emboss=False)
 
+    def _draw_topology_is_needed(self) -> bool:
+        return True
+
     def draw(self, context):
         layout = self.layout
         settings = fb_settings()
@@ -332,9 +335,11 @@ class COMMON_FB_PT_Model:
         if not head:
             return
 
-        row = layout.split(factor=0.35)
-        row.label(text='Topology')
-        row.prop(head, 'model_type', text='')
+        if self._draw_topology_is_needed():
+            row = layout.split(factor=0.35)
+            row.label(text='Topology')
+            row.prop(head, 'model_type', text='')
+
         layout.prop(head, 'tex_uv_shape')
 
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
