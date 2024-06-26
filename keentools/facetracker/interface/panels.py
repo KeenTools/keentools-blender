@@ -38,7 +38,7 @@ from ...utils.localview import check_context_localview, exit_area_localview
 from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
-from ...utils.bpy_common import bpy_timer_register
+from ...utils.bpy_common import bpy_timer_register, bpy_object_is_in_scene
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
@@ -436,8 +436,10 @@ class FT_PT_InputsPanel(View3DPanel):
         if not geotracker:
             return
 
-        if geotracker.geomobj and geotracker.geomobj.users == 1:
-            _start_geomobj_delete_handler()
+        if geotracker.geomobj:
+            if geotracker.geomobj.users == 1 or (geotracker.geomobj.users == 2
+                    and not bpy_object_is_in_scene(geotracker.geomobj)):
+                _start_geomobj_delete_handler()
 
         layout = self.layout
         self._draw_main_inputs(layout, geotracker)
