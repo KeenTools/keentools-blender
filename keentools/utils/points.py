@@ -102,9 +102,9 @@ class KTScreenPins:
 
     def add_selected_pins(self, selected_pins: Any) -> None:
         _log.output('add_selected_pins')
-        self.set_selected_pins(
-            np.unique(np.concatenate(self._selected_pins,
-                                     np.array(selected_pins, dtype=np.int32))))
+        self.set_selected_pins(np.unique(
+            np.concatenate((self._selected_pins,
+                            np.array(selected_pins, dtype=np.int32)))))
 
     def toggle_selected_pins(self, selected_pins: Any) -> None:
         _log.output('toggle_selected_pins')
@@ -117,6 +117,7 @@ class KTScreenPins:
     def exclude_selected_pin(self, pin_number: int) -> None:
         _log.output('exclude_selected_pin')
         self._selected_pins = self._selected_pins[self._selected_pins != pin_number]
+        self.reset_current_pin()
 
     def clear_selected_pins(self) -> None:
         _log.output('clear_selected_pins')

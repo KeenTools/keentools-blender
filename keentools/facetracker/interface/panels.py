@@ -38,7 +38,7 @@ from ...utils.localview import check_context_localview, exit_area_localview
 from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
-from ...utils.bpy_common import bpy_timer_register
+from ...utils.bpy_common import bpy_timer_register, bpy_object_is_in_scene
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
@@ -251,6 +251,9 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         facetracker = settings.get_current_geotracker_item()
         return facetracker.geomobj and facetracker.camobj
 
+    def _back_to_button_title(self) -> str:
+        return 'Back to FaceTracker'
+
     def _draw_add_images_button(self, headnum, layout, scale=2.0,
                                 icon='OUTLINER_OB_IMAGE'):
         col = layout.column(align=True)
@@ -289,6 +292,9 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
     @classmethod
     def poll(cls, context):
         return True
+
+    def _draw_topology_is_needed(self) -> bool:
+        return False
 
 
 def _draw_create_head_ui(layout, geotracker):
@@ -430,8 +436,10 @@ class FT_PT_InputsPanel(View3DPanel):
         if not geotracker:
             return
 
-        if geotracker.geomobj and geotracker.geomobj.users == 1:
-            _start_geomobj_delete_handler()
+        if geotracker.geomobj:
+            if geotracker.geomobj.users == 1 or (geotracker.geomobj.users == 2
+                    and not bpy_object_is_in_scene(geotracker.geomobj)):
+                _start_geomobj_delete_handler()
 
         layout = self.layout
         self._draw_main_inputs(layout, geotracker)
@@ -1072,10 +1080,14 @@ class FT_PT_ScenePanel(AllVisible):
             row = col.split(factor=0.4, align=True)
             row.label(text='Orientation')
             row.prop(settings, 'export_locator_orientation', text='')
-        row = col.split(factor=0.4, align=True)
-        row.prop(settings, 'export_linked_locator')
-        op = row.operator(FTConfig.ft_export_animated_empty_idname)
-        op.product = ProductType.FACETRACKER
+
+        if settings.export_locator_selector == 'SAVE_FACS':
+            col.operator(FTConfig.ft_save_facs_idname)
+        else:
+            row = col.split(factor=0.4, align=True)
+            row.prop(settings, 'export_linked_locator')
+            op = row.operator(FTConfig.ft_export_animated_empty_idname)
+            op.product = ProductType.FACETRACKER
 
 
 class FT_UL_selected_frame_list(UIList):

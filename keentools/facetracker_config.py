@@ -127,6 +127,7 @@ class FTConfig:
     ft_move_wrapper_idname = operators + '.move_wrapper'
     ft_pan_detector_idname = operators + '.pan_detector'
     ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
+    ft_save_facs_idname = operators + '.save_facs'
 
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'

@@ -17,10 +17,10 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder & GeoTracker 2024.1.0",  # (1/5)
+    "name": "KeenTools: FaceBuilder, FaceTracker, GeoTracker 2024.1.0",  # (1/5)
     "version": (2024, 1, 0),  # 2024.1.0 (2/5)
     "author": "KeenTools",
-    "description": "FaceBuilder: Create Heads. GeoTracker: Track Objects in videos using 3D models",
+    "description": "FaceBuilder: Create Heads. FaceTracker: Track Heads. GeoTracker: Track Objects",
     "blender": (2, 80, 0),
     "location": "View UI (press N to open tab bar)",
     "wiki_url": "https://keentools.io",

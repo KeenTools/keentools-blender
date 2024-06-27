@@ -40,7 +40,8 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 bpy_render_single_frame,
-                                get_scene_camera_shift)
+                                get_scene_camera_shift,
+                                bpy_object_is_in_scene)
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  viewer_node_to_image,
@@ -452,7 +453,9 @@ class TRSceneSetting(PropertyGroup):
         def _object_is_not_in_use(obj: Optional[Object]):
             if obj is None:
                 return False
-            return obj.users <= 1
+            if obj.users <= 1 or not bpy_object_is_in_scene(obj):
+                return True
+            return False
 
         flag = False
         for geotracker in self.trackers():
