@@ -90,11 +90,12 @@ class FBViewport(KTViewport):
         _log.cyan(f'{self.__class__.__name__}.register_handlers end >>>')
         return status
 
-    def unregister_handlers(self) -> None:
+    def unregister_handlers(self) -> Area:
         _log.cyan(f'{self.__class__.__name__}.unregister_handlers start')
         self.unregister_draw_update_timer()
-        super().unregister_handlers()
+        area = super().unregister_handlers()
         _log.cyan(f'{self.__class__.__name__}.unregister_handlers end >>>')
+        return area
 
     def update_surface_points(
             self, fb: Any, headobj: Object, keyframe: int = -1,

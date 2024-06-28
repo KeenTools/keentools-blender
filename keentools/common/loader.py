@@ -23,8 +23,10 @@ from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
 from .viewport import KTTextViewport
-from ..addon_config import fb_settings, gt_settings, ft_settings
+from ..addon_config import Config, fb_settings, gt_settings, ft_settings
 from ..facebuilder_config import FBConfig
+from ..geotracker_config import GTConfig
+from ..facetracker_config import FTConfig
 
 
 _log = KTLogger(__name__)
@@ -121,7 +123,8 @@ class CommonLoader:
     @classmethod
     def ft_head_mode(cls) -> str:
         if cls.ft_head_mode_state == 'EDIT_HEAD':
-            if not fb_settings().pinmode:
+            settings = fb_settings()
+            if not settings or not settings.pinmode:
                 cls.set_ft_head_mode('NONE')
         return cls.ft_head_mode_state
 
@@ -147,11 +150,38 @@ class CommonLoader:
         message_bus.remove_by_type(FBConfig.fb_pinmode_idname)
 
     @classmethod
+    def stop_gt_pinmode(cls) -> None:
+        message_bus = cls.message_bus()
+        message_bus.remove_by_type(GTConfig.gt_pinmode_idname)
+
+    @classmethod
+    def stop_ft_pinmode(cls) -> None:
+        message_bus = cls.message_bus()
+        message_bus.remove_by_type(FTConfig.ft_pinmode_idname)
+
+    @classmethod
+    def stop_esc_watcher(cls) -> None:
+        message_bus = cls.message_bus()
+        message_bus.remove_by_type(Config.kt_interrupt_modal_idname)
+
+    @classmethod
     def stop_fb_viewport(cls) -> None:
-        message_bus = cls.viewports()
-        message_bus.remove_by_type('fb_viewport')
         vp = fb_settings().loader().viewport()
         vp.stop_viewport()
+
+    @classmethod
+    def stop_gt_viewport(cls) -> None:
+        vp = gt_settings().loader().viewport()
+        vp.stop_viewport()
+
+    @classmethod
+    def stop_ft_viewport(cls) -> None:
+        vp = gt_settings().loader().viewport()
+        vp.stop_viewport()
+
+    @classmethod
+    def stop_text_viewport(cls) -> None:
+        cls.text_viewport().stop_viewport()
 
     @classmethod
     def get_current_viewport_area(cls) -> Optional[Area]:
