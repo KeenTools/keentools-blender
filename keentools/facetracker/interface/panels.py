@@ -1091,6 +1091,8 @@ class FT_PT_ScenePanel(AllVisible):
 
 
 class FT_UL_selected_frame_list(UIList):
+    bl_idname = FTConfig.ft_selected_frame_list_item_idname
+
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
         layout.label(text=f'frame {item.num}')

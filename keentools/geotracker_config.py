@@ -28,6 +28,7 @@ _log = KTLogger(__name__)
 
 _PT = 'GEOTRACKER_PT_'
 _MT = 'GEOTRACKER_MT_'
+_UL = 'GEOTRACKER_UL_'
 
 
 class GTConfig:
@@ -145,6 +146,7 @@ class GTConfig:
     gt_rendering_panel_idname = _PT + 'rendering_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
     gt_support_panel_idname = _PT + 'support_panel'
+    gt_selected_frame_list_item_idname = _UL + 'selected_frame_list_item'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'

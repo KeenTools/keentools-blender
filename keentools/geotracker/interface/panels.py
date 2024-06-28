@@ -21,7 +21,7 @@ from typing import Tuple, Optional, Any
 from functools import partial
 
 import bpy
-from bpy.types import Area, Panel
+from bpy.types import Area, Panel, UIList
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
@@ -801,7 +801,9 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         self._appearance_image_adjustment(settings, layout)
 
 
-class GT_UL_selected_frame_list(bpy.types.UIList):
+class GT_UL_selected_frame_list(UIList):
+    bl_idname = GTConfig.gt_selected_frame_list_item_idname
+
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
         layout.label(text=f'frame {item.num}')

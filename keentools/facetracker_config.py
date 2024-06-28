@@ -24,6 +24,7 @@ _log = KTLogger(__name__)
 
 _PT = 'FACETRACKER_PT_'
 _MT = 'FACETRACKER_MT_'
+_UL = 'FACETRACKER_UL_'
 
 
 class FTConfig:
@@ -159,6 +160,7 @@ class FTConfig:
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
     ft_support_panel_idname = _PT + 'support_panel'
     ft_choose_snapshot_frame_idname = _PT + 'choose_snapshot_frame_panel'
+    ft_selected_frame_list_item_idname = _UL + 'selected_frame_list_item'
 
     # Help ids
     ft_help_inputs_idname = operators + '.help_inputs'
