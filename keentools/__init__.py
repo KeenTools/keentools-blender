@@ -64,6 +64,9 @@ txt.append('Package: {}'.format(__package__))
 _log.info('\n---\nSystem Info:\n' + '\n'.join(txt) + '\n---\n')
 
 
+_another_keentools_addon_detected: bool = False
+
+
 def _is_platform_64bit():
     import platform
     return platform.architecture()[0] == '64bit'
@@ -136,6 +139,7 @@ if not _can_load():
         bl_idname = Config.package
 
         def draw(self, context):
+            global _another_keentools_addon_detected
             layout = self.layout
 
             if not _is_platform_64bit():
@@ -187,7 +191,14 @@ if not _can_load():
                 return
 
             if _check_addon_already_registered(log_error=False):
+                _another_keentools_addon_detected = True
                 draw_warning_labels(layout, ERROR_MESSAGES['ADDON_REGISTERED'],
+                                    alert=True, icon='ERROR')
+                draw_system_info(layout)
+                return
+
+            if _another_keentools_addon_detected:
+                draw_warning_labels(layout, ERROR_MESSAGES['NEEDS_RESTART'],
                                     alert=True, icon='ERROR')
                 draw_system_info(layout)
                 return
