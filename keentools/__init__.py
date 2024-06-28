@@ -89,18 +89,21 @@ def _check_libraries():
         return False
 
 
-def _check_addon_already_registered() -> bool:
+def _check_addon_already_registered(log_error: bool = True) -> bool:
     if hasattr(_bpy_types, FBConfig.fb_header_panel_idname):
-        _log.error(f'Another version of KeenTools add-on has been detected: '
-                   f'class {FBConfig.fb_header_panel_idname}')
+        if log_error:
+            _log.error(f'Another version of KeenTools add-on has been detected: '
+                       f'class {FBConfig.fb_header_panel_idname}')
         return True
     if hasattr(_bpy_types, GTConfig.gt_geotrackers_panel_idname):
-        _log.error(f'Another version of KeenTools add-on has been detected: '
-                   f'class {GTConfig.gt_geotrackers_panel_idname}')
+        if log_error:
+            _log.error(f'Another version of KeenTools add-on has been detected: '
+                       f'class {GTConfig.gt_geotrackers_panel_idname}')
         return True
     if hasattr(_bpy_types, FTConfig.ft_facetrackers_panel_idname):
-        _log.error(f'Another version of KeenTools add-on has been detected: '
-                   f'class {FTConfig.ft_facetrackers_panel_idname}')
+        if log_error:
+            _log.error(f'Another version of KeenTools add-on has been detected: '
+                       f'class {FTConfig.ft_facetrackers_panel_idname}')
         return True
     return False
 
@@ -183,7 +186,7 @@ if not _can_load():
                 draw_system_info(layout)
                 return
 
-            if _check_addon_already_registered():
+            if _check_addon_already_registered(log_error=False):
                 draw_warning_labels(layout, ERROR_MESSAGES['ADDON_REGISTERED'],
                                     alert=True, icon='ERROR')
                 draw_system_info(layout)

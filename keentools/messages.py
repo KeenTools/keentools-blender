@@ -186,9 +186,10 @@ def draw_system_info(layout):
 
 def draw_warning_labels(layout, content, alert=True, icon='INFO'):
     row = layout.row()
-    col = row.column()
-    col.operator(Config.kt_pref_computer_info_idname,
-                 text='', icon=icon, emboss=False)
+    if hasattr(bpy.types, Config.kt_pref_computer_info_idname):
+        col = row.column()
+        col.operator(Config.kt_pref_computer_info_idname,
+                     text='', icon=icon, emboss=False)
 
     col = row.column()
     col.alert = alert
