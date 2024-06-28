@@ -112,6 +112,14 @@ ERROR_MESSAGES = {
         'If you see this error, please contact our support. ',
         'We\'ll do our best to figure it out.'],
 
+    'NEEDS_RESTART': [
+        'Error (1130): Before installing a new add-on version ',
+        'you need to relaunch Blender.'],
+
+    'ADDON_REGISTERED': [
+        'Error (1140): Another active version of KeenTools add-on/extension ',
+        'has been detected. Please remove it before installing a new one. '],
+
     'UNKNOWN': ['Unknown error (0000)']
 }
 
@@ -147,6 +155,7 @@ def get_system_info():
         _log.error(f'get_system_info Exception:\n{str(err)}')
     finally:
         txt_arr.append(f'NumPy version: {np_ver}')
+        txt_arr.append(f'Package: {__package__}')
     return txt_arr
 
 
@@ -167,13 +176,12 @@ def get_gpu_info() -> List[str]:
 
 
 def draw_system_info(layout):
-    box = layout.box()
-    col = box.column()
+    col = layout.column()
     col.scale_y = _get_text_scale_y()
     txt_arr = get_system_info()
     for txt in txt_arr:
         col.label(text=txt)
-    return box
+    return col
 
 
 def draw_warning_labels(layout, content, alert=True, icon='INFO'):

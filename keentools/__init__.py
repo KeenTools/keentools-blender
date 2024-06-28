@@ -38,11 +38,15 @@ import sys
 import logging.config
 
 from bpy import app as _bpy_app
+from bpy import types as _bpy_types
 from bpy.types import AddonPreferences
 from bpy.utils import register_class, unregister_class
 
 # Only minimal imports are performed to check the start
 from .addon_config import Config, output_import_statistics
+from .facebuilder_config import FBConfig
+from .geotracker_config import GTConfig
+from .facetracker_config import FTConfig
 from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
                        draw_system_info, draw_long_label, draw_long_labels)
 
@@ -85,10 +89,43 @@ def _check_libraries():
         return False
 
 
-def _can_load():
-    return _is_platform_64bit() and _is_python_64bit() and \
-           _is_config_latest() and not _is_blender_too_old() and \
-           _check_libraries()
+def _check_addon_already_registered() -> bool:
+    if hasattr(_bpy_types, FBConfig.fb_header_panel_idname):
+        _log.error(f'Another version of KeenTools add-on has been detected: '
+                   f'class {FBConfig.fb_header_panel_idname}')
+        return True
+    if hasattr(_bpy_types, GTConfig.gt_geotrackers_panel_idname):
+        _log.error(f'Another version of KeenTools add-on has been detected: '
+                   f'class {GTConfig.gt_geotrackers_panel_idname}')
+        return True
+    if hasattr(_bpy_types, FTConfig.ft_facetrackers_panel_idname):
+        _log.error(f'Another version of KeenTools add-on has been detected: '
+                   f'class {FTConfig.ft_facetrackers_panel_idname}')
+        return True
+    return False
+
+
+def _can_load() -> bool:
+    if not _is_platform_64bit():
+        _log.error('\n'.join(ERROR_MESSAGES['OS_32_BIT']))
+        return False
+    if not _is_python_64bit():
+        _log.error('\n'.join(ERROR_MESSAGES['BLENDER_32_BIT']))
+        return False
+    if not _is_config_latest():
+        _log.error('\n'.join(ERROR_MESSAGES['NEEDS_RESTART']))
+        return False
+    if _is_blender_too_old():
+        _log.error('\n'.join(ERROR_MESSAGES['BLENDER_TOO_OLD']))
+        return False
+    if not _check_libraries():
+        _log.error('\n'.join(ERROR_MESSAGES['NUMPY_PROBLEM']))
+        return False
+    if _check_addon_already_registered():
+        _log.error('\n'.join(ERROR_MESSAGES['ADDON_REGISTERED']))
+        return False
+    _log.info('Basic checks have been passed')
+    return True
 
 
 if not _can_load():
@@ -97,35 +134,33 @@ if not _can_load():
 
         def draw(self, context):
             layout = self.layout
-            box = layout.box()
 
             if not _is_platform_64bit():
-                draw_warning_labels(box, ERROR_MESSAGES['OS_32_BIT'],
+                draw_warning_labels(layout, ERROR_MESSAGES['OS_32_BIT'],
                                     alert=True, icon='ERROR')
                 draw_system_info(layout)
                 return
 
             if not _is_python_64bit():
-                draw_warning_labels(box, ERROR_MESSAGES['BLENDER_32_BIT'],
+                draw_warning_labels(layout, ERROR_MESSAGES['BLENDER_32_BIT'],
                                     alert=True, icon='ERROR')
                 draw_system_info(layout)
                 return
 
             if not _is_config_latest():
-                msg = ['Before installing a new add-on version you need '
-                       'to relaunch Blender.']
-                draw_warning_labels(box, msg, alert=True, icon='ERROR')
+                draw_warning_labels(layout, ERROR_MESSAGES['NEEDS_RESTART'],
+                                    alert=True, icon='ERROR')
                 draw_system_info(layout)
                 return
 
             if _is_blender_too_old():
-                draw_warning_labels(box, ERROR_MESSAGES['BLENDER_TOO_OLD'],
+                draw_warning_labels(layout, ERROR_MESSAGES['BLENDER_TOO_OLD'],
                                     alert=True, icon='ERROR')
                 draw_system_info(layout)
                 return
 
             if not _check_libraries():
-                draw_warning_labels(box, ERROR_MESSAGES['NUMPY_PROBLEM'],
+                draw_warning_labels(layout, ERROR_MESSAGES['NUMPY_PROBLEM'],
                                     alert=True, icon='ERROR')
 
                 box = layout.box()
@@ -148,7 +183,13 @@ if not _can_load():
                 draw_system_info(layout)
                 return
 
-            draw_warning_labels(box, ERROR_MESSAGES['UNKNOWN'],
+            if _check_addon_already_registered():
+                draw_warning_labels(layout, ERROR_MESSAGES['ADDON_REGISTERED'],
+                                    alert=True, icon='ERROR')
+                draw_system_info(layout)
+                return
+
+            draw_warning_labels(layout, ERROR_MESSAGES['UNKNOWN'],
                                 alert=True, icon='ERROR')
 
 
@@ -194,7 +235,7 @@ else:
         stop_timers(False)
         _log.debug('START REGISTER CLASSES')
         for cls in CLASSES_TO_REGISTER:
-            _log.debug('REGISTER CLASS: \n{}'.format(str(cls)))
+            _log.debug(f'REGISTER CLASS: \n{str(cls)}')
             register_class(cls)
         _log.info('KeenTools addon classes have been registered')
         facebuilder_register()
@@ -224,7 +265,7 @@ else:
         facebuilder_unregister()
         _log.info('FaceBuilder classes have been unregistered')
         for cls in reversed(CLASSES_TO_REGISTER):
-            _log.debug('UNREGISTER CLASS: \n{}'.format(str(cls)))
+            _log.debug(f'UNREGISTER CLASS: \n{str(cls)}')
             unregister_class(cls)
         _log.info('KeenTools addon classes have been unregistered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info_copy["version"]} '
