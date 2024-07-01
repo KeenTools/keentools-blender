@@ -164,10 +164,10 @@ def _download_with_progress_callback(url, progress_callback,
 _MAX_CALLBACK_UPDATES_COUNT = 481
 
 
-def install_from_download(version=None, nightly=False, progress_callback=None,
+def install_from_download(version=None, progress_callback=None,
                           final_callback=None, error_callback=None,
                           max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
-    url = download_core_path(version, nightly)
+    url = download_core_path(version)
 
     def install_process(data):
         _install_from_stream(data, PartInstallation.CORE)
@@ -176,13 +176,13 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
                           error_callback, max_callback_updates_count, None)
 
 
-def _download_zip(part_installation, timeout, version=None, nightly=False, progress_callback=None,
+def _download_zip(part_installation, timeout, version=None, progress_callback=None,
                   final_callback=None, error_callback=None,
                   max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
     if part_installation == PartInstallation.CORE:
-        url = download_core_path(version, nightly)
+        url = download_core_path(version)
     else:
-        url = download_addon_path(version, nightly)
+        url = download_addon_path(version)
 
     def write_process(data):
         file_path = _download_file_path(part_installation)

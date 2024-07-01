@@ -94,14 +94,10 @@ def set_mock_update_paths(addon_path: Optional[str] = None,
     _mock_update_core_path = core_path
 
 
-def download_core_path(version: Optional[Tuple] = None,
-                       nightly: bool = False) -> str:
+def download_core_path(version: Optional[Tuple] = None) -> str:
     global _mock_update_core_path
     if _mock_update_core_path is not None:
         return _mock_update_core_path
-    if nightly:
-        assert(version is None)
-        return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
 
     if version is None:
         return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
@@ -110,14 +106,10 @@ def download_core_path(version: Optional[Tuple] = None,
         '_'.join([str(x) for x in version]), os_name())
 
 
-def download_addon_path(version: Optional[Tuple] = None,
-                        nightly: bool = False) -> str:
+def download_addon_path(version: Optional[Tuple] = None) -> str:
     global _mock_update_addon_path
     if _mock_update_addon_path is not None:
         return _mock_update_addon_path
-    if nightly:
-        assert(version is None)
-        return 'https://downloads.keentools.io/keentools-nightly-for-blender'
 
     if version is None:
         return 'https://downloads.keentools.io/latest-keentools-for-blender'
