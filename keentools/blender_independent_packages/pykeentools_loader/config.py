@@ -16,45 +16,55 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
+from typing import Tuple, Optional
+import logging
 import os
 import inspect
 import tempfile
 
-import bpy
-
 
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
-           'pkt_installation_dir', 'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
+           'ADDON_PARENT_DIRECTORY', 'pkt_installation_dir',
+           'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
            'os_name', 'download_core_path', 'download_addon_path',
            'set_mock_update_paths']
 
 
-SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
-                                       'pykeentools_shadow_copies')
+logger = logging.getLogger(__name__)
+log_error = logger.error
+log_output = logger.debug
 
 
-RELATIVE_LIB_DIRECTORY = os.path.join('pykeentools_installation', 'pykeentools')
+MINIMUM_VERSION_REQUIRED: Tuple = (2024, 1, 0)  # 2024.1.0 (4/6)
+_SUPPORTED_PYTHON_VERSIONS: Tuple = ((3, 7), (3, 9), (3, 10), (3, 11))
+
+_this_file_path: str = inspect.getfile(inspect.currentframe())
+SHADOW_COPIES_DIRECTORY: str = os.path.join(tempfile.gettempdir(),
+                                            'pykeentools_shadow_copies')
+RELATIVE_LIB_DIRECTORY: str = os.path.join('pykeentools_installation', 'pykeentools')
+ADDON_PARENT_DIRECTORY: str = os.path.abspath(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.dirname(_this_file_path)))))
+
+log_output(f'SHADOW_COPIES_DIRECTORY:\n{SHADOW_COPIES_DIRECTORY}')
+log_output(f'RELATIVE_LIB_DIRECTORY:\n{RELATIVE_LIB_DIRECTORY}')
+log_output(f'ADDON_PARENT_DIRECTORY:\n{ADDON_PARENT_DIRECTORY}')
 
 
-def pkt_installation_dir():
-    module_path = inspect.getfile(inspect.currentframe())
-    module_dir = os.path.dirname(module_path)
+def pkt_installation_dir() -> str:
+    module_dir = os.path.dirname(_this_file_path)
     installation_dir = os.path.join(module_dir, 'pykeentools')
-    return os.path.abspath(installation_dir)
+    path = os.path.abspath(installation_dir)
+    log_output(f'pkt_installation_dir:\n{path}')
+    return path
 
 
-def addon_installation_dir():
-    addons_path = bpy.utils.user_resource('SCRIPTS', path='addons')
-    return os.path.join(addons_path, 'keentools')
+def addon_installation_dir() -> str:
+    path = os.path.join(ADDON_PARENT_DIRECTORY, 'keentools')
+    return path
 
 
-MINIMUM_VERSION_REQUIRED = (2024, 1, 0)  # 2024.1.0 (4/5)
-_SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9), (3, 10), (3, 11))
-
-
-def is_python_supported():
+def is_python_supported() -> bool:
     import sys
     ver = sys.version_info[0:3]
     for supported_ver in _SUPPORTED_PYTHON_VERSIONS:
@@ -63,33 +73,31 @@ def is_python_supported():
     return False
 
 
-def os_name():
+def os_name() -> str:
     from sys import platform
-    if platform == "win32":
+    if platform == 'win32':
         return 'windows'
-    if platform == "linux" or platform == "linux2":
+    if platform == 'linux' or platform == 'linux2':
         return 'linux'
-    if platform == "darwin":
+    if platform == 'darwin':
         return 'macos'
 
 
-_mock_update_addon_path = None
-_mock_update_core_path = None
+_mock_update_addon_path: Optional[str] = None
+_mock_update_core_path: Optional[str] = None
 
 
-def set_mock_update_paths(addon_path=None, core_path=None):
+def set_mock_update_paths(addon_path: Optional[str] = None,
+                          core_path: Optional[str] = None) -> None:
     global _mock_update_addon_path, _mock_update_core_path
     _mock_update_addon_path = addon_path
     _mock_update_core_path = core_path
 
 
-def download_core_path(version=None, nightly=False):
+def download_core_path(version: Optional[Tuple] = None) -> str:
     global _mock_update_core_path
     if _mock_update_core_path is not None:
         return _mock_update_core_path
-    if nightly:
-        assert(version is None)
-        return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
 
     if version is None:
         return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
@@ -98,13 +106,10 @@ def download_core_path(version=None, nightly=False):
         '_'.join([str(x) for x in version]), os_name())
 
 
-def download_addon_path(version=None, nightly=False):
+def download_addon_path(version: Optional[Tuple] = None) -> str:
     global _mock_update_addon_path
     if _mock_update_addon_path is not None:
         return _mock_update_addon_path
-    if nightly:
-        assert(version is None)
-        return 'https://downloads.keentools.io/keentools-nightly-for-blender'
 
     if version is None:
         return 'https://downloads.keentools.io/latest-keentools-for-blender'
