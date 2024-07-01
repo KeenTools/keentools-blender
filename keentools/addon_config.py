@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Callable, Optional, Tuple, Set, Dict
+from typing import Any, Callable, Optional, Tuple, Set, Dict, List
 from dataclasses import dataclass
 import os
 
@@ -35,7 +35,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2024.1.0'  # (5/5)
+    addon_version = '2024.1.1'  # (5/6)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -44,7 +44,7 @@ class Config:
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
-    ft_tab_category = 'GeoTracker'
+    ft_tab_category = 'FaceTracker'
 
     kt_testing_tab_category = 'KeenTools Testing'
 
@@ -54,7 +54,8 @@ class Config:
 
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
-    addon_name = __package__  # the same as module name
+    addon_name = 'KeenTools'  # human readable
+    package = __package__  # the same as module name
 
     old_facebuilder_addon_name = 'keentools_facebuilder'  # to remove
 
@@ -95,6 +96,9 @@ class Config:
     kt_report_bug_idname = operators + '.report_bug'
 
     kt_warning_idname = operators + '.common_addon_warning'
+    kt_interrupt_modal_idname = operators + '.interrupt_modal'
+
+    kt_actor_idname = operators + '.actor'
 
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
@@ -140,6 +144,7 @@ class Config:
 
     # FaceBuilder Default Colors
     fb_midline_color = (0.960784, 0.007843, 0.615686)
+    ft_midline_color = (0.05, 1.0, 0.0)
     fb_color_schemes = {
         'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
         'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
@@ -149,6 +154,7 @@ class Config:
         'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
         'black': ((0.039, 0.04, 0.039), (0.0, 0.0, 0.85098)),
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        'facetracker': ((0.0, 0.0, 0.85098), (0.039, 0.04, 0.039)),
         'default': ((0.039, 0.04, 0.039), (0.0, 0.0, 0.85098))
     }
 
@@ -202,6 +208,20 @@ class Config:
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
+    # Colors
+    pin_color = (1.0, 0.0, 0.0, 1.0)
+    disabled_pin_color = (1.0, 1.0, 0.0, 1.0)
+    selected_pin_color = (0.0, 1.0, 1.0, 1.0)
+    current_pin_color = (0.0, 1.0, 0.0, 1.0)
+    surface_point_color = (0.0, 1.0, 1.0, 0.5)
+    residual_color = (0.0, 1.0, 1.0, 0.5)
+    timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
+
+    selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
+    regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
+
+    face_selection_frame_width = 3.0
+
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
                                 ver: Optional[Tuple]=None,
@@ -226,7 +246,7 @@ def is_blender_supported() -> bool:
 
 
 def get_addon_preferences() -> Any:
-    return bpy.context.preferences.addons[Config.addon_name].preferences
+    return bpy.context.preferences.addons[Config.package].preferences
 
 
 def supported_gpu_backend() -> bool:
@@ -287,14 +307,6 @@ def ft_pinmode() -> bool:
     if not settings:
         return False
     return settings.pinmode
-
-
-def calculation_in_progress() -> bool:
-    gts = gt_settings()
-    fts = ft_settings()
-    if not gts or not fts:
-        return False
-    return gts.is_calculating() or fts.is_calculating()
 
 
 def addon_pinmode() -> bool:
@@ -412,3 +424,60 @@ def product_name(product: int) -> str:
 def output_import_statistics() -> None:
     names = "\n".join(_log.module_names())
     _log.output('import sequence:\n' + _log.color('green', f'{names}'))
+
+
+def tool_pinmode(facebuilder: bool = True, geotracker: bool = True,
+                 facetracker: bool = True) -> Optional[int]:
+    if facebuilder and fb_pinmode():
+        return ProductType.FACEBUILDER
+    if geotracker and gt_pinmode():
+        return ProductType.GEOTRACKER
+    if facetracker and ft_pinmode():
+        return ProductType.FACETRACKER
+    return None
+
+
+def stop_fb_pinmode():
+    settings = fb_settings()
+    if not settings:
+        return
+    loader = settings.loader()
+    area = loader.get_work_area()
+    loader.out_pinmode_without_save()
+    settings.viewport_state.show_ui_elements(area)
+    settings.reset_pinmode_id()
+    settings.pinmode = False
+
+
+def stop_gt_pinmode():
+    settings = gt_settings()
+    if settings and settings.pinmode:
+        settings.loader().out_pinmode()
+    settings.pinmode = False
+
+
+def stop_ft_pinmode():
+    settings = ft_settings()
+    if settings and settings.pinmode:
+        settings.loader().out_pinmode()
+    settings.pinmode = False
+
+
+def calculation_in_progress(facebuilder: bool = True,
+                            geotracker: bool = True,
+                            facetracker: bool = True) -> ActionStatus:
+    if geotracker:
+        settings_gt = gt_settings()
+        if settings_gt and settings_gt.is_calculating():
+            return ActionStatus(False, 'GeoTracker calculation is in progress')
+
+    if facetracker:
+        settings_ft = ft_settings()
+        if settings_ft and settings_ft.is_calculating():
+            return ActionStatus(False, 'FaceTracker calculation is in progress')
+
+    if facebuilder:
+        settings_fb = fb_settings()
+        if settings_fb and settings_fb.is_calculating():
+            return ActionStatus(False, 'FaceBuilder calculation is in progress')
+    return ActionStatus(True, 'No calculation is in progress')

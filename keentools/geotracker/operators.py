@@ -16,12 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List
+from typing import List, Optional
 from math import radians
-import platform
-from urllib.parse import urlencode
 
-from bpy.types import Operator, Object
+from bpy.types import Operator, Object, Area
 from bpy.props import (BoolProperty,
                        IntProperty,
                        FloatProperty,
@@ -50,8 +48,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_show_addon_preferences,
                                 bpy_scene,
                                 create_empty_object,
-                                bpy_remove_object,
-                                bpy_url_open)
+                                bpy_remove_object)
 from ..tracker.calc_timer import TrackTimer, RefineTimer
 
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
@@ -85,7 +82,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     toggle_pins_action,
                                     center_geo_action,
                                     create_animated_empty_action,
-                                    create_empty_from_selected_pins_action,
+                                    create_hard_empties_from_selected_pins_action,
                                     bake_texture_from_frames_action,
                                     transfer_tracking_to_camera_action,
                                     transfer_tracking_to_geometry_action,
@@ -109,6 +106,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     get_operator_reposition_matrix,
                                     move_scene_tracking_action,
                                     unbreak_rotation_act)
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -249,7 +247,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = prev_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -279,7 +277,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = next_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -669,7 +667,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 self.report({'ERROR'}, msg)
                 return {'CANCELLED'}
 
-            act_status = create_empty_from_selected_pins_action(
+            act_status = create_hard_empties_from_selected_pins_action(
                 bpy_start_frame(), bpy_end_frame(),
                 linked=settings.export_linked_locator,
                 orientation=settings.export_locator_orientation,
@@ -725,57 +723,21 @@ class GT_OT_StopCalculating(Operator):
             _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
-        if settings.calculating_mode == 'PRECALC':
+        if settings.is_calculating('PRECALC'):
             _log.output(f'PrecalcTimer: {PrecalcTimer.active_timers()}')
             if len(PrecalcTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'TRACKING':
+        elif settings.is_calculating('TRACKING'):
             _log.output(f'TrackTimer: {TrackTimer.active_timers()}')
             if len(TrackTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'REFINE':
+        elif settings.is_calculating('REFINE'):
             _log.output(f'RefineTimer: {RefineTimer.active_timers()}')
             if len(RefineTimer.active_timers()) == 0:
                 settings.stop_calculating()
 
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
-
-
-class GT_OT_InterruptModal(Operator):
-    bl_idname = GTConfig.gt_interrupt_modal_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = gt_settings()
-        settings.user_interrupts = False
-
-        if not bpy_background_mode():
-            context.window_manager.modal_handler_add(self)
-            _log.output('GT INTERRUPTOR START')
-        else:
-            _log.info('GeoTracker Interruptor skipped by background mode')
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        settings = gt_settings()
-
-        if settings.user_interrupts:
-            _log.output('GT Interruptor has been stopped by value')
-            settings.user_interrupts = True
-            _log.output(f'{self.__class__.__name__} execute end >>>')
-            return {'FINISHED'}
-
-        if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit GT Interruptor by ESC')
-            settings.user_interrupts = True
-            _log.output(f'{self.__class__.__name__} execute end >>>')
-            return {'FINISHED'}
-
-        return {'PASS_THROUGH'}
 
 
 class GT_OT_ResetToneGain(ButtonOperator, Operator):
@@ -1093,11 +1055,11 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             return context.window_manager.invoke_props_dialog(self, width=400)
         return self.execute(context)
 
-    def start_text_on_screen(self, context):
+    def start_text_on_screen(self, area: Optional[Area] = None ):
         settings = get_settings(self.product)
         single_line_screen_message('Projecting and baking… Please wait',
-                                   register=not settings.pinmode,
-                                   context=context, product=self.product)
+                                   area=area if not settings.pinmode else None,
+                                   product=self.product)
 
     def finish_text_on_screen(self):
         settings = get_settings(self.product)
@@ -1124,9 +1086,9 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         _log.output('GT START TEXTURE CREATION')
-        self.start_text_on_screen(context)
-        act_status = bake_texture_from_frames_action(context.area,
-                                                     selected_keyframes,
+        area = context.area
+        self.start_text_on_screen(area)
+        act_status = bake_texture_from_frames_action(area, selected_keyframes,
                                                      product=self.product)
         self.finish_text_on_screen()
 
@@ -1923,7 +1885,7 @@ class GT_OT_RigWindow(Operator):
         settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
-        objects = []
+        objects: List[Object] = []
         if self.parent_camera and geotracker.camobj:
             objects.append(geotracker.camobj)
         if self.parent_geometry and geotracker.geomobj:
@@ -2044,6 +2006,61 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
         return {'FINISHED'}
 
 
+class GT_OT_MoveWrapper(Operator):
+    bl_idname = GTConfig.gt_move_wrapper
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'use_cursor_init={self.use_cursor_init}')
+        settings = gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        op = get_operator('view3d.move')
+        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'use_cursor_init={self.use_cursor_init}')
+        settings = gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if work_area != context.area:
+            return {'PASS_THROUGH'}
+
+        op = get_operator('view3d.move')
+        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class GT_OT_PanDetector(Operator):
+    bl_idname = GTConfig.gt_pan_detector
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        settings = gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
+        return {'PASS_THROUGH'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_SwitchToCameraMode,
@@ -2071,7 +2088,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_TogglePins,
                   GT_OT_ExportAnimatedEmpty,
                   GT_OT_ExitPinMode,
-                  GT_OT_InterruptModal,
                   GT_OT_StopCalculating,
                   GT_OT_ResetToneGain,
                   GT_OT_ResetToneGamma,
@@ -2101,4 +2117,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,
-                  GT_OT_SwitchCameraToFixedWarning)
+                  GT_OT_SwitchCameraToFixedWarning,
+                  GT_OT_MoveWrapper,
+                  GT_OT_PanDetector)

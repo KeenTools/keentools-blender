@@ -29,7 +29,7 @@ from ..utils.bpy_common import (bpy_new_action,
                                 bpy_shape_key_move_top,
                                 bpy_shape_key_move_up,
                                 bpy_shape_key_move_bottom)
-from ..utils.coords import xy_to_xz_rotation_matrix_3x3
+from ..utils.coords import xy_to_xz_rotation_matrix_3x3, InvScaleFromMatrix
 from ..utils.blendshapes import get_blendshape
 from ..utils.fcurve_operations import (get_safe_action_fcurve,
                                        get_action_fcurve,
@@ -42,7 +42,12 @@ _log = KTLogger(__name__)
 tracking_frame_name_pattern: Any = re.compile(r'frame_(\d+)$', 0)
 
 
-def get_prev_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
+def get_all_tracking_frame_shapes(key_blocks: Any) -> List:
+    return [kb for kb in key_blocks
+            if tracking_frame_name_pattern.match(kb.name)]
+
+
+def get_prev_frame_shape(key_blocks: Any, shape_index: int) -> Tuple[int, int]:
     '''
     :return: shape_index, frame_number
     '''
@@ -55,7 +60,7 @@ def get_prev_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
     return -1, -1
 
 
-def get_next_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
+def get_next_frame_shape(key_blocks: Any, shape_index: int) -> Tuple[int, int]:
     '''
     :return: shape_index, frame_number
     '''
@@ -68,11 +73,11 @@ def get_next_frame_shape(key_blocks, shape_index) -> Tuple[int, int]:
     return -1, -1
 
 
-def check_tracking_frames(key_blocks) -> Tuple[bool, Any]:
+def check_tracking_frames(key_blocks: Any) -> Tuple[bool, Any]:
     count = len(key_blocks)
     check_status = True
     non_tracking_shape_flag = False
-    arr = np.empty(shape=(count, 2), dtype=np.int32)
+    arr = np.empty((count, 2), dtype=np.int32)
     frame = -1
     for i in range(count - 1, -1, -1):
         res = tracking_frame_name_pattern.match(key_blocks[i].name)
@@ -98,7 +103,7 @@ def check_tracking_frames(key_blocks) -> Tuple[bool, Any]:
     return check_status, arr
 
 
-def reorder_tracking_frames(obj) -> None:
+def reorder_tracking_frames(obj: Object) -> None:
     key_blocks = obj.data.shape_keys.key_blocks
     check_status, arr = check_tracking_frames(key_blocks)
     if check_status:
@@ -185,9 +190,12 @@ def create_relative_shape_keyframe(frame: int, *,
     shape_index, shape, new_shape_created = get_blendshape(geomobj,
                                                            name=shape_name,
                                                            create=True)
+    scale_inv = np.array(InvScaleFromMatrix(geomobj.matrix_world),
+                         dtype=np.float32)
     gt = loader.kt_geotracker()
     verts = gt.applied_args_model_vertices_at(frame)
-    shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
+    shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()
+                                  @ scale_inv).ravel())
 
     geomobj.active_shape_key_index = shape_index
     key_blocks = mesh.shape_keys.key_blocks

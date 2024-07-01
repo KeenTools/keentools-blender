@@ -609,14 +609,12 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
             return {'CANCELLED'}
         frames = [x for x in range(self.from_frame, self.to_frame + 1)]
 
-        if self.product == ProductType.GEOTRACKER:
-            op = get_operator(GTConfig.gt_interrupt_modal_idname)
-            op('INVOKE_DEFAULT')
-        elif self.product == ProductType.FACETRACKER:
-            op = get_operator(FTConfig.ft_interrupt_modal_idname)
-            op('INVOKE_DEFAULT')
+        op = get_operator(Config.kt_interrupt_modal_idname)
+        op('INVOKE_DEFAULT', product=self.product)
 
-        bake_texture_sequence(context, geotracker, filepath_pattern,
+        bake_texture_sequence(area=context.area,
+                              geotracker=geotracker,
+                              filepath_pattern=filepath_pattern,
                               frames=frames,
                               file_format=self.file_format,
                               product=self.product)

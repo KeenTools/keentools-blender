@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import numpy as np
-from typing import Optional, Tuple, Any, List
+from typing import Optional, Tuple, Any, List, Set
 from contextlib import contextmanager
 
 from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
@@ -40,7 +40,8 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 bpy_render_single_frame,
-                                get_scene_camera_shift)
+                                get_scene_camera_shift,
+                                bpy_object_is_in_scene)
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  viewer_node_to_image,
@@ -57,7 +58,7 @@ class FrameListItem(PropertyGroup):
 
 
 class TrackerItem(PropertyGroup):
-    def precalc_message_error(self):
+    def precalc_message_error(self) -> bool:
         return self.precalc_message in [
             PrecalcStatusMessage.empty,
             PrecalcStatusMessage.broken_file,
@@ -200,13 +201,13 @@ class TrackerItem(PropertyGroup):
             return False
 
         mesh = geomobj.data
-        poly_set_list = []
+        poly_set_list: List[Set] = []
 
         if deep_analyze:
             for p in mesh.polygons:
                 poly_set_list.append(set(p.vertices[:]))
 
-        wrong_pins = []
+        wrong_pins: List[int] = []
         try:
             for i in range(gt.pins_count()):
                 pin = gt.pin(keyframes[0], i)
@@ -239,15 +240,15 @@ class TrackerItem(PropertyGroup):
 
         return True
 
-    def get_geomobj_name(self):
+    def get_geomobj_name(self) -> str:
         if self.geomobj:
             return self.geomobj.name
         return 'none'
 
-    def preview_material_name(self):
+    def preview_material_name(self) -> str:
         return GTConfig.tex_builder_matname_template.format(self.get_geomobj_name())
 
-    def preview_texture_name(self):
+    def preview_texture_name(self) -> str:
         return GTConfig.tex_builder_filename_template.format(self.get_geomobj_name())
 
 
@@ -258,7 +259,7 @@ class TRSceneSetting(PropertyGroup):
     def loader(self) -> Any:
         assert False, 'TRSceneSetting: loader'
 
-    def get_adaptive_opacity(self):
+    def get_adaptive_opacity(self) -> float:
         return self.adaptive_opacity if self.use_adaptive_opacity else 1.0
 
     def calc_adaptive_opacity(self, area: Area) -> None:
@@ -271,7 +272,7 @@ class TRSceneSetting(PropertyGroup):
         self.adaptive_opacity = (x2 - x1) / denom
 
     @contextmanager
-    def ui_write_mode_context(self):
+    def ui_write_mode_context(self) -> None:
         self.ui_write_mode = True
         yield
         self.ui_write_mode = False
@@ -437,10 +438,13 @@ class TRSceneSetting(PropertyGroup):
             return
         vp.stabilize(geotracker.geomobj)
 
+    def start_calculating(self, mode: str) -> None:
+        self.calculating_mode = mode
+
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'
 
-    def is_calculating(self, mode=None) -> bool:
+    def is_calculating(self, mode: Optional[str] = None) -> bool:
         if mode is None:
             return self.calculating_mode != 'NONE'
         return self.calculating_mode == mode
@@ -449,7 +453,9 @@ class TRSceneSetting(PropertyGroup):
         def _object_is_not_in_use(obj: Optional[Object]):
             if obj is None:
                 return False
-            return obj.users <= 1
+            if obj.users <= 1 or not bpy_object_is_in_scene(obj):
+                return True
+            return False
 
         flag = False
         for geotracker in self.trackers():

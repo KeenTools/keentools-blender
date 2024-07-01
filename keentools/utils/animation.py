@@ -18,9 +18,10 @@
 
 from typing import Optional, List, Set, Dict
 
-import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector, Matrix
+
+from .kt_logging import KTLogger
 from .bpy_common import (bpy_current_frame,
                          bpy_start_frame,
                          bpy_end_frame,
@@ -29,10 +30,9 @@ from .bpy_common import (bpy_current_frame,
                          operator_with_context,
                          update_depsgraph,
                          bpy_new_action,
-                         bpy_remove_action)
-
+                         bpy_remove_action,
+                         bpy_ops)
 from .fcurve_operations import *
-from .kt_logging import KTLogger
 
 
 _log = KTLogger(__name__)
@@ -228,7 +228,7 @@ def put_keys_in_frame(obj: Object, frame: int, anim_dict: Dict) -> None:
 
 
 def create_animation_locrot_keyframe_force(obj: Object) -> None:
-    operator_with_context(bpy.ops.anim.keyframe_insert_menu,
+    operator_with_context(bpy_ops().anim.keyframe_insert_menu,
                           {'selected_objects': [obj]},
                           type='BUILTIN_KSI_LocRot')
 
@@ -279,7 +279,7 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str = 'KEYFRAME') -> None
 
 
 def delete_locrot_keyframe(obj: Object) -> None:
-    operator_with_context(bpy.ops.anim.keyframe_delete_by_name,
+    operator_with_context(bpy_ops().anim.keyframe_delete_by_name,
                           {'selected_objects': [obj]},
                           type='BUILTIN_KSI_LocRot')
 

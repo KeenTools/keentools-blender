@@ -178,12 +178,14 @@ def get_sequence_file_number(filepath: str) -> int:
 def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
                                       name: str = 'geotracker_bg',
                                       index: int = 0) -> None:
-    _log.output(f'set_background_image_by_movieclip: {name} index={index}')
+    _log.yellow(f'set_background_image_by_movieclip start: {name} index={index}')
     if not camobj or not movie_clip:
+        _log.output('set_background_image_by_movieclip 1 end >>>')
         return
 
     if movie_clip.source not in ['SEQUENCE', 'MOVIE']:
         _log.error('UNKNOWN MOVIECLIP TYPE')
+        _log.output('set_background_image_by_movieclip 2 end >>>')
         return
 
     bg_img = get_background_image_object(camobj, index)
@@ -223,6 +225,8 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
         img.colorspace_settings.name = movie_clip.colorspace_settings.name
     except Exception as err:
         _log.error(f'set_background_image_by_movieclip Exception:\n{str(err)}')
+
+    _log.output('set_background_image_by_movieclip end >>>')
 
 
 def set_background_image_mask(camobj: Camera, mask: Image) -> bool:
@@ -319,14 +323,17 @@ def np_array_from_background_image(camobj: Camera, index: int = 0) -> Optional[A
 
 
 def reset_tone_mapping(cam_image: Optional[Image]) -> None:
+    _log.yellow('reset_tone_mapping start')
     if not cam_image:
         return
     if cam_image.is_dirty:
         cam_image.reload()
         _log.output('reset_tone_mapping: IMAGE RELOADED')
+    _log.output('reset_tone_mapping end >>>')
 
 
 def tone_mapping(cam_image, exposure, gamma):
+    _log.yellow(f'tone_mapping: {exposure:.4f} {gamma:.4f}')
     if not cam_image:
         return
     reset_tone_mapping(cam_image)
@@ -334,18 +341,19 @@ def tone_mapping(cam_image, exposure, gamma):
     if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
                                              Config.default_tone_gamma],
                                              atol=0.001)):
-        _log.output('SKIP tone mapping, only reload()')
+        _log.output('tone_mapping: SKIP tone mapping end >>>')
         return
     np_img = np_array_from_bpy_image(cam_image)
     if np_img is None:
-        _log.output('tone_mapping: Cannot load image')
+        _log.output('tone_mapping: Cannot load image end >>>')
         return
 
     gain = pow(2, exposure / 2.2)
     np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
     assign_pixels_data(cam_image.pixels, np_img.ravel())
-    _log.output('restore_tone_mapping: exposure: {} '
-                '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
+    _log.output(f'restore_tone_mapping: exposure: {exposure:.4f} '
+                f'(gain: {gain:.4f}) gamma: {gamma:.4f}')
+    _log.output('tone_mapping end >>>')
 
 
 def create_compatible_bpy_image(np_img: Any, name: str = 'tmp_name') -> Any:

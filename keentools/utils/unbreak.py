@@ -59,6 +59,7 @@ def unbreak_rotation_act(*, product: int) -> ActionStatus:
 
 
 def mark_object_keyframes(obj: Object, *, product: int) -> None:
+    _log.yellow(f'mark_object_keyframes [{product_name(product)}] start')
     settings = get_settings(product)
     gt = settings.loader().kt_geotracker()
     tracked_keyframes = gt.track_frames()
@@ -67,11 +68,12 @@ def mark_object_keyframes(obj: Object, *, product: int) -> None:
     keyframes = gt.keyframes()
     _log.output(f'KEYFRAMES TO MARK AS KEYFRAMES: {keyframes}')
     mark_selected_points_in_locrot(obj, keyframes, 'KEYFRAME')
+    _log.output('mark_object_keyframes end >>>')
 
 
 def unbreak_after(frame_list: List, *,
                   product: int = ProductType.GEOTRACKER) -> None:
-    _log.output(f'unbreak_after call {product_name(product)}')
+    _log.yellow(f'unbreak_after [{product_name(product)} start')
     prefs = get_addon_preferences()
     if not prefs.gt_auto_unbreak_rotation:
         _log.output('unbreak rotation is switched off')
@@ -85,19 +87,20 @@ def unbreak_after(frame_list: List, *,
         _log.error(unbreak_status.error_message)
     else:
         mark_object_keyframes(obj, product=product)
+    _log.output('unbreak_after end >>>')
 
 
 def unbreak_after_facetracker(frame_list: List) -> None:
-    _log.output('unbreak_after_facetracker call')
+    _log.yellow('unbreak_after_facetracker call')
     return unbreak_after(frame_list, product=ProductType.FACETRACKER)
 
 
 def unbreak_after_reversed(frame_list: List, *,
                            product: int = ProductType.GEOTRACKER) -> None:
-    _log.output('unbreak_after_reversed call')
+    _log.yellow('unbreak_after_reversed call')
     return unbreak_after(list(reversed(frame_list)), product=product)
 
 
 def unbreak_after_reversed_facetracker(frame_list: List) -> None:
-    _log.output('unbreak_after_reversed_facetracker call')
+    _log.yellow('unbreak_after_reversed_facetracker call')
     return unbreak_after_reversed(frame_list, product=ProductType.FACETRACKER)

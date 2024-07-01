@@ -53,6 +53,8 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                        clipping_changed_screen_message)
 from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
                                     subscribe_movie_clip_color_space_watcher)
+from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -76,10 +78,17 @@ def _playback_message(area: Area, *, product: int) -> None:
 
 class PinMode(Operator):
     _shift_pressed: bool = False
-    _prev_camera_state: Tuple = ()
-    _prev_area_state: Tuple = ()
-
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(GTConfig.gt_pinmode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
 
     @classmethod
     def get_settings(cls) -> Any:
@@ -93,22 +102,6 @@ class PinMode(Operator):
         settings.calc_adaptive_opacity(area)
         vp = settings.loader().viewport()
         vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
-
-    @classmethod
-    def _check_camera_state_changed(cls, rv3d: Any) -> bool:
-        camera_state = (rv3d.view_camera_zoom, *rv3d.view_camera_offset)
-        if camera_state != cls._prev_camera_state:
-            cls._prev_camera_state = camera_state
-            return True
-        return False
-
-    @classmethod
-    def _check_area_state_changed(cls, area: Area) -> bool:
-        area_state = (area.x, area.y, area.width, area.height)
-        if area_state != cls._prev_area_state:
-            cls._prev_area_state = area_state
-            return True
-        return False
 
     @classmethod
     def _set_shift_pressed(cls, val: bool) -> None:
@@ -210,16 +203,23 @@ class PinMode(Operator):
         kid = bpy_current_frame()
         loader.safe_keyframe_add(kid)
 
-        _log.output(_log.color('red', '_delete_found_pin before solve'))
         if not loader.solve():
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
-        _log.output(_log.color('red', '_delete_found_pin after solve'))
+
+        vp = loader.viewport()
+
+        if loader.product_type() == ProductType.FACETRACKER:
+            wf = vp.wireframer()
+            geo = gt.applied_args_model_at(kid)
+            wf.init_geom_data_from_core(*loader.get_geo_shader_data(geo,
+                                        geotracker.geomobj.matrix_world))
+            wf.create_batches()
+            create_relative_shape_keyframe(kid)
 
         loader.load_pins_into_viewport()
         loader.place_object_or_camera()
 
-        vp = loader.viewport()
         vp.update_surface_points(gt, geotracker.geomobj, kid)
 
         if not geotracker.camera_mode():
@@ -241,6 +241,7 @@ class PinMode(Operator):
         settings.pinmode_id = self.pinmode_id
 
     def _init_pinmode(self, area: Area, context: Optional[Any]=None) -> None:
+        _log.yellow(f'{self.__class__.__name__} _init_pinmode')
         settings = self.get_settings()
         product = settings.product_type()
         loader = settings.loader()
@@ -271,7 +272,9 @@ class PinMode(Operator):
         # TODO: Make this part more common for FaceTracker and GeoTracker
         if product == ProductType.FACETRACKER:
             wf = loader.viewport().wireframer()
-            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
+            if geotracker.geomobj and geotracker.camobj:
+                wf.set_camera_pos(geotracker.geomobj.matrix_world,
+                                  geotracker.camobj.matrix_world)
             wf.init_wireframe_image(settings.show_specials)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
@@ -285,11 +288,18 @@ class PinMode(Operator):
             clipping_changed_screen_message(near, far, product=product)
 
         if context is not None:
-            vp.register_handlers(context)
+            vp.register_handlers(area=area)
         vp.tag_redraw()
+        _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
+
+    def register_hotkeys(self) -> None:
+        pass
+
+    def unregister_hotkeys(self) -> None:
+        pass
 
     def _start_new_pinmode(self, context: Any) -> None:
-        _log.output('_start_new_pinmode')
+        _log.yellow(f'{self.__class__.__name__} _start_new_pinmode')
         settings = self.get_settings()
         settings.pinmode = True
         self._new_pinmode_id()
@@ -298,8 +308,11 @@ class PinMode(Operator):
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
 
+        self.register_hotkeys()
+        _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
+
     def _set_new_geotracker(self, area: Area, num: Optional[int]=None) -> None:
-        _log.output(f'_set_new_geotracker: area={id(area)} num={num}')
+        _log.yellow(f'{self.__class__.__name__} _set_new_geotracker: area={id(area)} num={num}')
         settings = self.get_settings()
         if num is not None:
             settings.change_current_geotracker(num)
@@ -315,9 +328,10 @@ class PinMode(Operator):
                          geotracker.animatable_object())
 
         settings.viewport_state.hide_ui_elements(area)
+        _log.output(f'{self.__class__.__name__} _set_new_geotracker end >>>')
 
     def _switch_to_new_geotracker(self, num: int) -> None:
-        _log.output('_switch_to_new_geotracker')
+        _log.yellow(f'{self.__class__.__name__} _switch_to_new_geotracker')
         settings = self.get_settings()
         settings.pinmode = True
 
@@ -326,6 +340,7 @@ class PinMode(Operator):
 
         self._set_new_geotracker(area, num)
         self._init_pinmode(area)
+        _log.output(f'{self.__class__.__name__} _switch_to_new_geotracker end >>>')
 
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
@@ -333,7 +348,8 @@ class PinMode(Operator):
         product = settings.product_type()
         vp = settings.loader().viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
-        vp.set_visible(flag)
+        vp.set_shaders_visible(flag)
+        vp.texter().set_shader_visible(True)
         if flag:
             revert_default_screen_message(product=product)
         else:
@@ -343,22 +359,28 @@ class PinMode(Operator):
         pass
 
     def invoke(self, context: Any, event: Any) -> Set:
-        _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
+        _log.green(f'{self.__class__.__name__} invoke')
+        _log.output(f'self.geotracker_num: {self.geotracker_num}')
 
         settings = self.get_settings()
         check_status = common_checks(
             product = settings.product_type(),
             object_mode=True, is_calculating=True,
+            stop_another_pinmode=True,
             reload_geotracker=True, geotracker=True,
             camera=True, geometry=True, movie_clip=False)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
+            _log.red(f'{self.__class__.__name__} cancelled 1 >>>')
             return {'CANCELLED'}
+
+        _log.output(f'common checks passed: {check_status}')
 
         if fb_pinmode():
             msg = 'Cannot start while FaceBuilder is in Pin mode!'
             _log.error(msg)
             self.report({'ERROR'}, msg)
+            _log.red(f'{self.__class__.__name__} cancelled 2 >>>')
             return {'CANCELLED'}
 
         old_geotracker_num = settings.current_tracker_num()
@@ -367,27 +389,31 @@ class PinMode(Operator):
 
         if not settings.is_proper_geotracker_number(new_geotracker_num):
             _log.error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
+            _log.red(f'{self.__class__.__name__} cancelled 3 >>>')
             return {'CANCELLED'}
 
         if not supported_gpu_backend():
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
+            _log.red(f'{self.__class__.__name__} cancelled 4 >>>')
             return {'CANCELLED'}
 
         loader = settings.loader()
         vp = loader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
+            _log.red(f'{self.__class__.__name__} cancelled 5 >>>')
             return {'CANCELLED'}
 
         vp.pins().on_start()
         self._change_wireframe_visibility(toggle=False, value=True)
 
-        if settings.pinmode and not vp.is_working():
+        if settings.pinmode and not vp.viewport_is_working():
             _log.error(f'VIEWPORT DOES NOT WORK IN PINMODE -- FIX IT')
             settings.pinmode = False
 
-        if settings.pinmode and old_geotracker_num == new_geotracker_num and vp.is_working():
+        if settings.pinmode and old_geotracker_num == new_geotracker_num and vp.viewport_is_working():
             _log.output(f'SAME GEOTRACKER. NOTHING TO DO: {new_geotracker_num}')
+            _log.red(f'{self.__class__.__name__} cancelled 6 >>>')
             return {'CANCELLED'}
 
         new_geotracker = settings.get_geotracker_item(new_geotracker_num)
@@ -397,12 +423,14 @@ class PinMode(Operator):
             msg = f'No Geometry object in GeoTracker {new_geotracker_num}'
             _log.error(msg)
             self.report({'INFO'}, msg)
+            _log.red(f'{self.__class__.__name__} cancelled 7 >>>')
             return {'CANCELLED'}
 
         if not new_geotracker.camobj:
             msg = f'No Camera object in GeoTracker {new_geotracker_num}'
             _log.error(msg)
             self.report({'INFO'}, msg)
+            _log.red(f'{self.__class__.__name__} cancelled 8 >>>')
             return {'CANCELLED'}
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
@@ -413,6 +441,7 @@ class PinMode(Operator):
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:
             self._switch_to_new_geotracker(new_geotracker_num)
+            _log.red(f'{self.__class__.__name__} switched to new finished >>>')
             return {'FINISHED'}
 
         settings.change_current_geotracker(new_geotracker_num)
@@ -420,26 +449,47 @@ class PinMode(Operator):
 
         self._start_new_pinmode(context)
         loader.start_shader_timer(settings.pinmode_id)
+
+        self.init_bus()
         context.window_manager.modal_handler_add(self)
         loader.register_undo_redo_handlers()
         vp.unhide_all_shaders()
-        _log.output('PINMODE STARTED')
+        _log.red(f'{self.__class__.__name__} Start pinmode -- modal >>>')
         return {'RUNNING_MODAL'}
 
+    def on_finish(self) -> None:
+        _log.output(f'{self.__class__.__name__}.on_finish')
+        self.unregister_hotkeys()
+        self.release_bus()
+
+    def cancel(self, context) -> None:
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.on_finish()
+
     def modal(self, context: Any, event: Any) -> Set:
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
+            return {'FINISHED'}
+
         settings = self.get_settings()
         product = settings.product_type()
         loader = settings.loader()
         vp = loader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log.output('Extreme GeoTracker pinmode operator stop')
             _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
+
+            self.on_finish()
+            _log.red(f'{self.__class__.__name__} Extreme pinmode stop -- finished >>>')
             return {'FINISHED'}
 
         if not context.space_data:
             _log.output('VIEWPORT IS CLOSED')
             loader.out_pinmode()
+
+            self.on_finish()
+            _log.red(f'{self.__class__.__name__} viewport closed -- finished >>>')
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
@@ -449,6 +499,9 @@ class PinMode(Operator):
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 loader.out_pinmode()
+
+                self.on_finish()
+                _log.red(f'{self.__class__.__name__} camera rotated -- finished >>>')
                 return {'FINISHED'}
 
         _playback_message(context.area, product=product)
@@ -472,6 +525,7 @@ class PinMode(Operator):
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()
+            _log.red(f'{self.__class__.__name__} mouse selection -- modal >>>')
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
@@ -479,12 +533,16 @@ class PinMode(Operator):
                 settings.cancel_selection()
                 settings.set_add_selection_mode(False)
                 vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} selection ESC -- finished >>>')
                 return {'RUNNING_MODAL'}
             if not bpy_background_mode() and bpy_is_animation_playing():
                 _log.output('STOP ANIMATION PLAYBACK')
                 return {'PASS_THROUGH'}
             _log.output('Exit pinmode by ESC')
             loader.out_pinmode()
+
+            self.on_finish()
+            _log.red(f'{self.__class__.__name__} Exit by ESC -- finished >>>')
             return {'FINISHED'}
 
         if event.type == 'TAB' and event.value == 'PRESS':
@@ -492,10 +550,11 @@ class PinMode(Operator):
                                 event.mouse_region_x, event.mouse_region_y):
                 self._change_wireframe_visibility()
                 vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} Tab pressed -- modal >>>')
                 return {'RUNNING_MODAL'}
 
         if loader.geomobj_mode_changed_to_object():
-            _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
+            _log.green('RETURNED TO OBJECT_MODE')
             self._change_wireframe_visibility(toggle=False, value=True)
             loader.load_geotracker()
             loader.load_pins_into_viewport()
@@ -504,8 +563,8 @@ class PinMode(Operator):
                                            geomobj_matrix=True,
                                            pins_and_residuals=True)
 
-        if self._check_camera_state_changed(context.space_data.region_3d) \
-                or self._check_area_state_changed(loader.get_work_area()):
+        if vp.check_camera_state_changed(context.space_data.region_3d) \
+                or vp.check_area_state_changed(loader.get_work_area()):
             _log.output('VIEWPORT ZOOM/OFFSET')
 
             self._calc_adaptive_opacity(context.area)

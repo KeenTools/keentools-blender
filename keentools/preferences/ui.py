@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import List
 import sys
 
 from bpy.types import Operator, AddonPreferences
@@ -59,7 +60,9 @@ from ..updater.utils import (preferences_current_active_updater_operators_info,
                              CurrentStateExecutor)
 from .operators import get_product_license_manager
 from .hotkeys import (geotracker_keymaps_register,
-                      geotracker_keymaps_unregister)
+                      geotracker_keymaps_unregister,
+                      facetracker_keymaps_register,
+                      facetracker_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -318,6 +321,13 @@ def _update_gt_hotkeys(addon_prefs, _):
         geotracker_keymaps_unregister()
 
 
+def _update_ft_hotkeys(addon_prefs, _):
+    if addon_prefs.ft_use_hotkeys:
+        facetracker_keymaps_register()
+    else:
+        facetracker_keymaps_unregister()
+
+
 def _universal_updater_getter(name, type_):
     def _getter(_):
         return UpdaterPreferences.get_value_safe(name, type_)
@@ -346,7 +356,7 @@ def _product_prop_prefix(product: int) -> str:
 
 
 class KTAddonPreferences(AddonPreferences):
-    bl_idname = Config.addon_name
+    bl_idname = Config.package
 
     facebuilder_enabled: BoolProperty(
         name='Enable KeenTools FaceBuilder',
@@ -656,6 +666,14 @@ class KTAddonPreferences(AddonPreferences):
         name='FaceTracker Settings',
         default=False
     )
+    ft_use_hotkeys: BoolProperty(
+        name='Use Hotkeys',
+        description='Enable FaceTracker Hotkeys: (L) Lock View. '
+                    '(Alt + Left Arrow) Previous FT keyframe. '
+                    '(Alt + Right Arrow) Next FT keyframe',
+        default=True,
+        update=_update_ft_hotkeys
+    )
 
     def _license_was_accepted(self):
         return pkt_is_installed() or self.license_accepted
@@ -875,8 +893,8 @@ class KTAddonPreferences(AddonPreferences):
                               text='Download', icon='URL')
             op.url = Config.core_download_website_url
 
-    def _get_problem_info(self):
-        info = []
+    def _get_problem_info(self) -> List[str]:
+        info: List[str] = []
         if 'pykeentools' in sys.modules:
             try:
                 import importlib

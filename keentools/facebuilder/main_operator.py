@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import re
-
 from bpy.props import (
     StringProperty,
     IntProperty,
@@ -28,6 +26,8 @@ from bpy.types import Operator
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             fb_settings,
+                            gt_settings,
+                            ft_settings,
                             get_operator,
                             show_user_preferences,
                             show_tool_preferences)
@@ -70,6 +70,8 @@ from .facebuilder_acts import (remove_pins_act,
                                center_geo_act)
 from .prechecks import common_fb_checks
 from .integration import FB_OT_ExportToCC
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -184,6 +186,8 @@ class FB_OT_SelectCamera(ButtonOperator, Operator):
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
+    detect_face: BoolProperty(default=False)
+
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         check_status = common_fb_checks(object_mode=True,
@@ -206,8 +210,8 @@ class FB_OT_SelectCamera(ButtonOperator, Operator):
         pinmode_op = get_operator(FBConfig.fb_pinmode_idname)
         if not bpy_background_mode():
             try:
-                pinmode_op('INVOKE_DEFAULT',
-                           headnum=self.headnum, camnum=self.camnum)
+                pinmode_op('INVOKE_DEFAULT', headnum=self.headnum,
+                           camnum=self.camnum, detect_face=self.detect_face)
             except Exception as err:
                 msg = f'{str(err)}'
                 self.report({'ERROR'}, msg)
@@ -715,7 +719,7 @@ class FB_OT_ShowTexture(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(context.area)
 
         mat = show_texture_in_mat(head.preview_texture_name(),
@@ -746,7 +750,7 @@ class FB_OT_ShowSolid(ButtonOperator, Operator):
 
         settings = fb_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(context.area)
         switch_to_mode('SOLID')
         _log.output(f'{self.__class__.__name__} execute end >>>')
@@ -888,7 +892,7 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
 
         settings = fb_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
+            FBLoader.out_pinmode_without_save()
             exit_area_localview(context.area)
 
         return export_head_to_fbx(self)
@@ -1164,10 +1168,11 @@ class FB_OT_ResetView(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class FB_OT_MoveWrapper(ButtonOperator, Operator):
-    bl_idname = 'keentools_fb.move_wrapper'
-    bl_label = 'move wrapper'
-    bl_description = 'KeenTools move wrapper operator'
+class FB_OT_MoveWrapper(Operator):
+    bl_idname = FBConfig.fb_move_wrapper
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
 
@@ -1188,12 +1193,34 @@ class FB_OT_MoveWrapper(ButtonOperator, Operator):
         if not settings:
             return {'CANCELLED'}
 
-        work_area = FBLoader.get_work_area()
+        work_area = CommonLoader.get_current_viewport_area()
         if work_area != context.area:
             return {'PASS_THROUGH'}
 
         op = get_operator('view3d.move')
         return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class FB_OT_PanDetector(Operator):
+    bl_idname = FBConfig.fb_pan_detector
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = CommonLoader.get_current_viewport_area()
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
+        return {'PASS_THROUGH'}
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
@@ -1237,4 +1264,5 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_RotateHeadForward,
                        FB_OT_RotateHeadBackward,
                        FB_OT_ResetView,
-                       FB_OT_MoveWrapper)
+                       FB_OT_MoveWrapper,
+                       FB_OT_PanDetector)

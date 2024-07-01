@@ -49,12 +49,36 @@ def bpy_context() -> Any:
     return bpy.context
 
 
+def bpy_window() -> Any:
+    return bpy.context.window
+
+
 def bpy_window_manager() -> Any:
     return bpy.context.window_manager
 
 
+def bpy_window_managers() -> Any:
+    return bpy.data.window_managers
+
+
+def bpy_winman() -> Any:
+    return bpy.data.window_managers['WinMan']
+
+
+def bpy_screen() -> Any:
+    return bpy.context.screen
+
+
+def bpy_ops() -> Any:
+    return bpy.ops
+
+
 def bpy_objects() -> Any:
     return bpy.data.objects
+
+
+def bpy_data() -> Any:
+    return bpy.data
 
 
 def bpy_images() -> Any:
@@ -173,16 +197,18 @@ def bpy_poll_is_camera(self: Any, obj: Optional[Object]) -> bool:
 
 
 def _operator_with_context_old(operator: Operator,
-                               context_override_dict: Dict, **kwargs) -> None:
+                               context_override_dict: Dict,
+                               *args, **kwargs) -> None:
     _log.output(f'_operator_with_context_old: {operator}')
-    return operator(context_override_dict, **kwargs)
+    return operator(context_override_dict, *args, **kwargs)
 
 
 def _operator_with_context_new(operator: Operator,
-                               context_override_dict: Dict, **kwargs) -> None:
+                               context_override_dict: Dict,
+                               *args, **kwargs) -> None:
     _log.output(f'_operator_with_context_new: {operator}')
     with bpy.context.temp_override(**context_override_dict):
-        return operator(**kwargs)
+        return operator(*args, **kwargs)
 
 
 operator_with_context: Callable = _operator_with_context_new \
@@ -254,7 +280,7 @@ def bpy_all_scene_objects() -> List:
 
 
 def bpy_show_addon_preferences():
-    bpy.ops.preferences.addon_show(module=Config.addon_name)
+    bpy.ops.preferences.addon_show(module=Config.package)
 
 
 def bpy_view_camera():
@@ -290,11 +316,19 @@ def bpy_new_image(name: str, **kwargs) -> Image:
     return bpy.data.images.new(name, **kwargs)
 
 
+def bpy_load_image(file_path: str) -> Image:
+    return bpy.data.images.load(file_path)
+
+
 def bpy_remove_image(img: Optional[Image]) -> None:
     if img is None:
         return
     if img.name in bpy.data.images:
         bpy.data.images.remove(img)
+
+
+def bpy_new_mesh(mesh_name: str) -> Mesh:
+    return bpy.data.meshes.new(mesh_name)
 
 
 def bpy_remove_material(mat: Optional[Material]) -> None:

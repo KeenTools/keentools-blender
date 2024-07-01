@@ -34,7 +34,7 @@ _log = KTLogger(__name__)
 
 
 def build_geo(obj: Object, get_uv=False) -> Any:
-    _log.output(_log.color('magenta', 'build_geo start'))
+    _log.magenta('build_geo start')
     mb = pkt_module().MeshBuilder()
     _geo = pkt_module().Geo()
 
@@ -54,12 +54,12 @@ def build_geo(obj: Object, get_uv=False) -> Any:
             mb.set_uvs_attribute('VERTEX_BASED', uvs)
 
     _geo.add_mesh(mb.mesh())
-    _log.output(_log.color('magenta', 'build_geo end'))
+    _log.output('build_geo end >>>')
     return _geo
 
 
 def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
-    _log.output(_log.color('magenta', 'build_geo_from_basis start'))
+    _log.magenta('build_geo_from_basis start')
     mb = pkt_module().MeshBuilder()
     _geo = pkt_module().Geo()
 
@@ -83,5 +83,5 @@ def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
             mb.set_uvs_attribute('VERTEX_BASED', uvs)
 
     _geo.add_mesh(mb.mesh())
-    _log.output(_log.color('magenta', 'build_geo_from_basis end'))
+    _log.output('build_geo_from_basis end >>>')
     return _geo

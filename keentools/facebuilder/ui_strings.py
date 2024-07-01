@@ -277,7 +277,14 @@ buttons = {
         'Reset View',
         'Remove all pins and reset camera position'
     ),
-
+    FBConfig.fb_move_wrapper: Button(
+        'Pan View (FaceBuilder)',
+        'KeenTools Viewport Pan override operator (FaceBuilder)'
+    ),
+    FBConfig.fb_pan_detector: Button(
+        'Pan View detect (FaceBuilder)',
+        'KeenTools Viewport Pan override operator (FaceBuilder)'
+    ),
     # Help buttons
     FBConfig.fb_help_views_idname: Button(
         'Views',

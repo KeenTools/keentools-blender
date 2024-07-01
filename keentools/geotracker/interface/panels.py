@@ -21,7 +21,7 @@ from typing import Tuple, Optional, Any
 from functools import partial
 
 import bpy
-from bpy.types import Area, Panel
+from bpy.types import Area, Panel, UIList
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
@@ -43,6 +43,7 @@ from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 from ...utils.icons import KTIcons
+from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -90,7 +91,7 @@ def _start_geomobj_delete_handler() -> None:
 
 
 def _exit_from_localview_button(layout, context):
-    if addon_pinmode() or not check_context_localview(context):
+    if not CommonLoader.check_localview_without_pinmode(context.area):
         return
     settings = gt_settings()
     if settings.is_calculating():
@@ -149,16 +150,15 @@ class GT_PT_GeotrackersPanel(View3DPanel):
                           text='', icon='PREFERENCES', emboss=False)
         op.show = 'geotracker'
 
-    def _geotracker_creation_offer(self, layout: Any) -> None:
+    def _geotracker_creation_button(self, layout: Any,
+                                    active: bool = True) -> None:
         settings = gt_settings()
-        row = layout.row()
+        row = layout.row(align=True)
+        row.scale_y = 2.0 if len(settings.trackers()) == 0 else Config.btn_scale_y
         if settings.is_calculating():
-            row.scale_y = Config.btn_scale_y
             row.operator(GTConfig.gt_stop_calculating_idname, icon='X')
         else:
-            row.active = not settings.pinmode
-            row.enabled = not settings.pinmode
-            row.scale_y = 2.0 if len(settings.trackers()) == 0 else Config.btn_scale_y
+            row.enabled = active
             row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
@@ -225,8 +225,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             self._pkt_install_offer(layout)
             return
 
-        self._output_geotrackers_list(layout)
-        self._geotracker_creation_offer(layout)
+        col = layout.column(align=True)
+        self._output_geotrackers_list(col)
+        self._geotracker_creation_button(col)
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
         _gt_grace_timer.start()
@@ -585,7 +586,7 @@ class GT_PT_TrackingPanel(AllVisible):
             row.operator(GTConfig.gt_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not GTLoader.viewport().is_working():
+            if not GTLoader.viewport().viewport_is_working():
                 _start_pinmode_escaper(context)
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,
@@ -800,7 +801,9 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         self._appearance_image_adjustment(settings, layout)
 
 
-class GT_UL_selected_frame_list(bpy.types.UIList):
+class GT_UL_selected_frame_list(UIList):
+    bl_idname = GTConfig.gt_selected_frame_list_item_idname
+
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
         layout.label(text=f'frame {item.num}')

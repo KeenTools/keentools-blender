@@ -316,28 +316,32 @@ def _exif_sizes_message(headnum: int, image: Any) -> str:
 
 
 def reload_all_camera_exif(headnum: int) -> None:
-    _log.output('reload_all_camera_exif')
+    _log.yellow('reload_all_camera_exif start')
     settings = fb_settings()
     head = settings.get_head(headnum)
     for i, camera in enumerate(head.cameras):
         filepath = camera.get_abspath()
         if filepath:
             read_exif_to_camera(headnum, i, filepath)
+    _log.output('reload_all_camera_exif end >>>')
 
 
 def read_exif_to_camera(headnum: int, camnum: int, filepath: str) -> bool:
-    _log.output('read_exif_to_camera')
+    _log.yellow('read_exif_to_camera start')
     settings = fb_settings()
     camera = settings.get_camera(headnum, camnum)
     if camera is None:
+        _log.red('read_exif_to_camera no camera end >>>')
         return False
     exif_data = _read_exif(filepath)
     _init_exif_settings(camera.exif, exif_data)
     camera.exif.info_message = _exif_info_message(camera.exif, exif_data)
+    _log.output('read_exif_to_camera end >>>')
     return exif_data['status']
 
 
 def update_exif_sizes_message(headnum: int, image: Any) -> bool:
+    _log.yellow('update_exif_sizes_message')
     settings = fb_settings()
     head = settings.get_head(headnum)
     if head is None:
@@ -348,7 +352,7 @@ def update_exif_sizes_message(headnum: int, image: Any) -> bool:
 
 
 def auto_setup_camera_from_exif(camera: Any) -> None:
-    _log.output('auto_setup_camera_from_exif')
+    _log.yellow('auto_setup_camera_from_exif')
     real_w, real_h = camera.get_background_size()
 
     if camera.exif.focal35mm > 0:

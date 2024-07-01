@@ -168,15 +168,19 @@ def unbreak_rotation(obj: Object, frame_list: List[int]) -> bool:
 
 
 def check_unbreak_rotaion_is_needed(obj: Object) -> bool:
+    _log.yellow('check_unbreak_rotaion_is_needed start')
     if not obj:
+        _log.red('check_unbreak_rotaion_is_needed: no object >>>')
         return False
 
     frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
     if len(frame_list) < 2:
+        _log.red('check_unbreak_rotaion_is_needed: not enough frames >>>')
         return False
 
     action = get_action(obj)
     if action is None:
+        _log.red('check_unbreak_rotaion_is_needed: no action >>>')
         return False
 
     rot_dict = get_rot_dict()
@@ -195,7 +199,9 @@ def check_unbreak_rotaion_is_needed(obj: Object) -> bool:
         prev = points[0][1]
         for point in points[1:]:
             if abs(prev - point[1]) > pi:
+                _log.magenta('check_unbreak_rotaion_is_needed True end >>>')
                 return True
             prev = point[1]
 
+    _log.output('check_unbreak_rotaion_is_needed False end >>>')
     return False

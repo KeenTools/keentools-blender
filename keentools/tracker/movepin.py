@@ -40,6 +40,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_is_animation_playing)
 from ..geotracker.interface.screen_mesages import (revert_default_screen_message,
                                                    clipping_changed_screen_message)
+from ..geotracker.utils.tracking import check_unbreak_rotaion_is_needed
+from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
 
 
 _log = KTLogger(__name__)
@@ -82,7 +84,7 @@ class MovePin(bpy.types.Operator):
             _log.output(f'_new_pin ADD PIN pins: {pins.arr()}')
             return True
 
-    def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
+    def init_action(self, area: Any, mouse_x: float, mouse_y: float) -> bool:
         def _enable_pin_safe(gt, keyframe, pin_index):
             pin = gt.pin(keyframe, pin_index)
             if pin and not pin.enabled:
@@ -97,14 +99,13 @@ class MovePin(bpy.types.Operator):
 
         loader = settings.loader()
         vp = loader.viewport()
-        vp.update_view_relative_pixel_size(context.area)
+        vp.update_view_relative_pixel_size(area)
         pins = vp.pins()
 
         loader.load_pins_into_viewport()
 
-        x, y = get_image_space_coord(mouse_x, mouse_y, context.area,
+        x, y = get_image_space_coord(mouse_x, mouse_y, area,
                                      *get_scene_camera_shift())
-        pins.set_current_pin((x, y))
 
         nearest, dist2 = nearest_point(x, y, pins.arr())
 
@@ -118,7 +119,7 @@ class MovePin(bpy.types.Operator):
             for i in pins.get_selected_pins():
                 _enable_pin_safe(gt, keyframe, i)
         else:
-            self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
+            self.new_pin_flag = self._new_pin(area, mouse_x, mouse_y)
             if not self.new_pin_flag:
                 _log.output('GT MISS MODEL CLICK')
                 pins.clear_selected_pins()
@@ -127,8 +128,8 @@ class MovePin(bpy.types.Operator):
             pins.set_selected_pins([pins.current_pin_num()])
             _log.output('GT NEW PIN CREATED')
 
-        vp.create_batch_2d(context.area)
-        vp.register_handlers(context)
+        vp.create_batch_2d(area)
+        vp.register_handlers(area=area)
         return True
 
     def update_focal_length_in_all_keyframes(self) -> None:
@@ -145,7 +146,7 @@ class MovePin(bpy.types.Operator):
 
         if self.old_focal_length != new_focal_length:
             current_frame = bpy_current_frame()
-            settings.calculating_mode = 'ESTIMATE_FL'
+            settings.start_calculating('ESTIMATE_FL')
             gt = settings.loader().kt_geotracker()
             gt.recalculate_model_for_new_focal_length(self.old_focal_length,
                                                       new_focal_length, False,
@@ -165,6 +166,7 @@ class MovePin(bpy.types.Operator):
             else:
                 force_undo_push('Drag GeoTracker pin')
 
+        _log.green('on_left_mouse_release start')
         settings = self.get_settings()
         loader = settings.loader()
         loader.viewport().pins().reset_current_pin()
@@ -189,10 +191,28 @@ class MovePin(bpy.types.Operator):
         loader.viewport_area_redraw()
 
         _push_action_in_undo_history()
+        _log.output('on_left_mouse_release end >>>')
         return {'FINISHED'}
 
     def update_on_left_mouse_release(self) -> None:
-        pass
+        _log.yellow('tracker update_on_left_mouse_release start')
+        settings = self.get_settings()
+        prefs = settings.preferences()
+        if not prefs.gt_auto_unbreak_rotation:
+            _log.red('tracker update_on_left_mouse_release prefs end >>>')
+            return
+
+        geotracker = settings.get_current_geotracker_item()
+        obj = geotracker.animatable_object()
+        product = settings.product_type()
+        if check_unbreak_rotaion_is_needed(obj):
+            _log.green(f'unbreak to object: {obj}')
+            unbreak_status = unbreak_object_rotation_act(obj)
+            if not unbreak_status.success:
+                _log.red(unbreak_status.error_message)
+            else:
+                mark_object_keyframes(obj, product=product)
+        _log.output('tracker update_on_left_mouse_release end >>>')
 
     def _pin_drag(self, kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int,
@@ -211,7 +231,6 @@ class MovePin(bpy.types.Operator):
         shift_x, shift_y = get_scene_camera_shift()
         x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
         pins = loader.viewport().pins()
-        pins.set_current_pin((x, y))
         pin_index = pins.current_pin_num()
         pins.arr()[pin_index] = (x, y)
         selected_pins = pins.get_selected_pins()
@@ -261,8 +280,8 @@ class MovePin(bpy.types.Operator):
 
         wf = vp.wireframer()
         wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
-        wf.set_lit_light_matrix(geotracker.geomobj.matrix_world,
-                                geotracker.camobj.matrix_world)
+        wf.set_camera_pos(geotracker.geomobj.matrix_world,
+                          geotracker.camobj.matrix_world)
 
         vp.create_batch_2d(area)
         vp.update_residuals(gt, area, frame)
@@ -271,7 +290,7 @@ class MovePin(bpy.types.Operator):
 
     def on_default_modal(self) -> Set:
         settings = self.get_settings()
-        if settings.loader().viewport().pins().current_pin() is not None:
+        if settings.loader().viewport().pins().current_pin():
             return {'RUNNING_MODAL'}
         else:
             _log.output('MOVE PIN FINISH')
@@ -279,22 +298,25 @@ class MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
-        _log.output('GT MOVEPIN invoke')
+        _log.green(f'{self.__class__.__name__} invoke start')
         self.dragged = False
         settings = self.get_settings()
         loader = settings.loader()
-        area = loader.get_work_area()
+        area = context.area
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
-        if not point_is_in_area(context.area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y):
             _log.output(f'OUT OF AREA: {mouse_x}, {mouse_y}')
+            _log.output(f'{self.__class__.__name__} invoke 1 cancel >>>')
             return {'CANCELLED'}
         if point_is_in_service_region(area, mouse_x, mouse_y):
             _log.output(f'OUT OF SAFE REGION: {mouse_x}, {mouse_y}')
+            _log.output(f'{self.__class__.__name__} invoke 2 cancel >>>')
             return {'CANCELLED'}
 
-        if not self.init_action(context, mouse_x, mouse_y):
+        if not self.init_action(area, mouse_x, mouse_y):
             settings.start_selection(mouse_x, mouse_y)
             _log.output(f'START SELECTION: {mouse_x}, {mouse_y}')
+            _log.output(f'{self.__class__.__name__} invoke 3 cancel >>>')
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
@@ -310,6 +332,7 @@ class MovePin(bpy.types.Operator):
 
         context.window_manager.modal_handler_add(self)
         _log.output('GT START PIN MOVING')
+        _log.output(f'{self.__class__.__name__} invoke end >>>')
         return {'RUNNING_MODAL'}
 
     def modal(self, context: Any, event: Any) -> Set:
@@ -322,7 +345,7 @@ class MovePin(bpy.types.Operator):
 
         settings = self.get_settings()
         if event.type == 'MOUSEMOVE' \
-                and settings.loader().viewport().pins().current_pin() is not None:
+                and settings.loader().viewport().pins().current_pin():
             _log.output(f'MOVEPIN MOUSEMOVE: {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 

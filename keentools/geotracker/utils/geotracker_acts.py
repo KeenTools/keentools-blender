@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import List, Dict, Any, Optional
+import time
 import numpy as np
 
 import bpy
@@ -29,6 +30,8 @@ from ...addon_config import (ActionStatus,
                              get_addon_preferences,
                              ProductType,
                              get_settings,
+                             fb_settings,
+                             ft_settings,
                              product_name)
 from ...geotracker_config import GTConfig
 from ...utils.animation import (get_action,
@@ -52,7 +55,10 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_scene,
                                  bpy_render_single_frame,
                                  bpy_scene_selected_objects,
-                                 bpy_active_object)
+                                 bpy_active_object,
+                                 bpy_progress_begin,
+                                 bpy_progress_end,
+                                 bpy_progress_update)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
@@ -77,6 +83,7 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
+                             InvScaleFromMatrix,
                              change_near_and_far_clip_planes,
                              pin_to_xyz_from_geo_mesh,
                              pin_to_normal_from_geo_mesh,
@@ -122,14 +129,14 @@ def create_geotracker_action() -> ActionStatus:
     active_object = bpy_active_object()
 
     geotracker = settings.get_current_geotracker_item()
-    obj = get_alone_object_in_scene_selection_by_type('MESH')
+    obj = get_alone_object_in_scene_selection_by_type('MESH', exclude_list=[])
     if obj is None:
-        obj = get_alone_object_in_scene_by_type('MESH')
+        obj = get_alone_object_in_scene_by_type('MESH', exclude_list=[])
     geotracker.geomobj = obj
 
-    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    camobj = get_alone_object_in_scene_selection_by_type('CAMERA', exclude_list=[])
     if camobj is None:
-        camobj = get_alone_object_in_scene_by_type('CAMERA')
+        camobj = get_alone_object_in_scene_by_type('CAMERA', exclude_list=[])
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
@@ -163,15 +170,19 @@ def create_facetracker_action() -> ActionStatus:
         obj = get_alone_ft_object_in_scene()
     geotracker.geomobj = obj
 
-    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    exclude_camobj = fb_settings().get_all_camobj()
+    camobj = get_alone_object_in_scene_selection_by_type(
+        'CAMERA', exclude_list=exclude_camobj)
     if camobj is None:
-        camobj = get_alone_object_in_scene_by_type('CAMERA')
+        camobj = get_alone_object_in_scene_by_type(
+            'CAMERA', exclude_list=exclude_camobj)
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
 
     select_objects_only(selected_objects)
     bpy_active_object(active_object)
+
     _log.output('create_facetracker_action end >>>')
     return ActionStatus(True, f'FaceTracker has been added')
 
@@ -191,6 +202,7 @@ def delete_tracker_action(geotracker_num: int, *, product: int) -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
     settings.reload_current_geotracker()
+
     _log.output('delete_tracker_action end >>>')
     return ActionStatus(True, f'{product_name(product)} has been removed')
 
@@ -409,7 +421,7 @@ def track_next_frame_action(forward: bool=True, *,
     gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     next_frame = current_frame + 1 if forward else current_frame - 1
-    settings.calculating_mode = 'TRACKING'
+    settings.start_calculating('TRACKING')
     try:
         _log.output(loader.get_geotracker_state())
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -876,11 +888,11 @@ def create_animated_empty_action(
     return ActionStatus(True, 'ok')
 
 
-def create_empty_from_selected_pins_action(
+def create_hard_empties_from_selected_pins_action(
         from_frame: int, to_frame: int, linked: bool = False,
         orientation: str = 'NORMAL', size: float = 1.0,
         *, product: int) -> ActionStatus:
-    _log.yellow(f'create_empty_from_selected_pins_action start [{product_name(product)}]')
+    _log.yellow(f'create_hard_empties_from_selected_pins_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -910,17 +922,17 @@ def create_empty_from_selected_pins_action(
     geo_mesh = geo.mesh(0)
 
     points = np.empty((selected_pins_count, 3), dtype=np.float32)
-    normals = []
+    normals = np.empty((selected_pins_count, 3), dtype=np.float32)
     for i, pin_index in enumerate(selected_pins):
         pin = gt.pin(current_frame, pin_index)
         points[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
-        normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
+        normals[i] = pin_to_normal_from_geo_mesh(pin, geo_mesh)
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
-    scale_inv = InvScaleMatrix(3, geomobj.matrix_world.to_scale())
+    scale_inv = InvScaleFromMatrix(geomobj.matrix_world)
     inv_mat = geomobj.matrix_world.inverted_safe()
 
-    empties = []
+    empties: List[Object] = []
     zv = Vector((0, 0, 1))
 
     for i, pos in enumerate(pin_positions):
@@ -943,10 +955,12 @@ def create_empty_from_selected_pins_action(
     if linked:
         return ActionStatus(True, 'ok')
 
+    settings.start_calculating('NO_SHADER_UPDATE')
+
     source_matrices = {}
     for frame in range(from_frame, to_frame + 1):
         bpy_set_current_frame(frame)
-        matrices = []
+        matrices: List[Matrix] = []
         for empty in empties:
             matrices.append(empty.matrix_world.copy())
         source_matrices[frame] = matrices
@@ -972,7 +986,115 @@ def create_empty_from_selected_pins_action(
 
     bpy_set_current_frame(current_frame)
 
-    _log.output(f'create_empty_from_selected_pins_action end >>>')
+    settings.stop_calculating()
+
+    _log.output(f'create_hard_empties_from_selected_pins_action end >>>')
+    return ActionStatus(True, 'ok')
+
+
+def create_soft_empties_from_selected_pins_action(
+        from_frame: int, to_frame: int, linked: bool = False,
+        orientation: str = 'NORMAL', size: float = 1.0,
+        *, product: int) -> ActionStatus:
+    _log.yellow(f'create_soft_empties_from_selected_pins_action start [{product_name(product)}]')
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    if from_frame < 0 or to_frame < from_frame:
+        return ActionStatus(False, 'Wrong frame range')
+
+    settings = get_settings(product)
+    geotracker = settings.get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    loader = settings.loader()
+
+    gt = loader.kt_geotracker()
+
+    pins = loader.viewport().pins()
+    pins_count = gt.pins_count()
+    selected_pins = pins.get_selected_pins(pins_count)
+    selected_pins_count = len(selected_pins)
+    if selected_pins_count == 0:
+        return ActionStatus(False, 'No pins selected')
+
+    zv = Vector((0, 0, 1))
+    empties: List[Object] = []
+    for i in range(selected_pins_count):
+        empty = create_empty_object('ftPin')
+        empty.empty_display_type = 'ARROWS'
+        empty.empty_display_size = size
+        empty.parent = geotracker.geomobj
+        empties.append(empty)
+
+    current_frame = bpy_current_frame()
+
+    settings.start_calculating('NO_SHADER_UPDATE')
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        geo = gt.applied_args_model_at(frame)
+        geo_mesh = geo.mesh(0)
+
+        geomobj_matrix_world = geomobj.matrix_world
+        scale_inv = InvScaleFromMatrix(geomobj_matrix_world)
+        inv_mat = geomobj_matrix_world.inverted_safe()
+
+        for i, pin_index in enumerate(selected_pins):
+            empty = empties[i]
+            pin = gt.pin(frame, pin_index)
+            point = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+            normal = pin_to_normal_from_geo_mesh(pin, geo_mesh)
+            pos = np.array(point, dtype=np.float32) @ xy_to_xz_rotation_matrix_3x3()
+
+            if orientation == 'NORMAL':
+                quaternion_matrix = zv.rotation_difference(
+                    np.array(normal, dtype=np.float32) @
+                    xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
+                empty.matrix_world = quaternion_matrix
+            elif orientation == 'WORLD':
+                empty.matrix_world = inv_mat
+
+            empty.location = pos @ scale_inv
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        for empty in empties:
+            unbreak_status = unbreak_object_rotation_act(empty)
+            if not unbreak_status.success:
+                _log.error(unbreak_status.error_message)
+
+    if linked:
+        bpy_set_current_frame(current_frame)
+        settings.stop_calculating()
+        return ActionStatus(True, 'ok')
+
+    source_matrices = {}
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        matrices: List[Matrix] = []
+        for empty in empties:
+            matrices.append(empty.matrix_world.copy())
+        source_matrices[frame] = matrices
+
+    for empty in empties:
+        empty.parent = None
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        for i, empty in enumerate(empties):
+            empty.matrix_world = source_matrices[frame][i]
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    bpy_set_current_frame(current_frame)
+    settings.stop_calculating()
+    _log.output(f'create_soft_empties_from_selected_pins_action end >>>')
     return ActionStatus(True, 'ok')
 
 
@@ -1091,7 +1213,7 @@ def bake_texture_from_frames_action(area: Area, selected_frames: List,
 
     prepare_camera(area, product=product)
     built_texture = bake_texture(geotracker, selected_frames, product=product)
-    revert_camera(area)
+    revert_camera(area, product=product)
 
     if settings.pinmode:
         settings.reload_current_geotracker()
@@ -1291,6 +1413,65 @@ def revert_default_render_action(*, product: int) -> ActionStatus:
     bpy.ops.render.view_show('INVOKE_DEFAULT')
     bpy_render_single_frame(scene)
     _log.output('revert_default_render_action end >>>')
+    return ActionStatus(True, 'ok')
+
+
+def save_facs_as_csv_action(*, filepath: str,
+                            from_frame: int = 1,
+                            to_frame: int = 1,
+                            use_tracked_only: bool = False) -> ActionStatus:
+    _log.yellow(f'save_facs_as_csv_action start')
+    check_status = common_checks(product=ProductType.FACETRACKER,
+                                 object_mode=True, is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    start_time = time.time()
+
+    fps = bpy_scene().render.fps
+
+    settings = ft_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return ActionStatus(False, 'FaceTracker is not found')
+
+    ft = settings.loader().kt_geotracker()
+
+    try:
+        neutral_geo = ft.scaled_input_geo()
+        face_model_scale = ft.get_face_model_scale()
+        facs_executor = pkt_module().FacsExecutor(neutral_geo, face_model_scale)
+        facs_animation = pkt_module().FacsAnimation()
+
+        if not use_tracked_only:
+            frames = [x for x in range(from_frame, to_frame + 1)]
+        else:
+            frames = [x for x in ft.track_frames()
+                      if from_frame <= x <= to_frame]
+
+        bpy_progress_begin(0, len(frames))
+        frame_count = 0
+        for frame in frames:
+            current_frame_vertices = ft.applied_args_model_vertices_at(frame)
+            facs_coeffs = facs_executor.approximate_vertices(current_frame_vertices)
+            facs_animation.set_at_frame(frame, facs_coeffs)
+            frame_count += 1
+            bpy_progress_update(frame_count)
+
+        bpy_progress_end()
+
+        res = facs_animation.save_as_csv_to_file(filepath, fps)
+        if not res:
+            return ActionStatus(False, 'Cannot save FACS animation as CSV')
+    except Exception as err:
+        _log.error(f'save_facs_as_csv_action Exception:\n{str(err)}')
+        bpy_progress_end()
+        return ActionStatus(False, 'Exception while save FACS animation')
+
+    _log.output(f'save_facs_as_csv_action '
+                f'time: {time.time() - start_time:.2f} sec. end >>>')
     return ActionStatus(True, 'ok')
 
 

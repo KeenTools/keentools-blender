@@ -231,7 +231,7 @@ buttons = {
         'Create an animated Empty'
     ),
     GTConfig.gt_exit_pinmode_idname: Button(
-        'Exit Pinmode',
+        'Back to 3D',
         'Back to 3D scene'
     ),
     GTConfig.gt_stop_calculating_idname: Button(
@@ -314,9 +314,13 @@ buttons = {
         'Revert default rendering',
         'Setup scene rendering settings to match default render view'
     ),
-    GTConfig.gt_interrupt_modal_idname: Button(
-        'GeoTracker Interruptor',
-        'Interrupt current operation by Esc'
+    GTConfig.gt_move_wrapper: Button(
+        'Pan View (GeoTracker)',
+        'KeenTools Viewport Pan override operator (GeoTracker)'
+    ),
+    GTConfig.gt_pan_detector: Button(
+        'Pan View detect (GeoTracker)',
+        'KeenTools Viewport Pan override operator (GeoTracker)'
     ),
     # Menu buttons
     GTConfig.gt_clear_tracking_menu_exec_idname: Button(

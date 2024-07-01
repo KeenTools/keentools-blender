@@ -25,15 +25,15 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
                        PointerProperty, CollectionProperty, BoolVectorProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, ProductType
+from ..addon_config import Config, ProductType, fb_settings
 from .ftloader import FTLoader
-from ..utils.bpy_common import (bpy_poll_is_mesh,
-                                bpy_poll_is_camera)
+from ..utils.bpy_common import bpy_poll_is_camera
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
 from .callbacks import (update_camobj,
+                        poll_is_facebuilder_mesh,
                         update_geomobj,
                         update_movieclip,
                         update_precalc_path,
@@ -55,11 +55,24 @@ from .callbacks import (update_camobj,
                         update_solve_for_camera,
                         update_smoothing,
                         update_stabilize_viewport_enabled,
-                        update_locks)
+                        update_locks,
+                        update_lock_blinking,
+                        update_lock_neck_movement,
+                        update_rigidity,
+                        update_blinking_rigidity,
+                        update_neck_movement_rigidity)
 from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
+
+
+def poll_is_camera_not_in_fb(self: Any, obj: Optional[Object]) -> bool:
+    if not bpy_poll_is_camera(self, obj):
+        return False
+    settings = fb_settings()
+    return obj not in settings.get_all_camobj()
 
 
 class FaceTrackerItem(TrackerItem):
@@ -69,13 +82,13 @@ class FaceTrackerItem(TrackerItem):
         description='Select target geometry from the list '
                     'of objects in your Scene',
         type=Object,
-        poll=bpy_poll_is_mesh,
+        poll=poll_is_facebuilder_mesh,
         update=update_geomobj)
     camobj: PointerProperty(
         name='Camera',
         description='Choose which camera will be your viewpoint',
         type=Object,
-        poll=bpy_poll_is_camera,
+        poll=poll_is_camera_not_in_fb,
         update=update_camobj)
     movie_clip: PointerProperty(name='Movie Clip',
                                 description='Select Footage from list',
@@ -99,7 +112,7 @@ class FaceTrackerItem(TrackerItem):
         default=False, update=update_solve_for_camera)
     reduce_pins: BoolProperty(name='Reduce pins', default=False)
     spring_pins_back: BoolProperty(
-        name='Spring pins back', default=True,
+        name='Spring pins back', default=False,
         update=update_spring_pins_back)
 
     focal_length_estimation: BoolProperty(
@@ -259,6 +272,11 @@ class FaceTrackerItem(TrackerItem):
         precision=2,
         name='XY Translations',
         description='XY translation smoothing', update=update_smoothing)
+    smoothing_face_args_coeff: FloatProperty(
+        default=0.0, min=0.0, max=1.0,
+        precision=2,
+        name='Facial expressions',
+        description='Facial expression smoothing', update=update_smoothing)
 
     overlapping_detected: BoolProperty(default=False)
 
@@ -266,6 +284,28 @@ class FaceTrackerItem(TrackerItem):
                               size=6, subtype='NONE',
                               default=(False,) * 6,
                               update=update_locks)
+
+    lock_blinking: BoolProperty(name='Lock eyelids',
+                                default=False, update=update_lock_blinking)
+    lock_neck_movement: BoolProperty(name='Lock neck',
+                                     default=False,
+                                     update=update_lock_neck_movement)
+
+    rigidity: FloatProperty(
+        description='Change how much pins affect the model expressions. '
+                    'Accessible in Pinmode only',
+        name='Expressions', default=2.0, min=0.001, max=1000.0,
+        update=update_rigidity)
+    blinking_rigidity: FloatProperty(
+        description='Change how much pins affect blinking. '
+                    'Accessible in Pinmode only',
+        name='Eyelids', default=2.0, min=0.001, max=1000.0,
+        update=update_blinking_rigidity)
+    neck_movement_rigidity: FloatProperty(
+        description='Change how much pins affect neck movement. '
+                    'Accessible in Pinmode only',
+        name='Neck', default=2.0, min=0.001, max=1000.0,
+        update=update_neck_movement_rigidity)
 
 
 class FTSceneSettings(TRSceneSetting):
@@ -312,35 +352,29 @@ class FTSceneSettings(TRSceneSetting):
     wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['facetracker'][0],
         min=0.0, max=1.0,
         update=update_wireframe_image)
 
     wireframe_special_color: FloatVectorProperty(
         description='Color of special parts in pin-mode',
         name='Wireframe Special Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['facetracker'][1],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_special_color'))
+        update=update_wireframe_image)
 
     wireframe_midline_color: FloatVectorProperty(
         description='Color of midline in pin-mode',
         name='Wireframe Midline Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
-                                               UserPreferences.type_color),
+        default=Config.ft_midline_color,
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_midline_color'))
+        update=update_wireframe_image)
 
     show_specials: BoolProperty(
         description='Use different colors for important head parts '
                     'on the mesh',
-        name='Special face parts', default=True, update=update_wireframe_image)
+        name='Highlight facial features', default=True,
+        update=update_wireframe_image)
 
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',
@@ -389,8 +423,9 @@ class FTSceneSettings(TRSceneSetting):
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
         ('REPROJECT', 'REPROJECT', 'Project and bake texture is calculating', 4),
-        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5),
-        ('JUMP', 'JUMP', 'Jump to frame', 6)
+        ('JUMP', 'JUMP', 'Jump to frame', 5),
+        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 6),
+        ('NO_SHADER_UPDATE', 'NO_SHADER_UPDATE', 'No shader update in calculating', 7),
     ])
 
     selection_mode: BoolProperty(name='Selection mode', default=False)
@@ -449,7 +484,9 @@ class FTSceneSettings(TRSceneSetting):
             ('CAMERA', 'Camera',
              'Use Camera as animation source', 1),
             ('SELECTED_PINS', 'Selected pins',
-             'Use selected pins as animation source', 2),],
+             'Use selected pins as animation source', 2),
+            ('SAVE_FACS', 'FACS as a CSV file',
+             'Use selected pins as animation source', 3),],
         description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(

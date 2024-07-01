@@ -38,6 +38,7 @@ from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from ..utils.ui_redraw import (find_modules_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
+from ..preferences.hotkeys import facebuilder_keymaps_unregister
 
 
 _log = KTLogger(__name__)
@@ -143,7 +144,7 @@ def menu_fb_func(self, context):
 
 
 def facebuilder_register():
-    _log.output('--- START FACEBUILDER REGISTER ---')
+    _log.green('--- START FACEBUILDER REGISTER ---')
     global CLASSES_TO_REGISTER
 
     _unregister_old_facebuilder()
@@ -168,11 +169,14 @@ def facebuilder_register():
     _log.output('MAIN FACEBUILDER VARIABLE REGISTER')
     add_addon_settings_var(Config.fb_global_var_name, FBSceneSettings)
     _log.output('MAIN FACEBUILDER VARIABLE REGISTERED')
-    _log.output('=== FACEBUILDER REGISTERED ===')
+    _log.green('=== FACEBUILDER REGISTERED ===')
 
 
 def facebuilder_unregister() -> None:
-    _log.output('--- START FACEBUILDER UNREGISTER ---')
+    _log.green('--- START FACEBUILDER UNREGISTER ---')
+
+    _log.output('FACEBUILDER KEYMAPS UNREGISTER')
+    facebuilder_keymaps_unregister()
 
     _log.output('FACEBUILDER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):
@@ -191,4 +195,4 @@ def facebuilder_unregister() -> None:
     except Exception as err:
         _log.error(f'FACEBUILDER UNREGISTER VARIABLE ERROR:\n{str(err)}')
 
-    _log.output('=== FACEBUILDER UNREGISTERED ===')
+    _log.green('=== FACEBUILDER UNREGISTERED ===')

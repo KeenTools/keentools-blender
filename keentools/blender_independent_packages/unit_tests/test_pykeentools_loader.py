@@ -59,7 +59,7 @@ def test_download_latest_nightly(use_progress_callback):
         else:
             testing_progress_callback = None
 
-        pkt.install_from_download(nightly=True, progress_callback=testing_progress_callback)
+        pkt.install_from_download(progress_callback=testing_progress_callback)
 
         if use_progress_callback:
             assert(testing_progress_callback.last_progress == 1.0)

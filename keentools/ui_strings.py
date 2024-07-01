@@ -136,6 +136,10 @@ buttons = {
         'Report Bug',
         'Report a Bug'
     ),
+    Config.kt_interrupt_modal_idname: Button(
+        'KeenTools Interruptor',
+        'Interrupt current operation by Esc'
+    ),
 }
 
 

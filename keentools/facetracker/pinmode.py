@@ -21,11 +21,14 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ft_settings
+from ..addon_config import ft_settings, get_addon_preferences
 from ..facetracker_config import FTConfig
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
+from ..preferences.hotkeys import (facetracker_keymaps_register,
+                                   facetracker_keymaps_unregister)
+from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -45,6 +48,13 @@ class FT_OT_PinMode(PinMode):
 
     movepin_operator_idname: str = FTConfig.ft_movepin_idname
 
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(FTConfig.ft_pinmode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
     @classmethod
     def get_settings(cls) -> Any:
         return ft_settings()
@@ -58,3 +68,15 @@ class FT_OT_PinMode(PinMode):
         if not geomobj or not geomobj.data.shape_keys:
             return
         reorder_tracking_frames(geomobj)
+
+    def register_hotkeys(self) -> None:
+        prefs = get_addon_preferences()
+        if prefs.ft_use_hotkeys:
+            _log.yellow(f'{self.__class__.__name__} register_hotkeys')
+            facetracker_keymaps_register()
+        else:
+            _log.red(f'{self.__class__.__name__} register_hotkeys disabled')
+
+    def unregister_hotkeys(self) -> None:
+        _log.yellow(f'{self.__class__.__name__} unregister_hotkeys')
+        facetracker_keymaps_unregister()

@@ -66,4 +66,8 @@ class FT_OT_MovePin(MovePin):
                                                   wireframe=True)
 
     def update_on_left_mouse_release(self) -> None:
+        _log.yellow(f'ft update_on_left_mouse_release start')
+        _log.output('update_on_left_mouse_release call super()')
+        super().update_on_left_mouse_release()
         create_relative_shape_keyframe(bpy_current_frame())
+        _log.output('ft update_on_left_mouse_release end >>>')

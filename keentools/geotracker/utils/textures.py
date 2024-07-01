@@ -169,7 +169,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
 
     delta = 0.001
     settings = get_settings(product)
-    settings.calculating_mode = 'REPROJECT'
+    settings.start_calculating('REPROJECT')
 
     single_line_screen_message('Projecting and baking… Please wait',
                                product=product)
@@ -215,18 +215,20 @@ def _bake_caller() -> Optional[float]:
     return None
 
 
-def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
+def bake_texture_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                           *, file_format: str = 'PNG', frames: List[int],
                           digits: int = 4, product: int) -> None:
+    _log.yellow('bake_texture_sequence start')
     global _bake_generator_var
-    _bake_generator_var = bake_generator(context.area, geotracker,
+    _bake_generator_var = bake_generator(area, geotracker,
                                          filepath_pattern,
                                          file_format=file_format,
                                          frames=frames, digits=digits,
                                          product=product)
-    prepare_camera(context.area)
-    settings = gt_settings()
+    prepare_camera(area, product=product)
+    settings = get_settings(product)
     if not settings.pinmode:
-        vp = GTLoader.viewport()
-        vp.texter().register_handler(context)
+        vp = settings.loader().viewport()
+        vp.texter().register_handler(area=area)
     bpy_timer_register(_bake_caller, first_interval=0.0)
+    _log.output('bake_texture_sequence end >>>')

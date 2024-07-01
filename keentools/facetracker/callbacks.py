@@ -41,7 +41,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_set_current_frame,
                                 bpy_msgbus_subscribe_rna,
                                 bpy_msgbus_clear_by_owner,
-                                bpy_object_name)
+                                bpy_object_name,
+                                bpy_object_is_in_scene)
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
@@ -65,7 +66,9 @@ _constraint_warning_message = \
 
 class Owner:
     def __del__(self):
-        _log.error('!!! OWNER OBJECT DESTROYED !!!')
+        if _log:
+            _log.error('!!! OWNER OBJECT DESTROYED !!!')
+
 
 _old_focal_lens_mm: float = 50.0
 _camobj_lens_watcher_owner = Owner()
@@ -156,7 +159,7 @@ def lens_change_callback() -> None:
 
     if old_focal_length_px != new_focal_length_px:
         current_frame = bpy_current_frame()
-        settings.calculating_mode = 'ESTIMATE_FL'
+        settings.start_calculating('ESTIMATE_FL')
         gt = loader.kt_geotracker()
         gt.recalculate_model_for_new_focal_length(old_focal_length_px,
                                                   new_focal_length_px, True,
@@ -213,6 +216,12 @@ def update_camobj(geotracker, context: Any) -> None:
             mark_object_keyframes(geotracker.camobj, product=product)
 
     _log.output('update_camobj end >>>')
+
+
+def poll_is_facebuilder_mesh(self: Any, obj: Optional[Object]) -> bool:
+    if not obj or not obj.type == 'MESH' or not bpy_object_is_in_scene(obj):
+        return False
+    return is_facebuilder_head_topology(obj)
 
 
 def update_geomobj(geotracker, context: Any) -> None:
@@ -342,7 +351,7 @@ def update_mask_3d_color(settings, context: Any) -> None:
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=True)
+        loader.update_viewport_shaders(wireframe=True, wireframe_colors=True)
     _log.output('update_mask_3d_color end >>>')
 
 
@@ -439,9 +448,9 @@ def update_track_focal_length(geotracker, context: Any) -> None:
 def update_mask_3d(geotracker, context: Any) -> None:
     _log.yellow('update_mask_3d')
     settings = ft_settings()
-    settings.loader().update_viewport_shaders(wireframe=True)
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
+    settings.loader().update_viewport_shaders(wireframe=True, wireframe_colors=True)
     _log.output('update_mask_3d end >>>')
 
 
@@ -457,7 +466,7 @@ def update_mask_2d(geotracker, context: Any) -> None:
     total_redraw_ui()
     settings.reload_mask_2d()
     vp = settings.loader().viewport()
-    if vp.is_working():
+    if vp.viewport_is_working():
         vp.create_batch_2d(vp.get_work_area())
     _log.output('update_mask_2d end >>>')
 
@@ -486,9 +495,10 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
 
 
 def update_solve_for_camera(geotracker, context: Any) -> None:
-    _log.yellow('update_solve_for_camera')
+    _log.green('update_solve_for_camera start')
     settings = ft_settings()
     if not settings.pinmode:
+        _log.output('update_solve_for_camera no pinmode >>>')
         return
     obj = geotracker.animatable_object()
     if not obj:
@@ -502,9 +512,10 @@ def update_solve_for_camera(geotracker, context: Any) -> None:
 
 
 def update_smoothing(geotracker, context: Any) -> None:
-    _log.yellow('update_smoothing')
+    _log.green('update_smoothing start')
     settings = ft_settings()
     if settings.ui_write_mode:
+        _log.green('update_smoothing ui_write_mode >>>')
         return
     loader = settings.loader()
     gt = loader.kt_geotracker()
@@ -512,24 +523,97 @@ def update_smoothing(geotracker, context: Any) -> None:
     gt.set_smoothing_focal_length_coeff(geotracker.smoothing_focal_length_coeff)
     gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
     gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
+    gt.set_smoothing_face_args_coeff(geotracker.smoothing_face_args_coeff)
     loader.save_geotracker()
     _log.output('update_smoothing end >>>')
 
 
 def update_stabilize_viewport_enabled(settings, context: Any) -> None:
-    _log.yellow('update_stabilize_viewport_enabled')
+    _log.green('update_stabilize_viewport_enabled start')
     settings.stabilize_viewport(reset=True)
     _log.output('update_stabilize_viewport_enabled end >>>')
 
 
 def update_locks(geotracker, context: Any) -> None:
-    _log.yellow('update_locks')
+    _log.green('update_locks start')
     settings = ft_settings()
     if settings.ui_write_mode:
+        _log.green('update_locks ui_write_mode >>>')
         return
     loader = settings.loader()
     gt = loader.kt_geotracker()
     gt.set_fixed_dofs(list(geotracker.locks))
+    _log.output(f'locks={geotracker.locks}')
     loader.save_geotracker()
     _log.magenta(f'{gt.fixed_dofs()}')
     _log.output('update_locks end >>>')
+
+
+def update_lock_blinking(geotracker: Any, context: Any) -> None:
+    _log.green('update_lock_blinking start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_lock_blinking ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_blinking_locked(geotracker.lock_blinking)
+    _log.output(f'lock_blinking={geotracker.lock_blinking}')
+    loader.save_geotracker()
+    _log.output('update_lock_blinking end >>>')
+
+
+def update_lock_neck_movement(geotracker: Any, context: Any) -> None:
+    _log.green('update_lock_neck_movement start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_lock_neck_movement ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_neck_movement_locked(geotracker.lock_neck_movement)
+    _log.output(f'lock_neck_movement={geotracker.lock_neck_movement}')
+    loader.save_geotracker()
+    _log.output('update_lock_neck_movement end >>>')
+
+
+def update_rigidity(geotracker: Any, context: Any) -> None:
+    _log.green('update_rigidity start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_rigidity ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_rigidity(geotracker.rigidity)
+    _log.output(f'rigidity={geotracker.rigidity}')
+    loader.save_geotracker()
+    _log.output('update_rigidity end >>>')
+
+
+def update_blinking_rigidity(geotracker: Any, context: Any) -> None:
+    _log.green('update_blinking_rigidity start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_blinking_rigidity ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_blinking_rigidity(geotracker.blinking_rigidity)
+    _log.output(f'blinking_rigidity={geotracker.blinking_rigidity}')
+    loader.save_geotracker()
+    _log.output('update_blinking_rigidity end >>>')
+
+
+def update_neck_movement_rigidity(geotracker: Any, context: Any) -> None:
+    _log.green('update_neck_movement_rigidity start')
+    settings = ft_settings()
+    if settings.ui_write_mode:
+        _log.green('update_neck_movement_rigidity ui_write_mode >>>')
+        return
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
+    gt.set_neck_movement_rigidity(geotracker.neck_movement_rigidity)
+    _log.output(f'neck_movement_rigidity={geotracker.neck_movement_rigidity}')
+    loader.save_geotracker()
+    _log.output('update_neck_movement_rigidity end >>>')

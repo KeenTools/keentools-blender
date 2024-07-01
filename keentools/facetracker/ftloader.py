@@ -16,14 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Tuple
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ft_settings, ProductType
+from ..addon_config import ft_settings, ProductType, ActionStatus
 from ..utils.bpy_common import bpy_current_frame
 from ..tracker.loader import Loader
 from ..tracker.class_loader import KTClassLoader
 from ..facetracker.viewport import FTViewport
+from ..utils.fb_wireframe_image import create_wireframe_image
+from ..utils.ui_redraw import force_ui_redraw
 
 
 _log = KTLogger(__name__)
@@ -64,5 +66,57 @@ class FTLoader(Loader):
         )
         return cls._kt_geotracker
 
+    @classmethod
+    def start_viewport(cls, *, area: Any,
+                       texture_colors: Tuple = ((0., 1., 1.),
+                                                (1., 0., 1.),
+                                                (1., 1., 0.))) -> ActionStatus:
+        _log.green(f'{cls.__name__}.start_viewport start')
+        vp = cls.viewport()
+        if not vp.load_all_shaders():
+            msg = 'Problem with loading shaders (see console)'
+            _log.error(msg)
+            _log.output(f'{cls.__name__}.start_viewport loading shaders error >>>')
+            return ActionStatus(False, msg)
+
+        create_wireframe_image(list(texture_colors))
+        vp.register_handlers(area=area)
+        vp.unhide_all_shaders()
+        vp.tag_redraw()
+        force_ui_redraw('DOPESHEET_EDITOR')
+        _log.output(f'{cls.__name__}.start_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    @classmethod
+    def _deserialize_global_options(cls):
+        _log.yellow(f'ft _deserialize_global_options start')
+        settings = cls.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        gt = cls.kt_geotracker()
+        with settings.ui_write_mode_context():
+            try:
+                settings.wireframe_backface_culling = gt.back_face_culling()
+                settings.track_focal_length = gt.track_focal_length()
+                geotracker.smoothing_depth_coeff = gt.get_smoothing_depth_coeff()
+                geotracker.smoothing_focal_length_coeff = gt.get_smoothing_focal_length_coeff()
+                geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
+                geotracker.smoothing_xy_translations_coeff = gt.get_smoothing_xy_translations_coeff()
+                geotracker.smoothing_face_args_coeff = gt.get_smoothing_face_args_coeff()
+                _log.output('locks')
+                geotracker.locks = gt.fixed_dofs()
+
+                _log.output('lock_blinking')
+                geotracker.lock_blinking = gt.blinking_locked()
+                _log.output('lock_neck_movement')
+                geotracker.lock_neck_movement = gt.neck_movement_locked()
+                _log.output('rigidity')
+                geotracker.rigidity = gt.rigidity()
+                _log.output('blinking_rigidity')
+                geotracker.blinking_rigidity = gt.blinking_rigidity()
+                _log.output('neck_movement_rigidity')
+                geotracker.neck_movement_rigidity = gt.neck_movement_rigidity()
+            except Exception as err:
+                _log.error(f'ft _deserialize_global_options:\n{str(err)}')
+        _log.output('ft _deserialize_global_options end >>>')
 
 FTLoader.init_handlers()

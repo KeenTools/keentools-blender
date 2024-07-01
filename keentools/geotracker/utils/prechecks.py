@@ -25,6 +25,11 @@ from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              get_settings,
                              get_operator,
+                             calculation_in_progress,
+                             tool_pinmode,
+                             stop_fb_pinmode,
+                             stop_gt_pinmode,
+                             stop_ft_pinmode,
                              ErrorType,
                              ActionStatus,
                              ProductType)
@@ -32,15 +37,16 @@ from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
                                  bpy_scene_selected_objects,
-                                 bpy_background_mode)
+                                 bpy_background_mode,
+                                 bpy_context)
 from ...facebuilder.utils.manipulate import check_facs_available
 
 
 _log = KTLogger(__name__)
 
 
-def prepare_camera(area: Area, *,
-                   product: int = ProductType.GEOTRACKER) -> None:
+def prepare_camera(area: Area, *, product: int) -> None:
+    _log.yellow(f'prepare_camera product={product} start')
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
@@ -50,20 +56,24 @@ def prepare_camera(area: Area, *,
 
     geotracker.setup_background_image()
     geotracker.reload_background_image()
+    _log.output('prepare_camera end >>>')
 
 
-def revert_camera(area: Area, *,
-                  product: int = ProductType.GEOTRACKER) -> None:
+def revert_camera(area: Area, *, product: int) -> None:
+    _log.yellow(f'revert_camera product={product} start')
     settings = get_settings(product)
     if not settings.pinmode:
         settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
+    _log.output('revert_camera end >>>')
 
 
-def get_alone_object_in_selection_by_type(
-        selection: List, obj_type: str = 'MESH') -> Optional[Object]:
+def get_alone_object_in_selection_by_type(*,
+        selection: List, obj_type: str, exclude_list: List) -> Optional[Object]:
     found_obj = None
     for obj in selection:
+        if obj in exclude_list:
+            continue
         if obj.type == obj_type:
             if found_obj is not None:
                 return None
@@ -72,15 +82,17 @@ def get_alone_object_in_selection_by_type(
 
 
 def get_alone_object_in_scene_by_type(
-        obj_type: str = 'MESH') -> Optional[Object]:
-    return get_alone_object_in_selection_by_type(bpy_all_scene_objects(),
-                                                 obj_type)
+        obj_type: str, exclude_list: List) -> Optional[Object]:
+    return get_alone_object_in_selection_by_type(
+        selection=bpy_all_scene_objects(), obj_type=obj_type,
+        exclude_list=exclude_list)
 
 
 def get_alone_object_in_scene_selection_by_type(
-        obj_type: str = 'MESH') -> Optional[Object]:
-    return get_alone_object_in_selection_by_type(bpy_scene_selected_objects(),
-                                                 obj_type)
+        obj_type: str, exclude_list: List) -> Optional[Object]:
+    return get_alone_object_in_selection_by_type(
+        selection=bpy_scene_selected_objects(), obj_type=obj_type,
+        exclude_list=exclude_list)
 
 
 def get_alone_ft_object_in_selection(selection: List) -> Optional[Object]:
@@ -103,14 +115,22 @@ def get_alone_ft_object_in_scene_selection():
 
 
 def show_warning_dialog(err: Any, limit=70) -> None:
-    _log.output('show_warning_dialog call')
+    _log.yellow('show_warning_dialog start')
     user_message = '\n'.join(split_long_string(str(err), limit=limit))
     if bpy_background_mode():
         _log.error(f'Warning operator is in background mode.\n{user_message}')
         return
+
     warn = get_operator(Config.kt_warning_idname)
+
+    if not bpy_context().window:
+        _log.error(f'\nCannot output warning: No window object in context\n'
+                   f'{user_message}')
+        return
+
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=user_message)
+    _log.output('show_warning_dialog end >>>')
 
 
 def show_unlicensed_warning() -> None:
@@ -122,6 +142,7 @@ def show_unlicensed_warning() -> None:
 def common_checks(*, object_mode: bool = False,
                   pinmode: bool = False,
                   pinmode_out: bool = False,
+                  stop_another_pinmode: bool = False,
                   is_calculating: bool = False,
                   reload_geotracker: bool = False,
                   geotracker: bool = False,
@@ -142,10 +163,11 @@ def common_checks(*, object_mode: bool = False,
             return ActionStatus(False, msg)
 
     settings = get_settings(product)
-    if is_calculating and settings.is_calculating():
-        msg = 'Calculation in progress'
-        _log.error(msg)
-        return ActionStatus(False, msg)
+    if is_calculating:
+        calc_status = calculation_in_progress()
+        if not calc_status.success:
+            _log.error(calc_status.error_message)
+            return calc_status
     if pinmode and not settings.pinmode:
         msg = 'This operation works only in Pin mode'
         _log.error(msg)
@@ -154,6 +176,29 @@ def common_checks(*, object_mode: bool = False,
         msg = 'This operation does not work in Pin mode'
         _log.error(msg)
         return ActionStatus(False, msg)
+
+    if stop_another_pinmode:
+        pm = tool_pinmode(facebuilder=True, geotracker=True, facetracker=True)
+        if pm is not None:
+            if pm == ProductType.FACEBUILDER:
+                stop_fb_pinmode()
+                msg = 'FaceBuilder interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+            elif pm == ProductType.GEOTRACKER and pm != product:
+                stop_gt_pinmode()
+                msg = 'GeoTracker interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+            elif pm == ProductType.FACETRACKER and pm != product:
+                stop_ft_pinmode()
+                msg = 'FaceTracker interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+
+            msg = f'Unknown product type in common check {pm}'
+            _log.error(msg)
+            return ActionStatus(False, msg)
 
     if reload_geotracker:
         if not settings.reload_current_geotracker():
@@ -213,7 +258,7 @@ def track_checks(*, product: int) -> ActionStatus:
     if not geotracker.precalcless:
         status, msg, precalc_info = geotracker.reload_precalc()
         if not status or precalc_info is None:
-            msg = 'Precalc has problems. Check it'
+            msg = 'Analyse clip before tracking!'
             _log.error(msg)
             return ActionStatus(False, msg)
     else:

@@ -28,6 +28,7 @@ _log = KTLogger(__name__)
 
 _PT = 'GEOTRACKER_PT_'
 _MT = 'GEOTRACKER_MT_'
+_UL = 'GEOTRACKER_UL_'
 
 
 class GTConfig:
@@ -80,7 +81,6 @@ class GTConfig:
 
     gt_toggle_lock_view_idname = operators + '.toggle_lock_view'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
-    gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
     gt_set_key_idname = operators + '.set_key_btn'
     gt_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
@@ -118,6 +118,8 @@ class GTConfig:
     gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
     gt_unbreak_rotation_idname = operators + '.unbreak_rotation'
     gt_share_feedback_idname = operators + '.share_feedback'
+    gt_move_wrapper = operators + '.move_wrapper'
+    gt_pan_detector = operators + '.pan_detector'
 
     # Window ids
     gt_rescale_window_idname = operators + '.rescale_window'
@@ -144,6 +146,7 @@ class GTConfig:
     gt_rendering_panel_idname = _PT + 'rendering_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
     gt_support_panel_idname = _PT + 'support_panel'
+    gt_selected_frame_list_item_idname = _UL + 'selected_frame_list_item'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'
@@ -167,7 +170,6 @@ class GTConfig:
     text_scale_y = 0.75
     default_precalc_filename = 'geotracker.precalc'
     viewport_redraw_interval = 0.15
-    show_markers_at_camera_corners = False
 
     pin_size = 7.0
     pin_sensitivity = 16.0

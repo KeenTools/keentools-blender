@@ -125,6 +125,9 @@ class FBConfig:
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
     fb_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
 
+    fb_move_wrapper = operators + '.move_wrapper'
+    fb_pan_detector = operators + '.pan_detector'
+
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'
 
@@ -202,9 +205,7 @@ class FBConfig:
     wireframe_offset_constant: float = 0.001
 
     next_head_step = (2.5, 0., 0.)
-    face_selection_frame_width = 3.0
 
-    show_markers_at_camera_corners = False
     recreate_vertex_groups = True
 
     # In Material
@@ -215,6 +216,3 @@ class FBConfig:
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
-
-    selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
-    regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)

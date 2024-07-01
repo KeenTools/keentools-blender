@@ -384,40 +384,52 @@ def update_background_tone_mapping(camera: Any, context: Any) -> None:
 
 
 def update_shape_rigidity(settings: Any, context: Any) -> None:
+    _log.green('update_shape_rigidity start')
     if settings.ui_write_mode:
+        _log.green('update_shape_rigidity ui_write_mode >>>')
         return
     fb = FBLoader.get_builder()
     fb.set_shape_rigidity(settings.shape_rigidity)
     if settings.pinmode:
         _update_head_shape_with_expressions(
             settings.get_head(settings.current_headnum), context)
+    _log.output('update_shape_rigidity end >>>')
 
 
 def update_expression_rigidity(settings: Any, context: Any) -> None:
+    _log.green('update_expression_rigidity start')
     if settings.ui_write_mode:
+        _log.green('update_expression_rigidity ui_write_mode >>>')
         return
     fb = FBLoader.get_builder()
     fb.set_expressions_rigidity(settings.expression_rigidity)
     if settings.pinmode:
         _update_head_shape_with_expressions(
             settings.get_head(settings.current_headnum), context)
+    _log.output('update_expression_rigidity end >>>')
 
 
 def update_blinking_rigidity(settings: Any, context: Any) -> None:
+    _log.green('update_blinking_rigidity start')
     if settings.ui_write_mode:
+        _log.green('update_blinking_rigidity ui_write_mode >>>')
         return
     fb = FBLoader.get_builder()
     fb.set_blinking_rigidity(settings.blinking_rigidity)
     if settings.pinmode:
         _update_head_shape_with_expressions(
             settings.get_head(settings.current_headnum), context)
+    _log.output('update_blinking_rigidity end >>>')
 
 
 def update_neck_movement_rigidity(settings: Any, context: Any) -> None:
+    _log.green('update_neck_movement_rigidity start')
     if settings.ui_write_mode:
+        _log.green('update_neck_movement_rigidity ui_write_mode >>>')
         return
     fb = FBLoader.get_builder()
     fb.set_neck_movement_rigidity(settings.neck_movement_rigidity)
     if settings.pinmode:
         _update_head_shape_with_expressions(
             settings.get_head(settings.current_headnum), context)
+    _log.output('update_neck_movement_rigidity end >>>')

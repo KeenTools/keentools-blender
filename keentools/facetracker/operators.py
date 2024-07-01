@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, List, Set
 import os
 
 from bpy.types import Operator, Object
@@ -26,9 +27,12 @@ from bpy.props import (BoolProperty,
                        StringProperty,
                        EnumProperty,
                        PointerProperty)
+from bpy_extras.io_utils import ExportHelper
+from bpy.path import ensure_ext
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
+                            get_settings,
                             ft_settings,
                             get_operator,
                             ProductType,
@@ -42,8 +46,11 @@ from .ftloader import FTLoader
 from ..geotracker.utils.prechecks import common_checks
 from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_background_mode,
-                                bpy_show_addon_preferences)
-from ..utils.manipulate import force_undo_push
+                                bpy_show_addon_preferences,
+                                bpy_start_frame,
+                                bpy_end_frame,
+                                bpy_view_camera)
+from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
 from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
@@ -66,8 +73,16 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 track_to,
                                                 track_next_frame_action,
                                                 refine_async_action,
-                                                refine_all_async_action)
+                                                refine_all_async_action,
+                                                create_animated_empty_action,
+                                                create_soft_empties_from_selected_pins_action,
+                                                save_facs_as_csv_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
+from ..common.loader import CommonLoader
+from ..preferences.hotkeys import (facebuilder_keymaps_register,
+                                   facebuilder_keymaps_unregister)
+from ..utils.localview import exit_area_localview
 
 
 _log = KTLogger(__name__)
@@ -315,7 +330,7 @@ class FT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = prev_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -345,7 +360,7 @@ class FT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings.calculating_mode = 'JUMP'
+        settings.start_calculating('JUMP')
         act_status = next_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
@@ -600,15 +615,15 @@ class FT_OT_StopCalculating(Operator):
             self.attempts = 0
             return {'FINISHED'}
 
-        if settings.calculating_mode == 'PRECALC':
+        if settings.is_calculating('PRECALC'):
             _log.output(f'PrecalcTimer: {PrecalcTimer.active_timers()}')
             if len(PrecalcTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'TRACKING':
+        elif settings.is_calculating('TRACKING'):
             _log.output(f'TrackTimer: {FTTrackTimer.active_timers()}')
             if len(FTTrackTimer.active_timers()) == 0:
                 settings.stop_calculating()
-        elif settings.calculating_mode == 'REFINE':
+        elif settings.is_calculating('REFINE'):
             _log.output(f'RefineTimer: {FTRefineTimer.active_timers()}')
             if len(FTRefineTimer.active_timers()) == 0:
                 settings.stop_calculating()
@@ -663,40 +678,6 @@ class FT_OT_SplitVideoExec(Operator):
 
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
-
-
-class FT_OT_InterruptModal(Operator):
-    bl_idname = FTConfig.ft_interrupt_modal_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = ft_settings()
-        settings.user_interrupts = False
-
-        if not bpy_background_mode():
-            context.window_manager.modal_handler_add(self)
-            _log.output('FT INTERRUPTOR START')
-        else:
-            _log.info('FaceTracker Interruptor skipped by background mode')
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        settings = ft_settings()
-
-        if settings.user_interrupts:
-            _log.output('FT Interruptor has been stopped by value')
-            settings.user_interrupts = True
-            return {'FINISHED'}
-
-        if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit FT Interruptor by ESC')
-            settings.user_interrupts = True
-            return {'FINISHED'}
-
-        return {'PASS_THROUGH'}
 
 
 class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
@@ -822,6 +803,318 @@ class FT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_export_animated_empty_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+
+    def draw(self, context):
+        return
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'[{product_name(self.product)}]')
+
+        check_status = common_checks(product=self.product,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = get_settings(self.product)
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            check_status = common_checks(product=self.product,
+                                         pinmode=True, geotracker=True,
+                                         geometry=True, camera=True,
+                                         reload_geotracker=True)
+            if not check_status.success:
+                self.report({'ERROR'}, check_status.error_message)
+                return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} invoke end >>>')
+        return self.execute(context)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
+        geotracker = settings.get_current_geotracker_item()
+
+        if settings.export_locator_selector == 'GEOMETRY':
+            act_status = create_animated_empty_action(
+                geotracker.geomobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'CAMERA':
+            act_status = create_animated_empty_action(
+                geotracker.camobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'SELECTED_PINS':
+            if len(settings.loader().viewport().pins().get_selected_pins()) == 0:
+                msg = 'No pins selected'
+                _log.error(msg)
+                self.report({'ERROR'}, msg)
+                return {'CANCELLED'}
+
+            act_status = create_soft_empties_from_selected_pins_action(
+                bpy_start_frame(), bpy_end_frame(),
+                linked=settings.export_linked_locator,
+                orientation=settings.export_locator_orientation,
+                product=self.product)
+            if not act_status.success:
+                _log.error(act_status.error_message)
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
+        msg = 'Unknown selector state'
+        _log.error(msg)
+        self.report({'ERROR'}, msg)
+        return {'CANCELLED'}
+
+
+class FT_OT_SaveFACS(Operator, ExportHelper):
+    bl_idname = FTConfig.ft_save_facs_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    filter_glob: StringProperty(
+        default='*.csv',
+        options={'HIDDEN'}
+    )
+
+    check_existing: BoolProperty(
+        name='Check Existing',
+        description='Check and warn on overwriting existing files',
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    filename_ext: StringProperty(default='.csv')
+
+    filepath: StringProperty(
+        default='',
+        subtype='FILE_PATH'
+    )
+
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+
+    use_tracked_only: BoolProperty(name='Tracked frames only', default=False)
+
+    def check(self, context):
+        change_ext = False
+
+        filepath = self.filepath
+        sp = os.path.splitext(filepath)
+
+        if sp[1] in {'.csv', '.'}:
+            filepath = sp[0]
+
+        filepath = ensure_ext(filepath, self.filename_ext)
+
+        if filepath != self.filepath:
+            self.filepath = filepath
+            change_ext = True
+
+        return change_ext
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Frame range:')
+        row = layout.row()
+        row.prop(self, 'from_frame', expand=True)
+        row.prop(self, 'to_frame', expand=True)
+
+        layout.prop(self, 'use_tracked_only', expand=True)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        _log.info(f'FACS path: {self.filepath}')
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            _log.error('Current FaceTracker is wrong')
+            return {'CANCELLED'}
+
+        if os.path.exists(self.filepath) and os.path.isdir(self.filepath):
+            _log.error(f'Wrong file destination: {self.filepath}')
+            self.report({'ERROR'}, 'Wrong file destination!')
+            return {'CANCELLED'}
+
+        if self.to_frame < self.from_frame:
+            msg = 'Wrong frame range'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        act_status = save_facs_as_csv_action(filepath=self.filepath,
+                                             from_frame=self.from_frame,
+                                             to_frame=self.to_frame,
+                                             use_tracked_only=self.use_tracked_only)
+
+        if not act_status:
+            msg = act_status.error_message
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        self.from_frame = bpy_start_frame()
+        self.to_frame = bpy_end_frame()
+        return super().invoke(context, event)
+
+
+class FT_OT_MoveWrapper(Operator):
+    bl_idname = FTConfig.ft_move_wrapper_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'use_cursor_init={self.use_cursor_init}')
+        settings = ft_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        op = get_operator('view3d.move')
+        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'use_cursor_init={self.use_cursor_init}')
+        settings = ft_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if work_area != context.area:
+            return {'PASS_THROUGH'}
+
+        op = get_operator('view3d.move')
+        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class FT_OT_PanDetector(Operator):
+    bl_idname = FTConfig.ft_pan_detector_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        settings = ft_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = settings.loader().get_work_area()
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
+        return {'PASS_THROUGH'}
+
+
+class FT_OT_ChooseFrameMode(Operator):
+    bl_idname = FTConfig.ft_choose_frame_mode_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    bus_id: IntProperty(default=-1)
+
+    def init_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        self.bus_id = message_bus.register_item(FTConfig.ft_choose_frame_mode_idname)
+        _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
+
+    def release_bus(self) -> None:
+        message_bus = CommonLoader.message_bus()
+        item = message_bus.remove_by_id(self.bus_id)
+        _log.output(f'release_bus: {self.bus_id} -> {item}')
+
+    def invoke(self, context: Any, event: Any) -> Set:
+        _log.red(f'{self.__class__.__name__} invoke')
+
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        if not geotracker.geomobj or not geotracker.camobj:
+            return {'CANCELLED'}
+        if not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        CommonLoader.stop_fb_viewport()
+        CommonLoader.stop_fb_pinmode()
+
+        area = context.area
+        switch_to_camera(area, geotracker.camobj,
+                         geotracker.animatable_object())
+
+        CommonLoader.text_viewport().start_viewport(area=area)
+        facebuilder_keymaps_register()
+
+        _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
+        self.init_bus()
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def on_finish(self) -> None:
+        _log.output(f'{self.__class__.__name__}.on_finish')
+        facebuilder_keymaps_unregister()
+        CommonLoader.text_viewport().stop_viewport()
+        self.release_bus()
+
+    def cancel(self, context) -> None:
+        _log.magenta(f'{self.__class__.__name__} cancel ***')
+        self.on_finish()
+
+    def modal(self, context: Any, event: Any) -> Set:
+        message_bus = CommonLoader.message_bus()
+        if not message_bus.check_id(self.bus_id):
+            _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
+            return {'FINISHED'}
+
+        if CommonLoader.ft_head_mode() != 'CHOOSE_FRAME':
+            self.on_finish()
+            return {'FINISHED'}
+
+        # Quit when camera rotated by user
+        if context.space_data.region_3d.view_perspective != 'CAMERA':
+            bpy_view_camera()
+
+        if event.value == 'PRESS' and event.type == 'ESC':
+            _log.error(f'ESC in {self.__class__.__name__}')
+            exit_area_localview(context.area)
+            self.on_finish()
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -850,11 +1143,15 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_StopCalculating,
                   FT_OT_AutoNamePrecalc,
                   FT_OT_SplitVideoExec,
-                  FT_OT_InterruptModal,
                   FT_OT_ExitPinMode,
                   FT_OT_AddonSetupDefaults,
                   FT_OT_DefaultPinSettings,
                   FT_OT_DefaultWireframeSettings,
                   FT_OT_WireframeColor,
                   FT_OT_RemoveFocalKeyframe,
-                  FT_OT_RemoveFocalKeyframes)
+                  FT_OT_RemoveFocalKeyframes,
+                  FT_OT_ExportAnimatedEmpty,
+                  FT_OT_SaveFACS,
+                  FT_OT_MoveWrapper,
+                  FT_OT_PanDetector,
+                  FT_OT_ChooseFrameMode)

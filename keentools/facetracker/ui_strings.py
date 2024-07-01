@@ -32,6 +32,14 @@ buttons = {
         'FaceTracker MovePin',
         'FaceTracker MovePin operator'
     ),
+    FTConfig.ft_pickmode_idname: Button(
+        'FaceTracker Pick Face mode',
+        'Modal Operator for Pick Face mode'
+    ),
+    FTConfig.ft_pickmode_starter_idname: Button(
+        'Auto align',
+        'Auto align mesh in current view'
+    ),
     FTConfig.ft_switch_to_camera_mode_idname: Button(
         'Camera',
         'Track Camera'
@@ -231,7 +239,7 @@ buttons = {
         'Create an animated Empty'
     ),
     FTConfig.ft_exit_pinmode_idname: Button(
-        'Exit Pinmode',
+        'Back to 3D',
         'Back to 3D scene'
     ),
     FTConfig.ft_stop_calculating_idname: Button(
@@ -318,9 +326,21 @@ buttons = {
         'Revert default rendering',
         'Setup scene rendering settings to match default render view'
     ),
-    FTConfig.ft_interrupt_modal_idname: Button(
-        'FaceTracker Interruptor',
-        'Interrupt current operation by Esc'
+    FTConfig.ft_move_wrapper_idname: Button(
+        'Pan View (FaceTracker)',
+        'KeenTools Viewport Pan override operator (FaceTracker)'
+    ),
+    FTConfig.ft_pan_detector_idname: Button(
+        'Pan View detect (FaceTracker)',
+        'KeenTools Viewport Pan override operator (FaceTracker)'
+    ),
+    FTConfig.ft_choose_frame_mode_idname: Button(
+        'Choose frame mode',
+        'Choose frame mode description'
+    ),
+    FTConfig.ft_save_facs_idname: Button(
+        'Save FACS animation',
+        'Save FACS as a CSV file'
     ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(

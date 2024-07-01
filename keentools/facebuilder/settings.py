@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Optional, List, Tuple
 import math
 from contextlib import contextmanager
 
@@ -34,6 +34,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Object, Area, Image
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             fb_settings,
                             get_addon_preferences,
@@ -71,6 +72,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_scene,
                                 bpy_remove_object,
                                 bpy_abspath)
+
+_log = KTLogger(__name__)
 
 
 class FBExifItem(PropertyGroup):
@@ -117,7 +120,7 @@ class FBExifItem(PropertyGroup):
         res += 'sizes_message: {} \n'.format(self.sizes_message)
         return res
 
-    def calculated_image_size(self):
+    def calculated_image_size(self) -> Tuple[float, float]:
         if self.image_width > 0.0 and self.image_length > 0.0:
             w = self.image_width
             h = self.image_length
@@ -132,6 +135,7 @@ class FBCameraItem(PropertyGroup):
     cam_image: PointerProperty(
         name='Image', type=Image, update=update_cam_image
     )
+    cam_image_frame: IntProperty(default=-1)
     image_width: IntProperty(default=-1)
     image_height: IntProperty(default=-1)
 
@@ -176,7 +180,7 @@ class FBCameraItem(PropertyGroup):
         default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
-    def update_scene_frame_size(self):
+    def update_scene_frame_size(self) -> None:
         if self.image_width > 0 and self.image_height > 0:
             render = bpy_scene().render
             if (self.orientation % 2) == 0:
@@ -186,28 +190,28 @@ class FBCameraItem(PropertyGroup):
                 render.resolution_x = self.image_height
                 render.resolution_y = self.image_width
 
-    def get_camera_background(self):
+    def get_camera_background(self) -> Optional[Image]:
         c = self.camobj.data
         if len(c.background_images) == 0:
             return None
         else:
             return c.background_images[0]
 
-    def get_background_size(self):
+    def get_background_size(self) -> Tuple[int, int]:
         img = self.get_camera_background()
         if img is not None:
             if img.image:
                 return img.image.size
         return -1, -1
 
-    def reset_background_image_rotation(self):
+    def reset_background_image_rotation(self) -> None:
         background_image = self.get_camera_background()
         if background_image is None:
             return
         background_image.rotation = 0
         self.orientation = 0
 
-    def rotate_background_image(self, delta=1):
+    def rotate_background_image(self, delta: int = 1) -> None:
         background_image = self.get_camera_background()
         if background_image is None:
             return
@@ -219,17 +223,22 @@ class FBCameraItem(PropertyGroup):
             self.orientation += -4
         background_image.rotation = self.orientation * math.pi / 2
 
-    def show_background_image(self):
+    def show_background_image(self) -> None:
         data = self.camobj.data
         data.show_background_images = True
         if len(data.background_images) == 0:
-            b = data.background_images.new()
+            bim = data.background_images.new()
         else:
-            b = data.background_images[0]
-        b.image = self.cam_image
-        b.rotation = self.orientation * math.pi / 2
+            bim = data.background_images[0]
+        bim.image = self.cam_image
+        bim.rotation = self.orientation * math.pi / 2
 
-    def calculate_background_scale(self):
+        if self.cam_image_frame >= 0:
+            bim.image_user.frame_duration = 1
+            bim.image_user.use_cyclic = True
+            bim.image_user.frame_offset = self.cam_image_frame - 1
+
+    def calculate_background_scale(self) -> float:
         if self.image_width <= 0 or self.image_height <= 0:
             return 1.0
         if (self.orientation % 2) == 0:
@@ -240,7 +249,7 @@ class FBCameraItem(PropertyGroup):
             else:
                 return self.image_width / self.image_height
 
-    def update_background_image_scale(self):
+    def update_background_image_scale(self) -> bool:
         self.background_scale = self.calculate_background_scale()
         background = self.get_camera_background()
         if background is None:
@@ -248,7 +257,7 @@ class FBCameraItem(PropertyGroup):
         background.scale = self.background_scale
         return True
 
-    def compensate_view_scale(self):
+    def compensate_view_scale(self) -> float:
         if self.image_width <= 0 or self.image_height <= 0:
             return 1.0
 
@@ -264,20 +273,20 @@ class FBCameraItem(PropertyGroup):
             return 1.0
 
     # Simple getters/setters
-    def get_image_width(self):
+    def get_image_width(self) -> int:
         return self.image_width
 
-    def set_image_width(self, w):
+    def set_image_width(self, w: int) -> None:
         self.image_width = w
 
-    def get_image_height(self):
+    def get_image_height(self) -> int:
         return self.image_height
 
-    def set_image_height(self, h):
+    def set_image_height(self, h: int) -> None:
         self.image_height = h
 
     # Real getter from image size
-    def get_image_size(self):
+    def get_image_size(self) -> Tuple[int, int]:
         w = -1
         h = -1
         if self.cam_image:
@@ -286,17 +295,17 @@ class FBCameraItem(PropertyGroup):
             self.image_height = h
         return w, h
 
-    def get_oriented_image_size(self):
+    def get_oriented_image_size(self) -> Tuple[int, int]:
         if (self.orientation % 2) == 0:
             return (self.get_image_width(), self.get_image_height())
         return (self.get_image_height(), self.get_image_width())
 
-    def update_image_size(self):
+    def update_image_size(self) -> None:
         w, h = self.get_image_size()
         self.set_image_width(w)
         self.set_image_height(h)
 
-    def is_deleted(self):
+    def is_deleted(self) -> bool:
         """ Checks that the list item references a non-existent object """
         if self.camobj is None:
             return True
@@ -309,47 +318,47 @@ class FBCameraItem(PropertyGroup):
         except AttributeError:
             return True
 
-    def delete_cam_background_images(self):
+    def delete_cam_background_images(self) -> None:
         if self.camobj is None:
             return
         for im in reversed(self.camobj.data.background_images):
             self.camobj.data.background_images.remove(im)
         self.camobj.data.show_background_images = False
 
-    def delete_cam_image(self):
+    def delete_cam_image(self) -> None:
         self.cam_image = None
         self.delete_cam_background_images()
 
-    def delete_camobj(self):
+    def delete_camobj(self) -> None:
         bpy_remove_object(self.camobj)
 
-    def get_keyframe(self):
+    def get_keyframe(self) -> int:
         return self.keyframe_id
 
-    def set_keyframe(self, num):
+    def set_keyframe(self, num: int) -> None:
         self.keyframe_id = num
 
-    def has_pins(self):
+    def has_pins(self) -> bool:
         return self.pins_count > 0
 
-    def get_abspath(self):
+    def get_abspath(self) -> Optional[str]:
         if self.cam_image is not None:
             return bpy_abspath(self.cam_image.filepath)
         else:
             return None
 
-    def get_image_name(self):
+    def get_image_name(self) -> str:
         if self.cam_image is not None:
             return self.cam_image.name
         else:
             return 'N/A'
 
-    def reset_camera_sensor(self):
+    def reset_camera_sensor(self) -> None:
         if self.camobj:
             self.camobj.data.sensor_width = FBConfig.default_sensor_width
             self.camobj.data.sensor_height = FBConfig.default_sensor_height
 
-    def get_custom_projection_matrix(self, focal):
+    def get_custom_projection_matrix(self, focal: float) -> Any:
         w = self.image_width
         h = self.image_height
 
@@ -374,10 +383,10 @@ class FBCameraItem(PropertyGroup):
 
         return projection
 
-    def get_projection_matrix(self):
+    def get_projection_matrix(self) -> Any:
         return self.get_custom_projection_matrix(self.focal)
 
-    def get_headnum_camnum(self):
+    def get_headnum_camnum(self) -> Tuple[int, int]:
         settings = fb_settings()
         for i, head in enumerate(settings.heads):
             for j, camera in enumerate(head.cameras):
@@ -385,30 +394,30 @@ class FBCameraItem(PropertyGroup):
                     return i, j
         return -1, -1
 
-    def get_focal_length_in_pixels_coef(self):
+    def get_focal_length_in_pixels_coef(self) -> float:
         w, _ = self.get_oriented_image_size()
         sc = 1.0 / self.compensate_view_scale()
         return sc * w / FBConfig.default_sensor_width
 
-    def reset_tone_mapping(self):
+    def reset_tone_mapping(self) -> None:
         reset_tone_mapping(self.cam_image)
 
-    def apply_tone_mapping(self):
+    def apply_tone_mapping(self) -> None:
         if not self.cam_image:
             return
         tone_mapping(self.cam_image,
                      exposure=self.tone_exposure, gamma=self.tone_gamma)
 
 
-def uv_items_callback(self, context):
+def uv_items_callback(self, context) -> List[Tuple]:
     fb = FBLoader.get_builder()
-    res = []
+    res: List[Tuple] = []
     for i, name in enumerate(fb.uv_sets_list()):
         res.append(('uv{}'.format(i), name, '', 'UV', i))
     return res
 
 
-def _get_icon_by_lod(level_of_detail):
+def _get_icon_by_lod(level_of_detail: str) -> str:
     icons = {'HIGH_POLY': 'SHADING_WIRE',
              'MID_POLY': 'MESH_UVSPHERE',
              'LOW_POLY': 'META_BALL'}
@@ -417,7 +426,7 @@ def _get_icon_by_lod(level_of_detail):
     return 'BLANK1'
 
 
-def model_type_callback(self, context):
+def model_type_callback(self, context) -> List[Tuple]:
     res = [(x.name, x.name, '', _get_icon_by_lod(x.level_of_detail), i)
            for i, x in enumerate(FBLoader.get_builder().models_list())]
     if len(res) == 0 or (len(res) == 1 and res[0][0] == ''):
@@ -425,7 +434,7 @@ def model_type_callback(self, context):
     return res
 
 
-def expression_views_callback(self, context):
+def expression_views_callback(self, context) -> List[Tuple]:
     res = [(FBConfig.neutral_expression_view_name, 'Neutral', '', 'USER', 0), ]
     for i, camera in enumerate(self.cameras):
         kid = camera.get_keyframe()
@@ -443,6 +452,7 @@ class FBHeadItem(PropertyGroup):
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)
+
     blendshapes_control_panel: PointerProperty(name='Blendshapes Control Panel',
                                                type=Object)
     cameras: CollectionProperty(name='Cameras', type=FBCameraItem)
@@ -490,11 +500,6 @@ class FBHeadItem(PropertyGroup):
 
     model_changed_by_scale: BoolProperty(default=False)
 
-    model_changed_by_pinmode: BoolProperty(
-        name="Blendshapes status",
-        description="When turned on then the blendshapes have actual state",
-        default=False)
-
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Selected topology',
                              update=update_mesh_with_dialog)
@@ -508,49 +513,43 @@ class FBHeadItem(PropertyGroup):
                                   description='Use expression from',
                                   update=update_expression_view)
 
-    def blenshapes_are_relevant(self):
+    def blenshapes_are_relevant(self) -> bool:
         if self.has_no_blendshapes():
             return True
-        return not self.model_changed_by_pinmode and \
-               not self.model_changed_by_scale
+        return not self.model_changed_by_scale
 
-    def clear_model_changed_status(self):
-        self.model_changed_by_pinmode = False
+    def clear_model_changed_status(self) -> None:
         self.model_changed_by_scale = False
 
-    def mark_model_changed_by_pinmode(self):
-        if not self.has_no_blendshapes():
-            self.model_changed_by_pinmode = True
-
-    def mark_model_changed_by_scale(self):
+    def mark_model_changed_by_scale(self) -> None:
         if not self.has_no_blendshapes():
             self.model_changed_by_scale = True
 
-    def model_type_changed(self):
+    def model_type_changed(self) -> bool:
         return self.model_type != self.model_type_previous
 
-    def model_changed(self):
+    def model_changed(self) -> bool:
         return self.model_type_changed()
 
-    def discard_model_changes(self):
+    def discard_model_changes(self) -> None:
         if self.model_type_changed():
             self.model_type = self.model_type_previous
 
-    def apply_model_changes(self):
+    def apply_model_changes(self) -> None:
         self.model_type_previous = self.model_type
 
-    def has_no_blendshapes(self):
+    def has_no_blendshapes(self) -> bool:
         return not self.headobj or not self.headobj.data or \
                not self.headobj.data.shape_keys
 
-    def has_blendshapes_action(self):
+    def has_blendshapes_action(self) -> bool:
         if self.headobj and self.headobj.data.shape_keys \
                and self.headobj.data.shape_keys.animation_data \
                and self.headobj.data.shape_keys.animation_data.action:
             return True
         return False
 
-    def get_camera(self, camnum):
+    def get_camera(self, camnum: int) -> Optional[Any]:
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
         if 0 <= camnum < len(self.cameras):
@@ -558,30 +557,30 @@ class FBHeadItem(PropertyGroup):
         else:
             return None
 
-    def get_camera_by_keyframe(self, keyframe):
+    def get_camera_by_keyframe(self, keyframe: int) -> Optional[Any]:
         for camera in self.cameras:
             if camera.get_keyframe() == keyframe:
                 return camera
         return None
 
-    def get_last_camera(self):
+    def get_last_camera(self) -> Optional[Any]:
         return self.get_camera(self.get_last_camnum())
 
-    def store_serial_str_on_headobj(self):
+    def store_serial_str_on_headobj(self) -> None:
         if self.headobj:
             self.headobj[FBConfig.fb_serial_prop_name] = self.serial_str
 
-    def set_serial_str(self, value):
+    def set_serial_str(self, value: str) -> None:
         self.serial_str = value
 
-    def get_serial_str(self):
+    def get_serial_str(self) -> str:
         return self.serial_str
 
-    def store_serial_str_in_head_and_on_headobj(self, value):
+    def store_serial_str_in_head_and_on_headobj(self, value: str) -> None:
         self.set_serial_str(value)
         self.store_serial_str_on_headobj()
 
-    def is_deleted(self):
+    def is_deleted(self) -> bool:
         """ Checks that the list item references a non-existent object """
         if self.headobj is None:
             return True
@@ -594,7 +593,7 @@ class FBHeadItem(PropertyGroup):
         except AttributeError:
             return True
 
-    def control_panel_exists(self):
+    def control_panel_exists(self) -> bool:
         if self.blendshapes_control_panel is None:
             return False
         try:
@@ -605,30 +604,30 @@ class FBHeadItem(PropertyGroup):
         except AttributeError:
             return False
 
-    def get_last_camnum(self):
+    def get_last_camnum(self) -> int:
         return len(self.cameras) - 1
 
-    def get_keyframe(self, camnum):
+    def get_keyframe(self, camnum: int) -> int:
         camera = self.get_camera(camnum)
         if camera is not None:
             return camera.get_keyframe()
         else:
             return -1
 
-    def has_camera(self, camnum):
+    def has_camera(self, camnum: int) -> bool:
         return 0 <= camnum < len(self.cameras)
 
-    def has_cameras(self):
+    def has_cameras(self) -> bool:
         return len(self.cameras) > 0
 
-    def has_pins(self):
+    def has_pins(self) -> bool:
         for c in self.cameras:
             if c.has_pins():
                 return True
         return False
 
-    def save_images_src_on_headobj(self):
-        res = []
+    def save_images_src_on_headobj(self) -> None:
+        res: List[str] = []
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
@@ -640,45 +639,45 @@ class FBHeadItem(PropertyGroup):
         # Dir name of current scene
         self.headobj[FBConfig.fb_dir_prop_name] = bpy_abspath("//")
 
-    def should_use_emotions(self):
+    def should_use_emotions(self) -> bool:
         return self.use_emotions
 
-    def get_masks(self):
+    def get_masks(self) -> List[bool]:
         fb = FBLoader.get_builder()
         return self.masks[:len(fb.masks())]
 
-    def reset_sensor_size(self):
+    def reset_sensor_size(self) -> None:
         self.sensor_width = 0
         self.sensor_height = 0
 
-    def get_headnum(self):
+    def get_headnum(self) -> int:
         settings = fb_settings()
         for i, head in enumerate(settings.heads):
             if head == self:
                 return i
         return -1
 
-    def get_expression_view_keyframe(self):
+    def get_expression_view_keyframe(self) -> int:
         if self.expression_view == FBConfig.empty_expression_view_name:
             return 0  # Neutral
         kid = int(self.expression_view)
         return kid
 
-    def set_neutral_expression_view(self):
+    def set_neutral_expression_view(self) -> None:
         self.expression_view = FBConfig.neutral_expression_view_name
 
-    def has_vertex_groups(self):
+    def has_vertex_groups(self) -> bool:
         return len(self.headobj.vertex_groups) != 0
 
-    def get_headobj_name(self):
+    def get_headobj_name(self) -> str:
         if self.headobj:
             return self.headobj.name
         return 'none'
 
-    def preview_material_name(self):
+    def preview_material_name(self) -> str:
         return FBConfig.tex_builder_matname_template.format(self.get_headobj_name())
 
-    def preview_texture_name(self):
+    def preview_texture_name(self) -> str:
         return FBConfig.tex_builder_filename_template.format(self.get_headobj_name())
 
 
@@ -689,15 +688,10 @@ class FBSceneSettings(PropertyGroup):
     def loader(self) -> Any:
         return FBLoader
 
-    # ---------------------
-    # Main settings
-    # ---------------------
     heads: CollectionProperty(type=FBHeadItem, name="Heads")
     frame_width: IntProperty(default=-1)
     frame_height: IntProperty(default=-1)
-    # ---------------------
-    # Operational settings
-    # ---------------------
+
     opnum: IntProperty(name="Operation Number", default=0)
     pinmode: BoolProperty(name="Pin Mode", default=False)
     pinmode_id: StringProperty(name="Unique pinmode ID")
@@ -706,9 +700,7 @@ class FBSceneSettings(PropertyGroup):
 
     ui_write_mode: BoolProperty(name='UI Write mode', default=False)
     viewport_state: PointerProperty(type=ViewportStateItem)
-    # ---------------------
-    # Model View parameters
-    # ---------------------
+
     adaptive_opacity: FloatProperty(
         description='From 0.0 to 1.0',
         name='FaceBuilder Adaptive Opacity',
@@ -720,17 +712,20 @@ class FBSceneSettings(PropertyGroup):
         default=True,
         update=update_wireframe_func)
 
-    def get_adaptive_opacity(self):
+    def get_adaptive_opacity(self) -> float:
         return self.adaptive_opacity if self.use_adaptive_opacity else 1.0
 
     def calc_adaptive_opacity(self, area: Area) -> None:
+        _log.yellow('fb calc_adaptive_opacity')
         if not area:
+            _log.red('fb calc_adaptive_opacity wrong area >>>')
             return
         aw = area.width
         rx, ry = bpy_render_frame()
         denom = aw if 1 <= aw < rx else rx
         x1, y1, x2, y2 = get_camera_border(area)
         self.adaptive_opacity = (x2 - x1) / denom
+        _log.output(f'fb calc_adaptive_opacity: {self.adaptive_opacity} >>>')
 
     wireframe_opacity: FloatProperty(
         description='',
@@ -800,22 +795,22 @@ class FBSceneSettings(PropertyGroup):
     shape_rigidity: FloatProperty(
         description='Adjust overall mesh rigidity: '
                     '0 - most flexible, 10 - most rigid, default = 1',
-        name='Shape rigidity', default=1.0, min=0.001, max=1000.0,
+        name='Shape', default=1.0, min=0.001, max=1000.0,
         update=update_shape_rigidity)
     expression_rigidity: FloatProperty(
         description='Change how much pins affect the model expressions. '
                     'Accessible in Pinmode only',
-        name='Expression rigidity', default=2.0, min=0.001, max=1000.0,
+        name='Expressions', default=2.0, min=0.001, max=1000.0,
         update=update_expression_rigidity)
     blinking_rigidity: FloatProperty(
         description='Change how much pins affect blinking. '
                     'Accessible in Pinmode only',
-        name='Eye blinking rigidity', default=2.0, min=0.001, max=1000.0,
+        name='Eyelids', default=2.0, min=0.001, max=1000.0,
         update=update_blinking_rigidity)
     neck_movement_rigidity: FloatProperty(
         description='Change how much pins affect neck movement. '
                     'Accessible in Pinmode only',
-        name='Neck movement rigidity', default=2.0, min=0.001, max=1000.0,
+        name='Neck', default=2.0, min=0.001, max=1000.0,
         update=update_neck_movement_rigidity)
 
     # Warning! current_headnum and current_camnum work only in Pinmode!
@@ -825,9 +820,15 @@ class FBSceneSettings(PropertyGroup):
     tmp_headnum: IntProperty(name='Temporary Head Number', default=-1)
     tmp_camnum: IntProperty(name='Temporary Camera Number', default=-1)
 
-    # -------------------------
-    # Texture Baking parameters
-    # -------------------------
+    calculating_mode: EnumProperty(name='Calculating mode', items=[
+        ('NONE', 'NONE', 'No calculation mode', 0),
+        ('TEXTURE_BAKING', 'TEXTURE_BAKING', 'Project and bake texture is calculating', 1),
+    ])
+
+    selection_mode: BoolProperty(name='Selection mode', default=False)
+    selection_x: FloatProperty(name='Selection X', default=0.0)
+    selection_y: FloatProperty(name='Selection Y', default=0.0)
+
     tex_width: IntProperty(
         description="Width in pixels",
         name="Width", default=Config.default_tex_width)
@@ -867,13 +868,24 @@ class FBSceneSettings(PropertyGroup):
         yield
         self.ui_write_mode = False
 
-    def reset_pinmode_id(self):
+    def reset_pinmode_id(self) -> None:
         self.pinmode_id = 'stop'
 
-    def wrong_pinmode_id(self):
+    def wrong_pinmode_id(self) -> bool:
         return self.pinmode_id in {'', 'stop'}
 
-    def get_head(self, headnum):
+    def start_calculating(self, mode: str) -> None:
+        self.calculating_mode = mode
+
+    def stop_calculating(self) -> None:
+        self.calculating_mode = 'NONE'
+
+    def is_calculating(self, mode: Optional[str] = None) -> bool:
+        if mode is None:
+            return self.calculating_mode != 'NONE'
+        return self.calculating_mode == mode
+
+    def get_head(self, headnum: int) -> Optional[Any]:
         if headnum < 0 and len(self.heads) + headnum >= 0:
             return self.heads[len(self.heads) + headnum]
         if 0 <= headnum < len(self.heads):
@@ -881,7 +893,7 @@ class FBSceneSettings(PropertyGroup):
         else:
             return None
 
-    def get_current_head(self):
+    def get_current_head(self) -> Optional[Any]:
         if self.pinmode:
             assert self.current_headnum >= 0
             head = self.get_head(self.current_headnum)
@@ -889,13 +901,13 @@ class FBSceneSettings(PropertyGroup):
             head = get_current_head()
         return head
 
-    def get_camera(self, headnum, camnum):
+    def get_camera(self, headnum: int, camnum: int) -> Optional[Any]:
         head = self.get_head(headnum)
         if head is None:
             return None
         return head.get_camera(camnum)
 
-    def get_keyframe(self, headnum, camnum):
+    def get_keyframe(self, headnum: int, camnum: int) -> int:
         head = self.get_head(headnum)
         if head is None:
             return -1
@@ -904,20 +916,20 @@ class FBSceneSettings(PropertyGroup):
             return -1
         return camera.get_keyframe()
 
-    def head_has_pins(self, headnum):
+    def head_has_pins(self, headnum: int) -> bool:
         head = self.get_head(headnum)
         if head is None:
             return False
         return head.has_pins()
 
-    def head_has_cameras(self, headnum):
+    def head_has_cameras(self, headnum: int) -> bool:
         head = self.get_head(headnum)
         if head is None:
             return False
         return head.has_cameras()
 
     # Find Head by Blender object (Head Mesh)
-    def find_head_index(self, obj):
+    def find_head_index(self, obj: Object) -> int:
         """ Find head index by blender object """
         for i, h in enumerate(self.heads):
             if h.headobj is obj:
@@ -925,7 +937,7 @@ class FBSceneSettings(PropertyGroup):
         return -1  # head object not found
 
     # Find Camera by Blender object
-    def find_cam_index(self, obj):
+    def find_cam_index(self, obj: Object) -> Tuple[int, int]:
         for i, h in enumerate(self.heads):
             for j, c in enumerate(h.cameras):
                 if c.camobj is obj:
@@ -934,21 +946,21 @@ class FBSceneSettings(PropertyGroup):
 
     # Verify the existence of all this head cameras
     @staticmethod
-    def check_head_cams(head):
+    def check_head_cams(head: Any) -> bool:
         for i, c in enumerate(head.cameras):
             if c.is_deleted():
                 return False  # Wrong camera in list
         return True  # All head cameras is ok
 
     # Verify the existence of all heads
-    def check_heads(self):
+    def check_heads(self) -> bool:
         for i, h in enumerate(self.heads):
             if h.is_deleted():
                 return False  # Wrong head object in list
-        return True  # All heads is ok
+        return True  # All heads are ok
 
     # Full check heads and cameras existence
-    def check_heads_and_cams(self):
+    def check_heads_and_cams(self) -> bool:
         for i, h in enumerate(self.heads):
             if h.is_deleted():
                 return False  # Wrong head object in list'
@@ -958,9 +970,9 @@ class FBSceneSettings(PropertyGroup):
 
     # Remove non-existent cameras in list of this head
     @staticmethod
-    def fix_head_cams(head):
+    def fix_head_cams(head: Any) -> bool:
         status = False  # no changes
-        err = []
+        err: List[int] = []
         for i, c in enumerate(head.cameras):
             if c.is_deleted():
                 status = True
@@ -975,12 +987,12 @@ class FBSceneSettings(PropertyGroup):
             head.cameras.remove(i)
         if status:
             FBLoader.save_fb_serial_and_image_pathes(headnum)
-        return status  # True if there was any changes
+        return status  # True if there were any changes
 
-    def fix_heads(self):
+    def fix_heads(self) -> Tuple[int, int]:
         heads_deleted = 0  # no changes
         cams_deleted = 0  # no changes
-        err = []
+        err: List[int] = []
         for i, h in enumerate(self.heads):
             if h.is_deleted():
                 heads_deleted += 1  # some changes!
@@ -1000,24 +1012,24 @@ class FBSceneSettings(PropertyGroup):
             self.heads.remove(i)
         return heads_deleted, cams_deleted
 
-    def head_by_obj(self, obj):
+    def head_by_obj(self, obj: Object) -> int:
         i = self.find_head_index(obj)
         j, _ = self.find_cam_index(obj)
         return max(i, j)
 
-    def get_last_headnum(self):
+    def get_last_headnum(self) -> int:
         return len(self.heads) - 1
 
-    def get_last_camnum(self, headnum):
+    def get_last_camnum(self, headnum: int) -> int:
         head = self.get_head(headnum)
         if head is None:
             return -1
         return head.get_last_camnum()
 
-    def is_proper_headnum(self, headnum):
+    def is_proper_headnum(self, headnum: int) -> bool:
         return 0 <= headnum <= self.get_last_headnum()
 
-    def get_next_head_position(self):
+    def get_next_head_position(self) -> Any:
         zero_position = (0., 0., 0)
         headnum = self.get_last_headnum()
         head = self.get_head(headnum)
@@ -1025,7 +1037,11 @@ class FBSceneSettings(PropertyGroup):
             return zero_position
         return np.array(head.headobj.location) + FBConfig.next_head_step
 
-    def preferences(self):
+    def get_all_camobj(self) -> List[Object]:
+        return [cam.camobj for head in self.heads
+                for cam in head.cameras if cam.camobj]
+
+    def preferences(self) -> Any:
         return get_addon_preferences()
 
     def mock_update_for_testing(self, value=True, ver=None,

@@ -364,8 +364,9 @@ class GTSceneSettings(TRSceneSetting):
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
         ('REPROJECT', 'REPROJECT', 'Project and bake texture is calculating', 4),
-        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5),
-        ('JUMP', 'JUMP', 'Jump to frame', 6)
+        ('JUMP', 'JUMP', 'Jump to frame', 5),
+        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 6),
+        ('NO_SHADER_UPDATE', 'NO_SHADER_UPDATE', 'No shader update in calculating', 7),
     ])
 
     selection_mode: BoolProperty(name='Selection mode', default=False)
