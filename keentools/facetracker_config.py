@@ -128,6 +128,8 @@ class FTConfig:
     ft_move_wrapper_idname = operators + '.move_wrapper'
     ft_pan_detector_idname = operators + '.pan_detector'
     ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
+    ft_create_new_head_idname = operators + '.create_new_head'
+    ft_cancel_choose_frame_idname = operators + '.cancel_choose_frame'
     ft_save_facs_idname = operators + '.save_facs'
 
     # Window ids

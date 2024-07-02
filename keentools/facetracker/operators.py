@@ -33,12 +33,14 @@ from bpy.path import ensure_ext
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             get_settings,
+                            fb_settings,
                             ft_settings,
                             get_operator,
                             ProductType,
                             product_name,
                             show_user_preferences,
                             show_tool_preferences)
+from ..facebuilder_config import FBConfig
 from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
 from .ui_strings import buttons
@@ -83,6 +85,7 @@ from ..common.loader import CommonLoader
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
 from ..utils.localview import exit_area_localview
+from ..utils.viewport_state import force_show_ui_overlays
 
 
 _log = KTLogger(__name__)
@@ -1115,6 +1118,77 @@ class FT_OT_ChooseFrameMode(Operator):
         return {'PASS_THROUGH'}
 
 
+class FT_OT_CreateNewHead(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_create_new_head_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings_ft = ft_settings()
+        geotracker = settings_ft.get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+
+        if not geotracker.camobj:
+            self.report({'INFO'}, 'No Camera in FaceTracker')
+            return {'CANCELLED'}
+
+        op = get_operator(FBConfig.fb_add_head_operator_idname)
+        op('EXEC_DEFAULT')
+
+        settings_fb = fb_settings()
+        headnum = settings_fb.get_last_headnum()
+        head = settings_fb.get_head(headnum)
+        geotracker.geomobj = head.headobj
+        head.use_emotions = True
+
+        if geotracker.movie_clip:
+            op = get_operator(Config.kt_actor_idname)
+            op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
+        else:
+            self.report({'INFO'}, 'New FBHead has been created')
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
+class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_cancel_choose_frame_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        area = CommonLoader.text_viewport().get_work_area()
+        exit_area_localview(area)
+        force_show_ui_overlays(area)
+
+        CommonLoader.text_viewport().stop_viewport()
+        CommonLoader.set_ft_head_mode('NONE')
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -1154,4 +1228,6 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_SaveFACS,
                   FT_OT_MoveWrapper,
                   FT_OT_PanDetector,
-                  FT_OT_ChooseFrameMode)
+                  FT_OT_ChooseFrameMode,
+                  FT_OT_CreateNewHead,
+                  FT_OT_CancelChooseFrame)

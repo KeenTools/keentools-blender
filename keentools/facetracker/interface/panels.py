@@ -326,8 +326,7 @@ class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
                           text='Take current frame', icon='IMAGE')
         op.action = 'ft_take_snapshot'
 
-        op = col.operator(Config.kt_actor_idname, text='Cancel', icon='X')
-        op.action = 'ft_cancel_take_snapshot'
+        col.operator(FTConfig.ft_cancel_choose_frame_idname, icon='X')
 
 
 class FT_PT_InputsPanel(View3DPanel):
@@ -384,8 +383,7 @@ class FT_PT_InputsPanel(View3DPanel):
         split2.prop(geotracker, 'geomobj', text='')
 
         if not geotracker.geomobj:
-            op = split2.operator(Config.kt_actor_idname, text='New')
-            op.action = 'ft_create_new_head'
+            split2.operator(FTConfig.ft_create_new_head_idname, text='New')
         else:
             op = split2.operator(Config.kt_actor_idname, text='Edit')
             op.action = 'ft_edit_head'

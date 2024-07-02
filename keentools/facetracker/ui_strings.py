@@ -342,6 +342,14 @@ buttons = {
         'Save FACS animation',
         'Save FACS as a CSV file'
     ),
+    FTConfig.ft_create_new_head_idname: Button(
+        'Create new Head',
+        'Create new FaceBuilder Head'
+    ),
+    FTConfig.ft_cancel_choose_frame_idname: Button(
+        'Cancel',
+        'Cancel Choose Frame Mode'
+    ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
         'Clear menu',

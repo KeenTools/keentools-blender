@@ -53,29 +53,6 @@ class KT_OT_Actor(Operator):
         if self.action == 'none':
             return {'CANCELLED'}
 
-        elif self.action == 'ft_create_new_head':
-            settings = ft_settings()
-            geotracker = settings.get_current_geotracker_item()
-            if not geotracker:
-                return {'CANCELLED'}
-
-            if not geotracker.camobj:
-                self.report({'INFO'}, 'No Camera in FaceTracker')
-                return {'CANCELLED'}
-
-            op = get_operator(FBConfig.fb_add_head_operator_idname)
-            op('EXEC_DEFAULT')
-
-            settings_fb = fb_settings()
-            headnum = settings_fb.get_last_headnum()
-            head = settings_fb.get_head(headnum)
-            geotracker.geomobj = head.headobj
-            head.use_emotions = True
-
-            if geotracker.movie_clip:
-                op = get_operator(Config.kt_actor_idname)
-                op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
-
         elif self.action == 'ft_take_snapshot_mode':
             settings = ft_settings()
             geotracker = settings.get_current_geotracker_item()
@@ -136,22 +113,6 @@ class KT_OT_Actor(Operator):
 
             op = get_operator(Config.kt_actor_idname)
             op('EXEC_DEFAULT', action='ft_edit_head')
-
-        elif self.action == 'ft_cancel_take_snapshot':
-            settings = ft_settings()
-            geotracker = settings.get_current_geotracker_item()
-            if not geotracker:
-                return {'CANCELLED'}
-
-            area = context.area
-            exit_area_localview(area)
-            force_show_ui_overlays(area)
-
-            area = CommonLoader.text_viewport().get_work_area()
-            CommonLoader.text_viewport().stop_viewport()
-            CommonLoader.set_ft_head_mode('NONE')
-            if area:
-                area.tag_redraw()
 
         elif self.action == 'ft_edit_head':
             settings = ft_settings()
