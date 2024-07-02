@@ -72,8 +72,9 @@ class KT_OT_Actor(Operator):
             geotracker.geomobj = head.headobj
             head.use_emotions = True
 
-            op = get_operator(Config.kt_actor_idname)
-            op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
+            if geotracker.movie_clip:
+                op = get_operator(Config.kt_actor_idname)
+                op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
 
         elif self.action == 'ft_take_snapshot_mode':
             settings = ft_settings()
@@ -136,12 +137,6 @@ class KT_OT_Actor(Operator):
             op = get_operator(Config.kt_actor_idname)
             op('EXEC_DEFAULT', action='ft_edit_head')
 
-        elif self.action == 'ft_cancel_create_head':
-            area = context.area
-            exit_area_localview(area)
-            force_show_ui_overlays(area)
-            CommonLoader.set_ft_head_mode('NONE')
-
         elif self.action == 'ft_cancel_take_snapshot':
             settings = ft_settings()
             geotracker = settings.get_current_geotracker_item()
@@ -179,8 +174,11 @@ class KT_OT_Actor(Operator):
 
             if len(head.cameras) == 0:
                 _log.error('No Cameras found')
-                op = get_operator(Config.kt_actor_idname)
-                op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
+                if geotracker.movie_clip:
+                    op = get_operator(Config.kt_actor_idname)
+                    op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
+                else:
+                    self.report({'INFO'}, 'No Movie Clip')
                 return {'CANCELLED'}
 
             if headnum == settings_fb.current_headnum:

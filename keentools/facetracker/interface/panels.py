@@ -297,18 +297,6 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
         return False
 
 
-def _draw_create_head_ui(layout, geotracker):
-    col = layout.column(align=True)
-    row = col.row(align=True)
-    row.scale_y = 2.0
-    op = row.operator(Config.kt_actor_idname,
-                      text='Create FaceBuilder Head', icon='USER')
-    op.action = 'ft_create_head_now'
-
-    op = col.operator(Config.kt_actor_idname, text='Cancel', icon='X')
-    op.action = 'ft_cancel_create_head'
-
-
 class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
     bl_idname = FTConfig.ft_choose_snapshot_frame_idname
     bl_label = 'Take snapshot mode'
