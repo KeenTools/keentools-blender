@@ -76,7 +76,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.use_simple_shader: bool = False
         self.simple_line_shader: Optional[Any] = None
 
-        self.wireframe_offset = FBConfig.wireframe_offset_constant
+        self.wireframe_offset = FBConfig.fb_wireframe_offset_constant
 
     def get_statistics(self):
         return f'\nvertices: {len(self.vertices)}' \

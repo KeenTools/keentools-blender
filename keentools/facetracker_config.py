@@ -179,3 +179,4 @@ class FTConfig:
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
     ft_action_name = 'ftAction'
+    ft_wireframe_offset_constant: float = 0.001
