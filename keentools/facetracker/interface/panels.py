@@ -259,9 +259,8 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         col = layout.column(align=True)
         col.scale_y = scale
         row = col.row(align=True)
-        op = row.operator(Config.kt_actor_idname,
-                          text='Add Snapshot' if icon != 'ADD' else 'snapshot', icon=icon)
-        op.action = 'ft_take_snapshot_mode'
+        row.operator(FTConfig.ft_choose_frame_mode_idname,
+                     text='snapshot', icon='ADD')
         op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
                           text='from file', icon='IMAGE')
         op.headnum = headnum
@@ -322,10 +321,7 @@ class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.scale_y = 2.0
-        op = row.operator(Config.kt_actor_idname,
-                          text='Take current frame', icon='IMAGE')
-        op.action = 'ft_take_snapshot'
-
+        row.operator(FTConfig.ft_add_chosen_frame_idname, icon='IMAGE')
         col.operator(FTConfig.ft_cancel_choose_frame_idname, icon='X')
 
 
@@ -383,10 +379,9 @@ class FT_PT_InputsPanel(View3DPanel):
         split2.prop(geotracker, 'geomobj', text='')
 
         if not geotracker.geomobj:
-            split2.operator(FTConfig.ft_create_new_head_idname, text='New')
+            split2.operator(FTConfig.ft_create_new_head_idname)
         else:
-            op = split2.operator(Config.kt_actor_idname, text='Edit')
-            op.action = 'ft_edit_head'
+            split2.operator(FTConfig.ft_edit_head_idname)
 
         split = layout.split(factor=factor, align=True)
         split.label(text='Camera')

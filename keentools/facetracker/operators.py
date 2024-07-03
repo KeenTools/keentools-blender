@@ -18,6 +18,7 @@
 
 from typing import Any, List, Set
 import os
+from copy import deepcopy
 
 from bpy.types import Operator, Object
 from bpy.props import (BoolProperty,
@@ -51,7 +52,9 @@ from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_show_addon_preferences,
                                 bpy_start_frame,
                                 bpy_end_frame,
-                                bpy_view_camera)
+                                bpy_view_camera,
+                                bpy_current_frame,
+                                bpy_new_image)
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
@@ -1061,17 +1064,26 @@ class FT_OT_ChooseFrameMode(Operator):
     def invoke(self, context: Any, event: Any) -> Set:
         _log.red(f'{self.__class__.__name__} invoke')
 
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True, geometry=True,
+                                     camera=True, movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
-            return {'CANCELLED'}
-        if not geotracker.geomobj or not geotracker.camobj:
-            return {'CANCELLED'}
-        if not geotracker.movie_clip:
-            return {'CANCELLED'}
 
         CommonLoader.stop_fb_viewport()
         CommonLoader.stop_fb_pinmode()
+
+        vp = CommonLoader.text_viewport()
+        default_txt = deepcopy(vp.texter().get_default_text())
+        default_txt[0]['text'] = 'Choose frame on timeline then press Take snapshot button'
+        default_txt[0]['color'] = (1., 0., 1., 0.85)
+        vp.message_to_screen(default_txt)
 
         area = context.area
         switch_to_camera(area, geotracker.camobj,
@@ -1079,8 +1091,9 @@ class FT_OT_ChooseFrameMode(Operator):
 
         CommonLoader.text_viewport().start_viewport(area=area)
         facebuilder_keymaps_register()
+        CommonLoader.set_ft_head_mode('CHOOSE_FRAME')
 
-        _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
+        _log.red(f'{self.__class__.__name__} start pinmode modal >>>')
         self.init_bus()
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -1105,7 +1118,6 @@ class FT_OT_ChooseFrameMode(Operator):
             self.on_finish()
             return {'FINISHED'}
 
-        # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             bpy_view_camera()
 
@@ -1153,8 +1165,8 @@ class FT_OT_CreateNewHead(ButtonOperator, Operator):
         head.use_emotions = True
 
         if geotracker.movie_clip:
-            op = get_operator(Config.kt_actor_idname)
-            op('EXEC_DEFAULT', action='ft_take_snapshot_mode')
+            op = get_operator(FTConfig.ft_choose_frame_mode_idname)
+            op('INVOKE_DEFAULT')
         else:
             self.report({'INFO'}, 'New FBHead has been created')
 
@@ -1176,6 +1188,8 @@ class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
                                      geotracker=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
+            CommonLoader.text_viewport().stop_viewport()
+            CommonLoader.set_ft_head_mode('NONE')
             return {'CANCELLED'}
 
         area = CommonLoader.text_viewport().get_work_area()
@@ -1184,6 +1198,123 @@ class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
 
         CommonLoader.text_viewport().stop_viewport()
         CommonLoader.set_ft_head_mode('NONE')
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
+class FT_OT_EditHead(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_edit_head_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True, geometry=True,
+                                     camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings_ft = ft_settings()
+        geotracker = settings_ft.get_current_geotracker_item()
+
+        settings_fb = fb_settings()
+        headnum = settings_fb.head_by_obj(geotracker.geomobj)
+        if headnum < 0:
+            msg = 'No FaceBuilder object found'
+            _log.error(msg)
+            self.report({'INFO'}, msg)
+            return {'CANCELLED'}
+
+        head = settings_fb.get_head(headnum)
+
+        if len(head.cameras) == 0:
+            if geotracker.movie_clip:
+                op = get_operator(FTConfig.ft_choose_frame_mode_idname)
+                op('INVOKE_DEFAULT')
+            else:
+                self.report({'INFO'}, 'No Movie Clip')
+            return {'CANCELLED'}
+
+        if headnum == settings_fb.current_headnum:
+            camnum = settings_fb.current_camnum
+        else:
+            camnum = 0
+
+        if camnum < 0 or camnum >= len(head.cameras):
+            camnum = 0
+
+        camera = head.get_camera(camnum)
+        if not camera:
+            self.report({'INFO'}, 'No Camera in FaceBuilder')
+            return {'CANCELLED'}
+
+        op = get_operator(FBConfig.fb_select_camera_idname)
+        op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
+           detect_face=not camera.has_pins())
+
+        CommonLoader.set_ft_head_mode('EDIT_HEAD')
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
+class FT_OT_AddChosenFrame(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_add_chosen_frame_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True, geometry=True,
+                                     camera=True, movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        frame = bpy_current_frame()
+
+        movie_clip = geotracker.movie_clip
+
+        name = movie_clip.name
+        w, h = movie_clip.size[:]
+        img = bpy_new_image(name, width=w, height=h, alpha=True,
+                            float_buffer=False)
+        img.use_view_as_render = True
+
+        if movie_clip.source == 'MOVIE':
+            img.source = 'MOVIE'
+        else:
+            img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
+
+        img.filepath = movie_clip.filepath
+
+        settings_fb = fb_settings()
+        loader_fb = settings_fb.loader()
+        headnum = settings_fb.head_by_obj(geotracker.geomobj)
+        if headnum < 0:
+            _log.error('No FaceBuilder object found')
+            return {'CANCELLED'}
+
+        loader_fb.add_new_camera(headnum, img, frame)
+        loader_fb.save_fb_serial_str(headnum)
+
+        settings_fb.current_camnum = settings_fb.get_last_camnum(headnum)
+
+        op = get_operator(FTConfig.ft_edit_head_idname)
+        op('EXEC_DEFAULT')
 
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
@@ -1230,4 +1361,6 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_PanDetector,
                   FT_OT_ChooseFrameMode,
                   FT_OT_CreateNewHead,
-                  FT_OT_CancelChooseFrame)
+                  FT_OT_EditHead,
+                  FT_OT_CancelChooseFrame,
+                  FT_OT_AddChosenFrame)
