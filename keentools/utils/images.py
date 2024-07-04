@@ -30,6 +30,7 @@ from .bpy_common import (bpy_start_frame,
                          bpy_end_frame,
                          bpy_current_frame,
                          bpy_images,
+                         bpy_new_image,
                          bpy_abspath)
 
 
@@ -198,8 +199,8 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
     img = bg_img.image
     if not img:
         w, h = movie_clip.size[:]
-        img = bpy_images().new(name, width=w, height=h, alpha=True,
-                                  float_buffer=False)
+        img = bpy_new_image(name, width=w, height=h, alpha=True,
+                            float_buffer=False)
         bg_img.image = img
 
     img.use_view_as_render = True

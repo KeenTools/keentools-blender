@@ -1281,8 +1281,17 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = ft_settings()
-        geotracker = settings.get_current_geotracker_item()
+        settings_ft = ft_settings()
+        geotracker = settings_ft.get_current_geotracker_item()
+
+        settings_fb = fb_settings()
+        loader_fb = settings_fb.loader()
+        headnum = settings_fb.head_by_obj(geotracker.geomobj)
+        if headnum < 0:
+            msg = 'No FaceBuilder object found'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
 
         frame = bpy_current_frame()
 
@@ -1290,6 +1299,12 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
 
         name = movie_clip.name
         w, h = movie_clip.size[:]
+        if w <= 0 or h <= 0:
+            msg = 'Wrong MovieClip size'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
         img = bpy_new_image(name, width=w, height=h, alpha=True,
                             float_buffer=False)
         img.use_view_as_render = True
@@ -1300,13 +1315,6 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
             img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
 
         img.filepath = movie_clip.filepath
-
-        settings_fb = fb_settings()
-        loader_fb = settings_fb.loader()
-        headnum = settings_fb.head_by_obj(geotracker.geomobj)
-        if headnum < 0:
-            _log.error('No FaceBuilder object found')
-            return {'CANCELLED'}
 
         loader_fb.add_new_camera(headnum, img, frame)
         loader_fb.save_fb_serial_str(headnum)
