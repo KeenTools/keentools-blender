@@ -203,8 +203,7 @@ class AllVisibleClosed(AllVisible):
 
 class FB_PT_HeaderPanel(AllVisible, Panel):
     bl_idname = FBConfig.fb_header_panel_idname
-    bl_label = '{} {}'.format(
-            FBConfig.fb_tool_name, Config.addon_version)
+    bl_label = f'{FBConfig.fb_tool_name} {Config.addon_version}'
 
     @classmethod
     def poll(cls, context):

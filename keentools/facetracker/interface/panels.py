@@ -135,8 +135,7 @@ class AllVisible(View3DPanel):
 
 class FT_PT_FacetrackersPanel(View3DPanel):
     bl_idname = FTConfig.ft_facetrackers_panel_idname
-    bl_label = '{} {}'.format(FTConfig.ft_tool_name,
-                              Config.addon_version)
+    bl_label = f'{FTConfig.ft_tool_name} {Config.addon_version}'
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -221,8 +220,10 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             return
 
         col = layout.column(align=True)
+        col.enabled = CommonLoader.ft_head_mode() == 'NONE'
         self._output_geotrackers_list(col)
         self._facetracker_creation_button(col)
+
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('FaceTracker')
         _ft_grace_timer.start()
