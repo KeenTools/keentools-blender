@@ -1199,6 +1199,16 @@ class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
         CommonLoader.text_viewport().stop_viewport()
         CommonLoader.set_ft_head_mode('NONE')
 
+        settings_ft = ft_settings()
+        geotracker = settings_ft.get_current_geotracker_item()
+
+        settings_fb = fb_settings()
+        headnum = settings_fb.head_by_obj(geotracker.geomobj)
+        head = settings_fb.get_head(headnum)
+        if headnum >= 0 and head and len(head.cameras) > 0:
+            op = get_operator(FTConfig.ft_edit_head_idname)
+            op('EXEC_DEFAULT')
+
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
