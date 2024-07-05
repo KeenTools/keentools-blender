@@ -18,15 +18,20 @@
 import os
 from typing import Any, Tuple, List, Optional
 
-import bpy
 from bpy.types import MovieClip, Image, Scene
+from bpy.path import abspath
 
 from .kt_logging import KTLogger
 from ..addon_config import ActionStatus
+from .version import BVersion
 from .bpy_common import (operator_with_context,
                          bpy_scene,
                          bpy_create_object,
-                         bpy_create_camera_data)
+                         bpy_create_camera_data,
+                         bpy_new_scene,
+                         bpy_data,
+                         bpy_ops,
+                         bpy_movieclips)
 from .ui_redraw import get_all_areas
 
 
@@ -65,14 +70,14 @@ def make_movieclip_proxy(movie_clip: Optional[MovieClip],
     movie_clip.use_proxy_custom_directory = True
     area.type = 'CLIP_EDITOR'
     area.spaces.active.clip = movie_clip
-    bpy.ops.clip.rebuild_proxy({'area': area})
+    bpy_ops().clip.rebuild_proxy({'area': area})
     area.type = area_type_old
     _log.output('make_proxy success')
     return True
 
 
 def get_new_movieclip(old_movieclips: List) -> Optional[MovieClip]:
-    for movieclip in bpy.data.movieclips:
+    for movieclip in bpy_movieclips():
         if movieclip not in old_movieclips:
             return movieclip
     return None
@@ -81,13 +86,13 @@ def get_new_movieclip(old_movieclips: List) -> Optional[MovieClip]:
 def find_movieclip(filepath: str) -> Optional[MovieClip]:
     if not os.path.exists(filepath):
         return None
-    for movieclip in bpy.data.movieclips:
+    for movieclip in bpy_movieclips():
         _log.output(f'find_movieclip: {movieclip}')
         try:
             _log.output(f'\nmovieclip.filepath: {movieclip.filepath}\n'
                         f'filepath: {filepath}')
-            if os.path.samefile(bpy.path.abspath(movieclip.filepath),
-                                bpy.path.abspath(filepath)):
+            if os.path.samefile(abspath(movieclip.filepath),
+                                abspath(filepath)):
                 return movieclip
         except FileNotFoundError as err:
             _log.error(f'find_movieclip FILE NOT FOUND:\n{str(err)}')
@@ -106,10 +111,10 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
     _log.output(f'load_movieclip DIR: {directory}')
     _log.output(f'load_movieclip FILES: {file_names}')
 
-    old_movieclips = bpy.data.movieclips[:]
+    old_movieclips = bpy_movieclips()[:]
     _log.output(f'old_movieclips: {[mc.name for mc in old_movieclips]}')
     try:
-        res = bpy.ops.clip.open('EXEC_DEFAULT', files=frame_files,
+        res = bpy_ops().clip.open('EXEC_DEFAULT', files=frame_files,
                                 directory=directory)
         _log.output(f'load_movieclip result: {res}')
     except RuntimeError as err:
@@ -143,24 +148,32 @@ def convert_movieclip_to_frames(
         single_frame: bool = False,
         opengl_render: bool = True,
         video_scene_name: str = 'video_scene') -> Optional[str]:
+
+    _log.yellow(f'convert_movieclip_to_frames start')
     w, h = get_movieclip_size(movie_clip)
     if w <= 0 or h <= 0:
+        _log.error('MovieClip has wrong size')
         return None
 
-    scene = bpy.data.scenes.new(video_scene_name)
+    scene = bpy_new_scene(video_scene_name)
     scene_name = scene.name
     sequence_editor = scene.sequence_editor_create()
     sequence_editor.use_cache_final = False
     strip = sequence_editor.sequences.new_clip('video', movie_clip, 2, 1)
-    strip.transform.rotation = orientation * 1.5707963  # pi/2 works worse!
+    strip.frame_start = movie_clip.frame_start
+
+    rotate_flag = BVersion.video_strip_has_transform
+    if rotate_flag:
+        strip.transform.rotation = orientation * 1.5707963  # pi/2 works worse!
+    else:
+        _log.error('Too old Blender version for rotating images')
 
     cam_data = bpy_create_camera_data('output_cam_data')
-    cam_data.show_background_images = True
     cam_ob = bpy_create_object('output_camera', cam_data)
     scene.collection.objects.link(cam_ob)
     scene.camera = cam_ob
 
-    if orientation % 2 != 0:
+    if rotate_flag and orientation % 2 != 0:
         w, h = h, w
     scene.render.resolution_x = w
     scene.render.resolution_y = h
@@ -177,22 +190,24 @@ def convert_movieclip_to_frames(
         if not single_frame else filepath
     try:
         if opengl_render:
-            operator_with_context(bpy.ops.render.opengl,
+            operator_with_context(bpy_ops().render.opengl,
                                   {'scene': scene}, animation=not single_frame,
                                   write_still=single_frame,
                                   sequencer=True, view_context=False)
         else:
             # Much slower but works everywhere
-            operator_with_context(bpy.ops.render.render,
+            operator_with_context(bpy_ops().render.render,
                                   {'scene': scene}, animation=True)
     except Exception as err:
         output_filepath = None
         _log.error(f'convert_movieclip_to_frames Exception:\n{str(err)}')
     finally:
         _log.output('_cleanup_scene')
-        scene = bpy.data.scenes[scene_name]
+        scene = bpy_data().scenes[scene_name]
         scene.sequence_editor_clear()
-        bpy.data.scenes.remove(scene)
+        bpy_data().scenes.remove(scene)
+
+    _log.output(f'convert_movieclip_to_frames end >>>')
     return output_filepath
 
 
@@ -203,7 +218,7 @@ def fit_render_size(movie_clip: Optional[MovieClip]) -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    scene = bpy.context.scene
+    scene = bpy_scene()
     scene.render.resolution_x = w
     scene.render.resolution_y = h
     return ActionStatus(True, f'Render size {w} x {h}')
