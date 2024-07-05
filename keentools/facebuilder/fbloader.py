@@ -796,7 +796,7 @@ class FBLoader:
         check_status = common_fb_checks(object_mode=True,
                                         is_calculating=True,
                                         reload_facebuilder=True,
-                                        stop_another_pinmode=True,
+                                        stop_other_pinmode=True,
                                         head_and_camera=True)
         if not check_status.success:
             return check_status

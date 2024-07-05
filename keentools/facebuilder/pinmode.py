@@ -284,7 +284,7 @@ class FB_OT_PinMode(Operator):
 
         check_status = common_fb_checks(object_mode=True,
                                         is_calculating=True,
-                                        stop_another_pinmode=True,
+                                        stop_other_pinmode=True,
                                         fix_facebuilders=True,
                                         head_and_camera=True,
                                         headnum=self.headnum,

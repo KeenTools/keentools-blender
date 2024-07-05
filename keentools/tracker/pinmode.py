@@ -366,7 +366,7 @@ class PinMode(Operator):
         check_status = common_checks(
             product = settings.product_type(),
             object_mode=True, is_calculating=True,
-            stop_another_pinmode=True,
+            stop_other_pinmode=True,
             reload_geotracker=True, geotracker=True,
             camera=True, geometry=True, movie_clip=False)
         if not check_status.success:

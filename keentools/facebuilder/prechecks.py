@@ -36,7 +36,7 @@ _log = KTLogger(__name__)
 def common_fb_checks(*, object_mode: bool = False,
                      pinmode: bool = False,
                      pinmode_out: bool = False,
-                     stop_another_pinmode: bool = False,
+                     stop_other_pinmode: bool = False,
                      is_calculating: bool = False,
                      fix_facebuilders: bool = False,
                      reload_facebuilder: bool = False,
@@ -75,7 +75,7 @@ def common_fb_checks(*, object_mode: bool = False,
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    if stop_another_pinmode:
+    if stop_other_pinmode:
         pm = tool_pinmode(facebuilder=False, geotracker=True, facetracker=True)
         if pm is not None:
             if pm == ProductType.GEOTRACKER:
