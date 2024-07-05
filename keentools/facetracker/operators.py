@@ -1081,7 +1081,7 @@ class FT_OT_ChooseFrameMode(Operator):
 
         vp = CommonLoader.text_viewport()
         default_txt = deepcopy(vp.texter().get_default_text())
-        default_txt[0]['text'] = 'Choose frame on timeline then press Take snapshot button'
+        default_txt[0]['text'] = 'Take a snapshot of a video frame'
         default_txt[0]['color'] = (1., 0., 1., 0.85)
         vp.message_to_screen(default_txt)
 
@@ -1248,7 +1248,7 @@ class FT_OT_EditHead(ButtonOperator, Operator):
                 op = get_operator(FTConfig.ft_choose_frame_mode_idname)
                 op('INVOKE_DEFAULT')
             else:
-                self.report({'INFO'}, 'No Movie Clip')
+                self.report({'ERROR'}, 'Please, load a clip first')
             return {'CANCELLED'}
 
         if headnum == settings_fb.current_headnum:

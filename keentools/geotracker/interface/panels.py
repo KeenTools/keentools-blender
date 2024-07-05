@@ -903,7 +903,7 @@ class GT_PT_TexturePanel(AllVisible):
         col.label(text='Add frames')
         row = col.row()
         row.template_list(
-            'GT_UL_selected_frame_list',
+            GTConfig.gt_selected_frame_list_item_idname,
             'selected_frame_list',
             geotracker,
             'selected_frames',

@@ -235,7 +235,7 @@ def _fb_view_panel_active() -> bool:
 class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
     bl_category = Config.ft_tab_category
     bl_idname = FTConfig.ft_fb_views_panel_idname
-    bl_label = 'FaceBuilder Views'
+    bl_label = 'FaceBuilder'
 
     @classmethod
     def poll(cls, context: Any) -> bool:
@@ -298,7 +298,7 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
 
 class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
     bl_idname = FTConfig.ft_choose_snapshot_frame_idname
-    bl_label = 'Take snapshot mode'
+    bl_label = 'FaceBuilder'
 
     @classmethod
     def poll(cls, context: Any) -> bool:
@@ -542,7 +542,7 @@ class FT_PT_TrackingPanel(AllVisible):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker:
-            row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
+            row.label(text='Camera' if geotracker.camera_mode() else 'Head')
         row.operator(
             FTConfig.ft_help_tracking_idname,
             text='', icon='QUESTION', emboss=False)
@@ -1173,7 +1173,7 @@ class FT_PT_TexturePanel(AllVisible):
         col.label(text='Add frames')
         row = col.row()
         row.template_list(
-            'FT_UL_selected_frame_list',
+            FTConfig.ft_selected_frame_list_item_idname,
             'selected_frame_list',
             geotracker,
             'selected_frames',

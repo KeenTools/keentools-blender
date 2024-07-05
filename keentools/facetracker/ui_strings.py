@@ -45,8 +45,8 @@ buttons = {
         'Track Camera'
     ),
     FTConfig.ft_switch_to_geometry_mode_idname: Button(
-        'Geometry',
-        'Track Geometry'
+        'Head',
+        'Track Head'
     ),
     FTConfig.ft_actor_idname: Button(
         'Actor Operator',
@@ -351,8 +351,8 @@ buttons = {
         'Cancel Choose Frame Mode'
     ),
     FTConfig.ft_add_chosen_frame_idname: Button(
-        'Choose frame',
-        'Add current frame as a reference image'
+        'Take Snapshot',
+        'Add current frame as a reference image for FaceBuilder'
     ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(

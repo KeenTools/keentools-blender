@@ -78,8 +78,8 @@ def poll_is_camera_not_in_fb(self: Any, obj: Optional[Object]) -> bool:
 class FaceTrackerItem(TrackerItem):
     serial_str: StringProperty(name='GeoTracker Serialization string')
     geomobj: PointerProperty(
-        name='Geometry',
-        description='Select target geometry from the list '
+        name='Head',
+        description='Select target FaceBuilder Head from the list '
                     'of objects in your Scene',
         type=Object,
         poll=poll_is_facebuilder_mesh,
@@ -463,24 +463,24 @@ class FTSceneSettings(TRSceneSetting):
     transfer_animation_selector: EnumProperty(
         name='Select direction',
         items=[
-            ('GEOMETRY_TO_CAMERA', 'Geometry to Camera', '', 0),
-            ('CAMERA_TO_GEOMETRY', 'Camera to Geometry', '', 1),],
+            ('GEOMETRY_TO_CAMERA', 'Head to Camera', '', 0),
+            ('CAMERA_TO_GEOMETRY', 'Camera to Head', '', 1),],
         description='All animation will be converted from')
 
     bake_animation_selector: EnumProperty(name='Bake selector',
         items=[
-            ('GEOMETRY_AND_CAMERA', 'Geometry & Camera',
+            ('GEOMETRY_AND_CAMERA', 'Head & Camera',
              'Both objects will be baked to World space', 0),
-            ('GEOMETRY', 'Geometry',
-             'Geometry animation will be baked to World space', 1),
+            ('GEOMETRY', 'Head',
+             'Head animation will be baked to World space', 1),
             ('CAMERA', 'Camera',
              'Camera animation will be baked to World space', 2),],
         description='Convert animation to World space')
 
     export_locator_selector: EnumProperty(name='Select source',
         items=[
-            ('GEOMETRY', 'Geometry',
-            'Use Geometry as animation source', 0),
+            ('GEOMETRY', 'Head',
+            'Use Head as animation source', 0),
             ('CAMERA', 'Camera',
              'Use Camera as animation source', 1),
             ('SELECTED_PINS', 'Selected pins',
