@@ -124,11 +124,15 @@ class FTConfig:
     ft_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
-    ft_share_feedback_idname = operators + '.share_feedback'
     ft_move_wrapper_idname = operators + '.move_wrapper'
     ft_pan_detector_idname = operators + '.pan_detector'
-    ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
     ft_save_facs_idname = operators + '.save_facs'
+
+    ft_create_new_head_idname = operators + '.create_new_head'
+    ft_edit_head_idname = operators + '.edit_head'
+    ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
+    ft_cancel_choose_frame_idname = operators + '.cancel_choose_frame'
+    ft_add_chosen_frame_idname = operators + '.add_chosen_frame'
 
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'
@@ -175,3 +179,4 @@ class FTConfig:
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
     ft_action_name = 'ftAction'
+    ft_wireframe_offset_constant: float = 0.001

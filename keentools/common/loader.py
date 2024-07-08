@@ -116,7 +116,7 @@ class KTMessageBus:
 class CommonLoader:
     _text_viewport: Any = KTTextViewport()
     _message_bus: Any = KTMessageBus()
-    _viewports: Any = KTMessageBus()
+    _esc_pressed: bool = False
 
     ft_head_mode_state: str = 'NONE'  # 'CHOOSE_FRAME', 'EDIT_HEAD'
 
@@ -133,16 +133,20 @@ class CommonLoader:
         cls.ft_head_mode_state = value
 
     @classmethod
+    def esc_pressed(cls) -> bool:
+        return cls._esc_pressed
+
+    @classmethod
+    def set_esc_pressed(cls, value: bool) -> None:
+        cls._esc_pressed = value
+
+    @classmethod
     def text_viewport(cls) -> Any:
         return cls._text_viewport
 
     @classmethod
     def message_bus(cls) -> Any:
         return cls._message_bus
-
-    @classmethod
-    def viewports(cls) -> Any:
-        return cls._viewports
 
     @classmethod
     def stop_fb_pinmode(cls) -> None:

@@ -32,7 +32,8 @@ from ...addon_config import (Config,
                              stop_ft_pinmode,
                              ErrorType,
                              ActionStatus,
-                             ProductType)
+                             ProductType,
+                             product_name)
 from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
@@ -142,7 +143,7 @@ def show_unlicensed_warning() -> None:
 def common_checks(*, object_mode: bool = False,
                   pinmode: bool = False,
                   pinmode_out: bool = False,
-                  stop_another_pinmode: bool = False,
+                  stop_other_pinmode: bool = False,
                   is_calculating: bool = False,
                   reload_geotracker: bool = False,
                   geotracker: bool = False,
@@ -169,15 +170,15 @@ def common_checks(*, object_mode: bool = False,
             _log.error(calc_status.error_message)
             return calc_status
     if pinmode and not settings.pinmode:
-        msg = 'This operation works only in Pin mode'
+        msg = 'This operation works only in Pinmode'
         _log.error(msg)
         return ActionStatus(False, msg)
     if pinmode_out and settings.pinmode:
-        msg = 'This operation does not work in Pin mode'
+        msg = 'This operation does not work in Pinmode'
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    if stop_another_pinmode:
+    if stop_other_pinmode:
         pm = tool_pinmode(facebuilder=True, geotracker=True, facetracker=True)
         if pm is not None:
             if pm == ProductType.FACEBUILDER:
@@ -202,31 +203,31 @@ def common_checks(*, object_mode: bool = False,
 
     if reload_geotracker:
         if not settings.reload_current_geotracker():
-            msg = 'Cannot load GeoTracker data'
+            msg = f'Cannot load {product_name(product)} data'
             _log.error(msg)
             return ActionStatus(False, msg)
         settings.reload_mask_3d()
 
     geotracker_item = settings.get_current_geotracker_item()
     if geotracker and not geotracker_item:
-        msg = 'GeoTracker item is not found'
+        msg = f'{product_name(product)} item is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if camera and not geotracker_item.camobj:
-        msg = 'GeoTracker camera is not found'
+        msg = f'{product_name(product)} camera is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if geometry and not geotracker_item.geomobj:
-        msg = 'GeoTracker geometry is not found'
+        msg = f'{product_name(product)} geometry is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if movie_clip and not geotracker_item.movie_clip:
-        msg = 'GeoTracker movie clip is not found'
+        msg = f'{product_name(product)} movie clip is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if constraints:
         if not geotracker_item.camobj:
-            msg = 'GeoTracker does not contain Camera object!'
+            msg = f'{product_name(product)} does not contain Camera object!'
             _log.error(msg)
             return ActionStatus(False, msg)
         if len(geotracker_item.camobj.constraints) != 0:
@@ -234,7 +235,7 @@ def common_checks(*, object_mode: bool = False,
             _log.error(msg)
             return ActionStatus(False, msg)
         if not geotracker_item.geomobj:
-            msg = 'GeoTracker does not contain Geometry object!'
+            msg = f'{product_name(product)} does not contain Geometry object!'
             _log.error(msg)
             return ActionStatus(False, msg)
         if len(geotracker_item.geomobj.constraints) != 0:

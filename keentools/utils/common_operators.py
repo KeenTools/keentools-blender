@@ -216,7 +216,7 @@ class KT_OT_ShareFeedback(Operator):
         elif self.product == ProductType.GEOTRACKER:
             url = _gt_feedback_url()
         elif self.product == ProductType.FACETRACKER:
-            url = _gt_feedback_url()
+            url = _ft_feedback_url()
         else:
             self.report({'ERROR', 'Wrong Product ID'})
             url = 'https://keentools.io'

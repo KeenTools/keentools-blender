@@ -445,8 +445,20 @@ class FB_OT_DeleteCamera(ButtonOperator, Operator):
         if settings.current_camnum > camnum:
             settings.current_camnum -= 1
         elif settings.current_camnum == camnum:
-            settings.current_camnum = -1
-            settings.reset_pinmode_id()
+            kfs = fb.keyframes()
+            if len(kfs) == 0:
+                settings.current_camnum = -1
+                settings.reset_pinmode_id()
+                if settings.pinmode:
+                    settings.pinmode = False
+                    area = FBLoader.get_work_area()
+                    settings.viewport_state.show_ui_elements(area)
+                    CommonLoader.set_ft_head_mode('NONE')
+            else:
+                settings.current_camnum = 0
+                if settings.pinmode:
+                    op = get_operator(FBConfig.fb_pinmode_idname)
+                    op('INVOKE_DEFAULT', headnum=self.headnum, camnum=0)
 
         _log.output(f'CAMERA H:{headnum} C:{camnum} REMOVED')
         _log.output(f'{self.__class__.__name__} execute end >>>')

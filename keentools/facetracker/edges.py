@@ -24,7 +24,8 @@ from mathutils import Matrix, Vector
 from gpu_extras.batch import batch_for_shader
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, ft_settings
+from ..addon_config import ft_settings
+from ..facetracker_config import FTConfig
 from ..facebuilder.utils.edges import FBRasterEdgeShader3D
 from ..utils.fb_wireframe_image import get_ft_edge_indices_and_uvs
 from ..utils.coords import get_triangles_in_vertex_group, get_mesh_verts
@@ -57,7 +58,7 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.wireframe_offset = Config.wireframe_offset_constant
+        self.wireframe_offset = FTConfig.ft_wireframe_offset_constant
 
     def init_edge_indices(self) -> None:
         _log.blue('init_edge_indices')

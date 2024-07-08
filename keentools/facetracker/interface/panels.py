@@ -135,8 +135,7 @@ class AllVisible(View3DPanel):
 
 class FT_PT_FacetrackersPanel(View3DPanel):
     bl_idname = FTConfig.ft_facetrackers_panel_idname
-    bl_label = '{} {}'.format(FTConfig.ft_tool_name,
-                              Config.addon_version)
+    bl_label = f'{FTConfig.ft_tool_name} {Config.addon_version}'
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -221,8 +220,10 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             return
 
         col = layout.column(align=True)
+        col.enabled = CommonLoader.ft_head_mode() == 'NONE'
         self._output_geotrackers_list(col)
         self._facetracker_creation_button(col)
+
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('FaceTracker')
         _ft_grace_timer.start()
@@ -235,7 +236,7 @@ def _fb_view_panel_active() -> bool:
 class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
     bl_category = Config.ft_tab_category
     bl_idname = FTConfig.ft_fb_views_panel_idname
-    bl_label = 'FaceBuilder Views'
+    bl_label = 'FaceBuilder'
 
     @classmethod
     def poll(cls, context: Any) -> bool:
@@ -259,9 +260,8 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         col = layout.column(align=True)
         col.scale_y = scale
         row = col.row(align=True)
-        op = row.operator(Config.kt_actor_idname,
-                          text='Add Snapshot' if icon != 'ADD' else 'snapshot', icon=icon)
-        op.action = 'ft_take_snapshot_mode'
+        row.operator(FTConfig.ft_choose_frame_mode_idname,
+                     text='snapshot', icon='ADD')
         op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
                           text='from file', icon='IMAGE')
         op.headnum = headnum
@@ -297,21 +297,9 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
         return False
 
 
-def _draw_create_head_ui(layout, geotracker):
-    col = layout.column(align=True)
-    row = col.row(align=True)
-    row.scale_y = 2.0
-    op = row.operator(Config.kt_actor_idname,
-                      text='Create FaceBuilder Head', icon='USER')
-    op.action = 'ft_create_head_now'
-
-    op = col.operator(Config.kt_actor_idname, text='Cancel', icon='X')
-    op.action = 'ft_cancel_create_head'
-
-
 class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
     bl_idname = FTConfig.ft_choose_snapshot_frame_idname
-    bl_label = 'Take snapshot mode'
+    bl_label = 'FaceBuilder'
 
     @classmethod
     def poll(cls, context: Any) -> bool:
@@ -334,12 +322,8 @@ class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.scale_y = 2.0
-        op = row.operator(Config.kt_actor_idname,
-                          text='Take current frame', icon='IMAGE')
-        op.action = 'ft_take_snapshot'
-
-        op = col.operator(Config.kt_actor_idname, text='Cancel', icon='X')
-        op.action = 'ft_cancel_take_snapshot'
+        row.operator(FTConfig.ft_add_chosen_frame_idname, icon='IMAGE')
+        col.operator(FTConfig.ft_cancel_choose_frame_idname, icon='X')
 
 
 class FT_PT_InputsPanel(View3DPanel):
@@ -396,11 +380,9 @@ class FT_PT_InputsPanel(View3DPanel):
         split2.prop(geotracker, 'geomobj', text='')
 
         if not geotracker.geomobj:
-            op = split2.operator(Config.kt_actor_idname, text='New')
-            op.action = 'ft_create_new_head'
+            split2.operator(FTConfig.ft_create_new_head_idname)
         else:
-            op = split2.operator(Config.kt_actor_idname, text='Edit')
-            op.action = 'ft_edit_head'
+            split2.operator(FTConfig.ft_edit_head_idname)
 
         split = layout.split(factor=factor, align=True)
         split.label(text='Camera')
@@ -561,7 +543,7 @@ class FT_PT_TrackingPanel(AllVisible):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker:
-            row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
+            row.label(text='Camera' if geotracker.camera_mode() else 'Head')
         row.operator(
             FTConfig.ft_help_tracking_idname,
             text='', icon='QUESTION', emboss=False)
@@ -1192,7 +1174,7 @@ class FT_PT_TexturePanel(AllVisible):
         col.label(text='Add frames')
         row = col.row()
         row.template_list(
-            'FT_UL_selected_frame_list',
+            FTConfig.ft_selected_frame_list_item_idname,
             'selected_frame_list',
             geotracker,
             'selected_frames',

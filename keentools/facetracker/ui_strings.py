@@ -45,8 +45,8 @@ buttons = {
         'Track Camera'
     ),
     FTConfig.ft_switch_to_geometry_mode_idname: Button(
-        'Geometry',
-        'Track Geometry'
+        'Head',
+        'Track Head'
     ),
     FTConfig.ft_actor_idname: Button(
         'Actor Operator',
@@ -218,10 +218,6 @@ buttons = {
         'Unbreak Rotation',
         'Fix rotation making it continuous and removing 360 degrees jumps'
     ),
-    FTConfig.ft_share_feedback_idname: Button(
-        'Share Feedback',
-        'Send feedback. Help us improve'
-    ),
     FTConfig.ft_rescale_window_idname: Button(
         'Scale',
         'Scale scene'
@@ -334,13 +330,29 @@ buttons = {
         'Pan View detect (FaceTracker)',
         'KeenTools Viewport Pan override operator (FaceTracker)'
     ),
+    FTConfig.ft_save_facs_idname: Button(
+        'Save FACS animation',
+        'Save FACS as a CSV file'
+    ),
+    FTConfig.ft_create_new_head_idname: Button(
+        'New',
+        'Create new FaceBuilder Head'
+    ),
+    FTConfig.ft_edit_head_idname: Button(
+        'Edit',
+        'Edit FaceBuilder Head'
+    ),
     FTConfig.ft_choose_frame_mode_idname: Button(
         'Choose frame mode',
         'Choose frame mode description'
     ),
-    FTConfig.ft_save_facs_idname: Button(
-        'Save FACS animation',
-        'Save FACS as a CSV file'
+    FTConfig.ft_cancel_choose_frame_idname: Button(
+        'Cancel',
+        'Cancel Choose Frame Mode'
+    ),
+    FTConfig.ft_add_chosen_frame_idname: Button(
+        'Take Snapshot',
+        'Add current frame as a reference image for FaceBuilder'
     ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(

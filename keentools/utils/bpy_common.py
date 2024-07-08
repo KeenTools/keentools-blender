@@ -85,6 +85,10 @@ def bpy_images() -> Any:
     return bpy.data.images
 
 
+def bpy_movieclips() -> Any:
+    return bpy.data.movieclips
+
+
 def bpy_scene_camera() -> Camera:
     return bpy.context.scene.camera
 

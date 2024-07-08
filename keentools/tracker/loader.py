@@ -869,7 +869,7 @@ class Loader:
         check_status = common_checks(object_mode=True,
                                      is_calculating=True,
                                      reload_geotracker=True,
-                                     stop_another_pinmode=True,
+                                     stop_other_pinmode=True,
                                      geotracker=True,
                                      camera=True,
                                      geometry=True,

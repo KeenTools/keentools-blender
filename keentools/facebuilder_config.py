@@ -202,7 +202,7 @@ class FBConfig:
     camera_y_step = 5
     camera_z_step = 0.5
 
-    wireframe_offset_constant: float = 0.001
+    fb_wireframe_offset_constant: float = 0.001
 
     next_head_step = (2.5, 0., 0.)
 

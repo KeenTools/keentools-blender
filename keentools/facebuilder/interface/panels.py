@@ -130,24 +130,6 @@ def _start_autoloader_handler(headnum: int) -> None:
     bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
 
 
-def _draw_align_button(layout, scale=2.0, depress=False):
-    settings = fb_settings()
-    row = layout.row(align=True)
-    row.scale_y = scale
-    row.operator(FBConfig.fb_rotate_head_backward_idname,
-                 **KTIcons.key_value('rotate_head_backward'), text='')
-
-    op = row.operator(FBConfig.fb_pickmode_starter_idname,
-                      **KTIcons.key_value('align_face'), depress=depress,
-                      text='Auto Align      ')  # 6 Extra spaces are for layout!
-    op.headnum = settings.current_headnum
-    op.camnum = settings.current_camnum
-    op.auto_detect_single = False
-
-    row.operator(FBConfig.fb_rotate_head_forward_idname,
-                 **KTIcons.key_value('rotate_head_forward'), text='')
-
-
 def _draw_pins_panel(layout):
     settings = fb_settings()
     if settings is None:
@@ -221,8 +203,7 @@ class AllVisibleClosed(AllVisible):
 
 class FB_PT_HeaderPanel(AllVisible, Panel):
     bl_idname = FBConfig.fb_header_panel_idname
-    bl_label = '{} {}'.format(
-            FBConfig.fb_tool_name, Config.addon_version)
+    bl_label = f'{FBConfig.fb_tool_name} {Config.addon_version}'
 
     @classmethod
     def poll(cls, context):

@@ -57,6 +57,7 @@ class BVersion:
     blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
     pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
     bound_box_has_foreach_get: bool = ver >= (2, 83, 0)
+    video_strip_has_transform: bool = ver >= (2, 92, 0)
     property_keywords_enabled: bool = ver >= (2, 93, 0)
     LocRotScale_exist: bool = version >= (3, 0, 0)
     operator_with_context_exists: bool = ver >= (3, 2, 0)
