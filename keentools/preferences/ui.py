@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List
+from typing import List, Optional
 import sys
 
 from bpy.types import Operator, AddonPreferences
@@ -99,7 +99,7 @@ def reset_updater_preferences_to_default():
 
 
 def _expand_icon(value):
-    return 'TRIA_RIGHT' if not value else 'TRIA_DOWN'
+    return 'RIGHTARROW' if not value else 'DOWNARROW_HLT'
 
 
 def _expandable_button(layout, data, prop, text=None):
@@ -236,7 +236,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
                          default=False)
     product: IntProperty(name='all', default=ProductType.UNDEFINED)
 
-    def draw(self, _):
+    def draw(self, context):
         layout = self.layout.column()
         col = layout.column()
         col.scale_y = Config.text_scale_y
@@ -682,20 +682,22 @@ class KTAddonPreferences(AddonPreferences):
         plugin_name = product_name(product)
         plugin_prop_prefix = _product_prop_prefix(product)
 
-        layout.label(text=f'{plugin_name} license info:')
-        box = layout.box()
+        col = layout.column(align=True)
+        col.label(text=f'{plugin_name} license info:')
+        box = col.box()
 
         lm = get_product_license_manager(product)
         _multi_line_text_to_output_labels(box, lm.license_status_text(
             strategy=pkt_module().LicenseCheckStrategy.LAZY))
 
-        box.row().prop(self, f'{plugin_prop_prefix}_lic_type', expand=True)
+        row = col.row(align=True)
+        row.prop(self, f'{plugin_prop_prefix}_lic_type', expand=True)
 
         lic_type_prop = getattr(self, f'{plugin_prop_prefix}_lic_type')
 
         if lic_type_prop == 'ONLINE':
-            box = layout.box()
-            row = box.split(factor=0.85)
+            box = layout #.box()
+            row = box.split(factor=0.85, align=True)
             row.prop(self, f'{plugin_prop_prefix}_license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
             install_online_op.license_key = getattr(self, f'{plugin_prop_prefix}_license_key')
@@ -704,17 +706,17 @@ class KTAddonPreferences(AddonPreferences):
         elif lic_type_prop == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
-            row = layout.split(factor=0.65)
+            row = layout.split(factor=0.55, align=True)
             row.label(text='Get an activated license file at our site:')
             op = row.operator(Config.kt_open_manual_install_page_idname, icon='URL')
             op.product = product
 
-            box = layout.box()
-            row = box.split(factor=0.85)
+            box = layout #.box()
+            row = box.split(factor=0.85, align=True)
             row.prop(self, 'hardware_id')
             row.operator(Config.kt_copy_hardware_id_idname)
 
-            row = box.split(factor=0.85)
+            row = box.split(factor=0.85, align=True)
             row.prop(self, f'{plugin_prop_prefix}_lic_path')
             install_offline_op = row.operator(Config.kt_install_license_offline_idname)
             install_offline_op.lic_path = getattr(self, f'{plugin_prop_prefix}_lic_path')
@@ -730,8 +732,8 @@ class KTAddonPreferences(AddonPreferences):
             else:
                 setattr(self, f'{plugin_prop_prefix}_license_server_lock', False)
 
-            box = layout.box()
-            row = box.split(factor=0.35)
+            box = layout #.box()
+            row = box.split(factor=0.32, align=True)
             row.label(text='License Server host/IP')
             license_server_lock = getattr(self, f'{plugin_prop_prefix}_license_server_lock')
             license_server_auto = getattr(self, f'{plugin_prop_prefix}_license_server_auto')
@@ -740,7 +742,7 @@ class KTAddonPreferences(AddonPreferences):
             else:
                 row.prop(self, f'{plugin_prop_prefix}_license_server', text='')
 
-            row = box.split(factor=0.35)
+            row = box.split(factor=0.32, align=True)
             row.label(text='License Server port')
             if license_server_lock and license_server_auto:
                 row.label(text=str(getattr(self, f'{plugin_prop_prefix}_license_server_port')))
@@ -835,13 +837,13 @@ class KTAddonPreferences(AddonPreferences):
             # Core Uninstall button
             layout.operator(Config.kt_uninstall_core_idname)
 
-    def _get_core_version_text(self):
+    def _get_core_version_text(self) -> Optional[str]:
         try:
-            txt = "Version {}, built {}".format(pkt_module().__version__,
-                                                pkt_module().build_time)
+            txt = (f'Core version {pkt_module().__version__}, '
+                   f'built {pkt_module().build_time} is installed')
             return txt
         except Exception as err:
-            _log.error('_get_core_version_text: {}'.format(str(err)))
+            _log.error(f'_get_core_version_text:\n{str(err)}')
             return None
 
     def _draw_updater_info(self, layout):
@@ -935,63 +937,73 @@ class KTAddonPreferences(AddonPreferences):
         op.param_string = 'pin_sensitivity'
 
     def _draw_fb_user_preferences(self, layout):
-        main_box = layout
-        if not _expandable_button(main_box, self, 'show_fb_user_preferences'):
+        row = layout.row()
+        row.prop(self, 'show_fb_user_preferences', text='', emboss=False,
+                 icon=_expand_icon(self.show_fb_user_preferences))
+        row.label(text='FaceBuilder Settings')
+
+        if not self.show_fb_user_preferences:
             return
 
-        box = main_box.box()
-        box.prop(self, 'prevent_fb_view_rotation')
+        main_col = self._make_indent_column(layout)
 
-        box = main_box.box()
-        self._draw_pin_user_preferences(box)
+        main_col.prop(self, 'prevent_fb_view_rotation')
+        main_col.separator()
 
-        box = main_box.box()
-        split = box.split(factor=0.7)
+        self._draw_pin_user_preferences(main_col)
+        main_col.separator()
+
+        split = main_col.split(factor=0.7)
         split.label(text='Default wireframe colors')
         split.operator(FBConfig.fb_user_preferences_get_colors)
 
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.prop(self, 'fb_wireframe_color', text='')
         row.prop(self, 'fb_wireframe_special_color', text='')
         row.prop(self, 'fb_wireframe_midline_color', text='')
         row.prop(self, 'fb_wireframe_opacity', text='', slider=True)
-
         op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_fb_default_colors'
+        main_col.separator()
 
-        main_box.operator(FBConfig.fb_user_preferences_reset_all)
+        main_col.operator(FBConfig.fb_user_preferences_reset_all)
 
     def _draw_gt_user_preferences(self, layout):
-        main_box = layout
-        if not _expandable_button(main_box, self, 'show_gt_user_preferences'):
+        row = layout.row()
+        row.prop(self, 'show_gt_user_preferences', text='', emboss=False,
+                 icon=_expand_icon(self.show_gt_user_preferences))
+        row.label(text='GeoTracker Settings')
+
+        if not self.show_gt_user_preferences:
             return
 
-        col = main_box.column(align=True)
+        main_col = self._make_indent_column(layout)
+
+        col = main_col.column(align=True)
         col.prop(self, 'prevent_gt_view_rotation')
         col.prop(self, 'gt_auto_unbreak_rotation')
         col.prop(self, 'gt_use_hotkeys')
+        main_col.separator()
 
-        box = main_box.box()
-        self._draw_pin_user_preferences(box)
+        self._draw_pin_user_preferences(main_col)
+        main_col.separator()
 
-        box = main_box.box()
-        split = box.split(factor=0.7)
+        split = main_col.split(factor=0.7)
         split.label(text='Default wireframe colors')
         split.operator(GTConfig.gt_user_preferences_get_colors)
 
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.prop(self, 'gt_wireframe_color', text='')
         row.prop(self, 'gt_wireframe_opacity', text='', slider=True)
-
         op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_gt_default_colors'
+        main_col.separator()
 
-        box = main_box.box()
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.label(text='3d mask color')
         row.prop(self, 'gt_mask_3d_color', text='')
@@ -1000,7 +1012,7 @@ class KTAddonPreferences(AddonPreferences):
                                  text='Reset')
         op.action = 'revert_gt_default_mask_3d_colors'
 
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.label(text='2d mask color')
         row.prop(self, 'gt_mask_2d_color', text='')
@@ -1008,16 +1020,21 @@ class KTAddonPreferences(AddonPreferences):
         op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_gt_default_mask_2d_colors'
+        main_col.separator()
 
-        main_box.operator(GTConfig.gt_user_preferences_reset_all)
+        main_col.operator(GTConfig.gt_user_preferences_reset_all)
 
     def _draw_ft_user_preferences(self, layout):
-        main_box = layout
-        if not _expandable_button(main_box, self, 'show_ft_user_preferences'):
+        row = layout.row()
+        row.prop(self, 'show_ft_user_preferences', text='', emboss=False,
+                 icon=_expand_icon(self.show_ft_user_preferences))
+        row.label(text='FaceTracker Settings')
+
+        if not self.show_ft_user_preferences:
             return
 
-        box = main_box.box()
-        self._draw_pin_user_preferences(box)
+        main_col = self._make_indent_column(layout)
+        self._draw_pin_user_preferences(main_col)
 
     def _draw_core_python_problem(self, layout):
         if not pkt_is_python_supported():
@@ -1061,33 +1078,42 @@ class KTAddonPreferences(AddonPreferences):
         if cached_status[1] == 'PYKEENTOOLS_OK':
             core_txt = self._get_core_version_text()
             if core_txt is not None:
-                box = layout.box()
-                msg = [core_txt,
-                       'The core library has been installed successfully']
-                draw_warning_labels(box, msg, alert=False, icon='INFO')
+                draw_warning_labels(layout, [core_txt],
+                                    alert=False, icon='INFO')
                 return True
 
         self._draw_pykeentools_problem_report(layout, 'NO_VERSION')
         return False
 
     def _draw_facebuilder_preferences(self, layout):
-        self._draw_plugin_license_info(layout, ProductType.FACEBUILDER)
-        self._draw_fb_user_preferences(layout)
+        col = self._make_indent_column(layout)
+        self._draw_plugin_license_info(col, ProductType.FACEBUILDER)
+        col.separator()
+        self._draw_fb_user_preferences(col)
 
     def _draw_geotracker_preferences(self, layout):
-        self._draw_plugin_license_info(layout, ProductType.GEOTRACKER)
-        self._draw_gt_user_preferences(layout)
+        col = self._make_indent_column(layout)
+        self._draw_plugin_license_info(col, ProductType.GEOTRACKER)
+        col.separator()
+        self._draw_gt_user_preferences(col)
 
     def _draw_facetracker_preferences(self, layout):
-        self._draw_plugin_license_info(layout, ProductType.FACETRACKER)
-        self._draw_ft_user_preferences(layout)
+        col = self._make_indent_column(layout)
+        self._draw_plugin_license_info(col, ProductType.FACETRACKER)
+        col.separator()
+        self._draw_ft_user_preferences(col)
 
     def _draw_unsupported_gpu_detected(self, layout):
         box = layout.box()
         box.alert = True
         draw_warning_labels(box, ERROR_MESSAGES['UNSUPPORTED_GPU_BACKEND'])
 
-    def draw(self, _):
+    def _make_indent_column(self, layout):
+        indent_row = layout.row(align=True)
+        indent_row.label(text='', icon='BLANK1')
+        return indent_row.column()
+
+    def draw(self, context):
         layout = self.layout
 
         if not supported_gpu_backend():
@@ -1104,22 +1130,32 @@ class KTAddonPreferences(AddonPreferences):
             return
         self._draw_updater_info(layout)
 
-        box = layout.box()
-        row = box.row(align=True)
+        row = layout.row(align=True)
+        row.prop(self, 'facebuilder_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.facebuilder_expanded))
         row.prop(self, 'facebuilder_enabled', text='')
-        if _expandable_button(row, self, 'facebuilder_expanded'):
-            self._draw_facebuilder_preferences(box)
+        row.label(text='KeenTools FaceBuilder')
 
-        box = layout.box()
-        row = box.row(align=True)
+        if self.facebuilder_expanded:
+            self._draw_facebuilder_preferences(layout)
+
+        row = layout.row(align=True)
+        row.prop(self, 'geotracker_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.geotracker_expanded))
         row.prop(self, 'geotracker_enabled', text='')
-        if _expandable_button(row, self, 'geotracker_expanded'):
-            self._draw_geotracker_preferences(box)
+        row.label(text='KeenTools GeoTracker')
+
+        if self.geotracker_expanded:
+            self._draw_geotracker_preferences(layout)
 
         if not Config.show_facetracker:
             return
-        box = layout.box()
-        row = box.row(align=True)
+
+        row = layout.row(align=True)
+        row.prop(self, 'facetracker_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.facetracker_expanded))
         row.prop(self, 'facetracker_enabled', text='')
-        if _expandable_button(row, self, 'facetracker_expanded'):
-            self._draw_facetracker_preferences(box)
+        row.label(text='KeenTools FaceTracker')
+
+        if self.facetracker_expanded:
+            self._draw_facetracker_preferences(layout)
