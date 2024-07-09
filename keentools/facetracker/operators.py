@@ -1223,6 +1223,7 @@ class FT_OT_EditHead(ButtonOperator, Operator):
 
         product = ProductType.FACETRACKER
         check_status = common_checks(product=product, reload_geotracker=True,
+                                     stop_other_pinmode=True,
                                      object_mode=True, is_calculating=True,
                                      geotracker=True, geometry=True,
                                      camera=True)
@@ -1231,6 +1232,11 @@ class FT_OT_EditHead(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         settings_ft = ft_settings()
+
+        if settings_ft.pinmode:
+            loader = settings_ft.loader()
+            loader.out_pinmode()
+
         geotracker = settings_ft.get_current_geotracker_item()
 
         settings_fb = fb_settings()

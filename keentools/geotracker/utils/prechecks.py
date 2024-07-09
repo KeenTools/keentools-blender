@@ -182,24 +182,27 @@ def common_checks(*, object_mode: bool = False,
         pm = tool_pinmode(facebuilder=True, geotracker=True, facetracker=True)
         if pm is not None:
             if pm == ProductType.FACEBUILDER:
-                stop_fb_pinmode()
-                msg = 'FaceBuilder interactive mode stopped'
-                _log.warning(msg)
+                if pm != product:
+                    stop_fb_pinmode()
+                    msg = 'FaceBuilder interactive mode stopped'
+                    _log.warning(msg)
+                    return ActionStatus(False, msg)
+            elif pm == ProductType.GEOTRACKER:
+                if pm != product:
+                    stop_gt_pinmode()
+                    msg = 'GeoTracker interactive mode stopped'
+                    _log.warning(msg)
+                    return ActionStatus(False, msg)
+            elif pm == ProductType.FACETRACKER:
+                if pm != product:
+                    stop_ft_pinmode()
+                    msg = 'FaceTracker interactive mode stopped'
+                    _log.warning(msg)
+                    return ActionStatus(False, msg)
+            else:
+                msg = f'Unknown product type in common check [{pm}]'
+                _log.error(msg)
                 return ActionStatus(False, msg)
-            elif pm == ProductType.GEOTRACKER and pm != product:
-                stop_gt_pinmode()
-                msg = 'GeoTracker interactive mode stopped'
-                _log.warning(msg)
-                return ActionStatus(False, msg)
-            elif pm == ProductType.FACETRACKER and pm != product:
-                stop_ft_pinmode()
-                msg = 'FaceTracker interactive mode stopped'
-                _log.warning(msg)
-                return ActionStatus(False, msg)
-
-            msg = f'Unknown product type in common check {pm}'
-            _log.error(msg)
-            return ActionStatus(False, msg)
 
     if reload_geotracker:
         if not settings.reload_current_geotracker():
