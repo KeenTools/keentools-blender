@@ -702,8 +702,7 @@ class KTAddonPreferences(AddonPreferences):
         lic_type_prop = getattr(self, f'{plugin_prop_prefix}_lic_type')
 
         if lic_type_prop == 'ONLINE':
-            box = layout #.box()
-            row = box.split(factor=0.85, align=True)
+            row = layout.split(factor=0.85, align=True)
             row.prop(self, f'{plugin_prop_prefix}_license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
             install_online_op.license_key = getattr(self, f'{plugin_prop_prefix}_license_key')
@@ -717,12 +716,11 @@ class KTAddonPreferences(AddonPreferences):
             op = row.operator(Config.kt_open_manual_install_page_idname, icon='URL')
             op.product = product
 
-            box = layout #.box()
-            row = box.split(factor=0.85, align=True)
+            row = layout.split(factor=0.85, align=True)
             row.prop(self, 'hardware_id')
             row.operator(Config.kt_copy_hardware_id_idname)
 
-            row = box.split(factor=0.85, align=True)
+            row = layout.split(factor=0.85, align=True)
             row.prop(self, f'{plugin_prop_prefix}_lic_path')
             install_offline_op = row.operator(Config.kt_install_license_offline_idname)
             install_offline_op.lic_path = getattr(self, f'{plugin_prop_prefix}_lic_path')
@@ -738,8 +736,7 @@ class KTAddonPreferences(AddonPreferences):
             else:
                 setattr(self, f'{plugin_prop_prefix}_license_server_lock', False)
 
-            box = layout #.box()
-            row = box.split(factor=0.32, align=True)
+            row = layout.split(factor=0.32, align=True)
             row.label(text='License Server host/IP')
             license_server_lock = getattr(self, f'{plugin_prop_prefix}_license_server_lock')
             license_server_auto = getattr(self, f'{plugin_prop_prefix}_license_server_auto')
@@ -748,7 +745,7 @@ class KTAddonPreferences(AddonPreferences):
             else:
                 row.prop(self, f'{plugin_prop_prefix}_license_server', text='')
 
-            row = box.split(factor=0.32, align=True)
+            row = layout.split(factor=0.32, align=True)
             row.label(text='License Server port')
             if license_server_lock and license_server_auto:
                 row.label(text=str(getattr(self, f'{plugin_prop_prefix}_license_server_port')))
@@ -756,7 +753,7 @@ class KTAddonPreferences(AddonPreferences):
                 row.prop(self, f'{plugin_prop_prefix}_license_server_port', text='')
 
             if license_server_lock:
-                box.prop(self, f'{plugin_prop_prefix}_license_server_auto', text='Auto server/port settings')
+                layout.prop(self, f'{plugin_prop_prefix}_license_server_auto', text='Auto server/port settings')
 
             floating_install_op = row.operator(Config.kt_floating_connect_idname)
             floating_install_op.license_server = getattr(self, f'{plugin_prop_prefix}_license_server')
