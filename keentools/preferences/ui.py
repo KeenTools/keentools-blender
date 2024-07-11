@@ -165,7 +165,7 @@ class GTPREF_OT_UserPreferencesGetColors(Operator):
     def draw(self, context: Any) -> None:
         pass
 
-    def execute(self, context) -> Set:
+    def execute(self, context: Any) -> Set:
         _log.green(f'{self.__class__.__name__} start')
         settings = gt_settings()
         prefs = settings.preferences()
@@ -283,7 +283,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
-def _update_user_preferences_pin_size(addon_prefs: Any, _) -> None:
+def _update_user_preferences_pin_size(addon_prefs: Any, context: Any) -> None:
     settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_size = addon_prefs.pin_size
@@ -292,7 +292,7 @@ def _update_user_preferences_pin_size(addon_prefs: Any, _) -> None:
         prefs.pin_sensitivity = addon_prefs.pin_size
 
 
-def _update_user_preferences_pin_sensitivity(addon_prefs: Any, _) -> None:
+def _update_user_preferences_pin_sensitivity(addon_prefs: Any, context: Any) -> None:
     settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_sensitivity = addon_prefs.pin_sensitivity
@@ -301,32 +301,32 @@ def _update_user_preferences_pin_sensitivity(addon_prefs: Any, _) -> None:
         prefs.pin_size = addon_prefs.pin_sensitivity
 
 
-def _update_mask_3d(addon_prefs: Any, _) -> None:
+def _update_mask_3d(addon_prefs: Any, context: Any) -> None:
     settings = gt_settings()
     settings.mask_3d_color = addon_prefs.gt_mask_3d_color
     settings.mask_3d_opacity = addon_prefs.gt_mask_3d_opacity
 
 
-def _update_mask_2d(addon_prefs: Any, _) -> None:
+def _update_mask_2d(addon_prefs: Any, context: Any) -> None:
     settings = gt_settings()
     settings.mask_2d_color = addon_prefs.gt_mask_2d_color
     settings.mask_2d_opacity = addon_prefs.gt_mask_2d_opacity
 
 
-def _update_gt_wireframe(addon_prefs: Any, _) -> None:
+def _update_gt_wireframe(addon_prefs: Any, context: Any) -> None:
     settings = gt_settings()
     settings.wireframe_color = addon_prefs.gt_wireframe_color
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
 
 
-def _update_gt_hotkeys(addon_prefs: Any, _) -> None:
+def _update_gt_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.gt_use_hotkeys:
         geotracker_keymaps_register()
     else:
         geotracker_keymaps_unregister()
 
 
-def _update_ft_hotkeys(addon_prefs: Any, _) -> None:
+def _update_ft_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.ft_use_hotkeys:
         facetracker_keymaps_register()
     else:
