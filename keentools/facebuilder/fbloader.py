@@ -23,7 +23,7 @@ import bmesh
 from bpy.types import Object, Area, Mesh
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import fb_settings, ActionStatus
+from ..addon_config import fb_settings, ActionStatus, common_loader
 from ..facebuilder_config import FBConfig
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             focal_by_projection_matrix_mm,
@@ -47,7 +47,6 @@ from ..utils.bpy_common import (bpy_create_object,
 from ..utils.fb_wireframe_image import create_wireframe_image
 from .prechecks import common_fb_checks
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
-from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -70,7 +69,7 @@ def _create_mesh_from_pydata(mesh_name: str,
 
 def force_stop_fb_shaders() -> None:
     _log.yellow('force_stop_fb_shaders start')
-    CommonLoader.stop_fb_viewport()
+    common_loader().stop_fb_viewport()
     force_ui_redraw('VIEW_3D')
     _log.yellow('force_stop_fb_shaders end >>>')
 

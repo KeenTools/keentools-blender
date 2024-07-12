@@ -30,7 +30,8 @@ from ..addon_config import (Config,
                             ft_settings,
                             get_operator,
                             show_user_preferences,
-                            show_tool_preferences)
+                            show_tool_preferences,
+                            common_loader)
 from ..utils.bpy_common import (bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_view_camera,
@@ -71,7 +72,6 @@ from .facebuilder_acts import (remove_pins_act,
 from .prechecks import common_fb_checks
 from .integration import FB_OT_ExportToCC
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
-from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -453,7 +453,7 @@ class FB_OT_DeleteCamera(ButtonOperator, Operator):
                     settings.pinmode = False
                     area = FBLoader.get_work_area()
                     settings.viewport_state.show_ui_elements(area)
-                    CommonLoader.set_ft_head_mode('NONE')
+                    common_loader().set_ft_head_mode('NONE')
             else:
                 settings.current_camnum = 0
                 if settings.pinmode:
@@ -1205,7 +1205,7 @@ class FB_OT_MoveWrapper(Operator):
         if not settings:
             return {'CANCELLED'}
 
-        work_area = CommonLoader.get_current_viewport_area()
+        work_area = common_loader().get_current_viewport_area()
         if work_area != context.area:
             return {'PASS_THROUGH'}
 
@@ -1229,7 +1229,7 @@ class FB_OT_PanDetector(Operator):
         if not settings:
             return {'CANCELLED'}
 
-        work_area = CommonLoader.get_current_viewport_area()
+        work_area = common_loader().get_current_viewport_area()
         if viewport_native_pan_operator_activate(work_area == context.area):
             return {'CANCELLED'}
         return {'PASS_THROUGH'}

@@ -24,7 +24,7 @@ from bpy.types import Operator
 from bpy.props import StringProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config
+from ..addon_config import Config, common_loader
 from ..geotracker.gtloader import GTLoader
 from ..facebuilder.fbloader import FBLoader
 from ..utils.bpy_common import (bpy_remove_object,
@@ -32,7 +32,6 @@ from ..utils.bpy_common import (bpy_remove_object,
                                 bpy_link_to_scene,
                                 bpy_scene_camera)
 from ..utils.mesh_builder import build_geo
-from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -346,7 +345,7 @@ def gt_stop_all() -> None:
 
 
 def fb_stop_all() -> None:
-    CommonLoader.stop_fb_viewport()
+    common_loader().stop_fb_viewport()
 
 
 def gt_load_all_shaders() -> None:

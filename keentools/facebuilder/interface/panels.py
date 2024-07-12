@@ -31,7 +31,8 @@ from ...addon_config import (Config,
                              fb_settings,
                              facebuilder_enabled,
                              addon_pinmode,
-                             ProductType)
+                             ProductType,
+                             common_loader)
 from ...facebuilder_config import FBConfig
 from ...utils.version import BVersion
 from ..fbloader import FBLoader
@@ -46,7 +47,6 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
-from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -101,7 +101,7 @@ def _start_pinmode_escaper(context):
 
 
 def _exit_from_localview_button(layout, context):
-    if not CommonLoader.check_localview_without_pinmode(context.area):
+    if not common_loader().check_localview_without_pinmode(context.area):
         return
     col = layout.column()
     col.alert = True

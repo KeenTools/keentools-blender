@@ -40,7 +40,8 @@ from ..addon_config import (Config,
                             ProductType,
                             product_name,
                             show_user_preferences,
-                            show_tool_preferences)
+                            show_tool_preferences,
+                            common_loader)
 from ..facebuilder_config import FBConfig
 from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
@@ -84,7 +85,6 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 save_facs_as_csv_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
-from ..common.loader import CommonLoader
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
 from ..utils.localview import exit_area_localview
@@ -1052,12 +1052,12 @@ class FT_OT_ChooseFrameMode(Operator):
     bus_id: IntProperty(default=-1)
 
     def init_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         self.bus_id = message_bus.register_item(FTConfig.ft_choose_frame_mode_idname)
         _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
     def release_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         item = message_bus.remove_by_id(self.bus_id)
         _log.output(f'release_bus: {self.bus_id} -> {item}')
 
@@ -1076,10 +1076,10 @@ class FT_OT_ChooseFrameMode(Operator):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
 
-        CommonLoader.stop_fb_viewport()
-        CommonLoader.stop_fb_pinmode()
+        common_loader().stop_fb_viewport()
+        common_loader().stop_fb_pinmode()
 
-        vp = CommonLoader.text_viewport()
+        vp = common_loader().text_viewport()
         default_txt = deepcopy(vp.texter().get_default_text())
         default_txt[0]['text'] = 'Take a snapshot of a video frame'
         default_txt[0]['color'] = (1., 0., 1., 0.85)
@@ -1089,9 +1089,9 @@ class FT_OT_ChooseFrameMode(Operator):
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
 
-        CommonLoader.text_viewport().start_viewport(area=area)
+        common_loader().text_viewport().start_viewport(area=area)
         facebuilder_keymaps_register()
-        CommonLoader.set_ft_head_mode('CHOOSE_FRAME')
+        common_loader().set_ft_head_mode('CHOOSE_FRAME')
 
         _log.red(f'{self.__class__.__name__} start pinmode modal >>>')
         self.init_bus()
@@ -1101,7 +1101,7 @@ class FT_OT_ChooseFrameMode(Operator):
     def on_finish(self) -> None:
         _log.output(f'{self.__class__.__name__}.on_finish')
         facebuilder_keymaps_unregister()
-        CommonLoader.text_viewport().stop_viewport()
+        common_loader().text_viewport().stop_viewport()
         self.release_bus()
 
     def cancel(self, context) -> None:
@@ -1109,12 +1109,12 @@ class FT_OT_ChooseFrameMode(Operator):
         self.on_finish()
 
     def modal(self, context: Any, event: Any) -> Set:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         if not message_bus.check_id(self.bus_id):
             _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
             return {'FINISHED'}
 
-        if CommonLoader.ft_head_mode() != 'CHOOSE_FRAME':
+        if common_loader().ft_head_mode() != 'CHOOSE_FRAME':
             self.on_finish()
             return {'FINISHED'}
 
@@ -1188,16 +1188,16 @@ class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
                                      geotracker=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
-            CommonLoader.text_viewport().stop_viewport()
-            CommonLoader.set_ft_head_mode('NONE')
+            common_loader().text_viewport().stop_viewport()
+            common_loader().set_ft_head_mode('NONE')
             return {'CANCELLED'}
 
-        area = CommonLoader.text_viewport().get_work_area()
+        area = common_loader().text_viewport().get_work_area()
         exit_area_localview(area)
         force_show_ui_overlays(area)
 
-        CommonLoader.text_viewport().stop_viewport()
-        CommonLoader.set_ft_head_mode('NONE')
+        common_loader().text_viewport().stop_viewport()
+        common_loader().set_ft_head_mode('NONE')
 
         settings_ft = ft_settings()
         geotracker = settings_ft.get_current_geotracker_item()
@@ -1274,7 +1274,7 @@ class FT_OT_EditHead(ButtonOperator, Operator):
         op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
            detect_face=not camera.has_pins())
 
-        CommonLoader.set_ft_head_mode('EDIT_HEAD')
+        common_loader().set_ft_head_mode('EDIT_HEAD')
 
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}

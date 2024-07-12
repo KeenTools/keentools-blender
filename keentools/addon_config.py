@@ -481,3 +481,17 @@ def calculation_in_progress(facebuilder: bool = True,
         if settings_fb and settings_fb.is_calculating():
             return ActionStatus(False, 'FaceBuilder calculation is in progress')
     return ActionStatus(True, 'No calculation is in progress')
+
+
+def _init_common_loader() -> Any:
+    from .common.loader import CommonLoader
+    global common_loader
+    common_loader = _get_common_loader
+    return CommonLoader
+
+
+def _get_common_loader() -> Any:
+    return CommonLoader
+
+
+common_loader: Callable = _init_common_loader

@@ -198,7 +198,7 @@ class CommonLoader:
         settings = ft_settings()
         if settings.pinmode:
             return settings.loader().viewport().get_work_area()
-        return CommonLoader.text_viewport().get_work_area()
+        return cls.text_viewport().get_work_area()
 
     @classmethod
     def check_localview_without_pinmode(cls, area: Optional[Area]) -> bool:

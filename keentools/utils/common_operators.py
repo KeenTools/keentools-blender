@@ -29,7 +29,8 @@ from ..addon_config import (Config,
                             show_user_preferences,
                             show_tool_preferences,
                             product_name,
-                            ProductType)
+                            ProductType,
+                            common_loader)
 from .localview import check_context_localview
 from .viewport_state import force_show_ui_overlays
 from ..utils.ui_redraw import (force_ui_redraw,
@@ -44,7 +45,6 @@ from .bpy_common import (bpy_localview,
                          bpy_window_manager,
                          bpy_ops)
 from ..ui_strings import buttons
-from ..common.loader import CommonLoader
 from ..common.actor import KT_OT_Actor
 
 
@@ -309,13 +309,13 @@ class KT_OT_InterruptModal(Operator):
     bus_id: IntProperty(default=-1)
 
     def init_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         self.bus_id = message_bus.register_item(
             Config.kt_interrupt_modal_idname, product=self.product)
         _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
     def release_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         item = message_bus.remove_by_id(self.bus_id)
         _log.output(f'release_bus: {self.bus_id} -> {item}')
 
@@ -348,7 +348,7 @@ class KT_OT_InterruptModal(Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         if not message_bus.check_id(self.bus_id):
             _log.red(f'{product_name(self.product)} Interruptor '
                      f'has been stopped by message bus')

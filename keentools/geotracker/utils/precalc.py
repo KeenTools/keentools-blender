@@ -23,8 +23,11 @@ import os
 import bpy
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ActionStatus, get_settings
-
+from ...addon_config import (Config,
+                             get_operator,
+                             ActionStatus,
+                             get_settings,
+                             common_loader)
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
                              get_background_image_object,
@@ -42,7 +45,6 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
 from ...tracker.calc_timer import CalcTimer
-from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -213,7 +215,7 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
         old_vp = settings.loader().viewport()
         old_vp.hide_all_shaders()
 
-    text_viewport = CommonLoader.text_viewport()
+    text_viewport = common_loader().text_viewport()
     text_viewport.start_viewport(area=area)
 
     rw, rh = bpy_render_frame()
