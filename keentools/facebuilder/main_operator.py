@@ -1180,61 +1180,6 @@ class FB_OT_ResetView(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class FB_OT_MoveWrapper(Operator):
-    bl_idname = FBConfig.fb_move_wrapper
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute '
-                   f'use_cursor_init={self.use_cursor_init}')
-        settings = fb_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        op = get_operator('view3d.move')
-        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke '
-                   f'use_cursor_init={self.use_cursor_init}')
-        settings = fb_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        work_area = common_loader().get_current_viewport_area()
-        if work_area != context.area:
-            return {'PASS_THROUGH'}
-
-        op = get_operator('view3d.move')
-        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
-
-
-class FB_OT_PanDetector(Operator):
-    bl_idname = FBConfig.fb_pan_detector
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = fb_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        work_area = common_loader().get_current_viewport_area()
-        if viewport_native_pan_operator_activate(work_area == context.area):
-            return {'CANCELLED'}
-        return {'PASS_THROUGH'}
-
-
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_SelectCurrentHead,
                        FB_OT_DeleteHead,
@@ -1275,6 +1220,4 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ResetToneMapping,
                        FB_OT_RotateHeadForward,
                        FB_OT_RotateHeadBackward,
-                       FB_OT_ResetView,
-                       FB_OT_MoveWrapper,
-                       FB_OT_PanDetector)
+                       FB_OT_ResetView)

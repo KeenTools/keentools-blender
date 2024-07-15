@@ -20,12 +20,13 @@ import platform
 from urllib.parse import urlencode
 
 from bpy.types import Operator
-from bpy.props import StringProperty, IntProperty
+from bpy.props import StringProperty, IntProperty, BoolProperty
 
 from .kt_logging import KTLogger
 from .version import BVersion
 from ..addon_config import (Config,
                             get_settings,
+                            get_operator,
                             show_user_preferences,
                             show_tool_preferences,
                             product_name,
@@ -46,6 +47,7 @@ from .bpy_common import (bpy_localview,
                          bpy_ops)
 from ..ui_strings import buttons
 from ..common.actor import KT_OT_Actor
+from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
 _log = KTLogger(__name__)
@@ -374,6 +376,52 @@ class KT_OT_InterruptModal(Operator):
         return {'PASS_THROUGH'}
 
 
+class KT_OT_MoveWrapper(Operator):
+    bl_idname = Config.kt_move_wrapper_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'use_cursor_init={self.use_cursor_init}')
+
+        op = get_operator('view3d.move')
+        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'use_cursor_init={self.use_cursor_init}')
+
+        work_area = common_loader().get_current_viewport_area()
+        if work_area != context.area:
+            return {'PASS_THROUGH'}
+
+        op = get_operator('view3d.move')
+        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+
+class KT_OT_PanDetector(Operator):
+    bl_idname = Config.kt_pan_detector_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+
+        work_area = common_loader().get_current_viewport_area()
+        if viewport_native_pan_operator_activate(work_area == context.area):
+            return {'CANCELLED'}
+        return {'PASS_THROUGH'}
+
+
 CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_OpenURL,
                        KT_OT_AddonSearch,
@@ -381,4 +429,6 @@ CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_ShareFeedback,
                        KT_OT_ReportBug,
                        KT_OT_Actor,
-                       KT_OT_InterruptModal)
+                       KT_OT_InterruptModal,
+                       KT_OT_MoveWrapper,
+                       KT_OT_PanDetector)

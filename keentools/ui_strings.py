@@ -140,6 +140,14 @@ buttons = {
         'KeenTools Interruptor',
         'Interrupt current operation by Esc'
     ),
+    Config.kt_move_wrapper_idname: Button(
+        'Pan View (KeenTools)',
+        'KeenTools Viewport Pan override operator'
+    ),
+    Config.kt_pan_detector_idname: Button(
+        'Pan View detect (KeenTools)',
+        'KeenTools Viewport Pan override operator'
+    ),
 }
 
 

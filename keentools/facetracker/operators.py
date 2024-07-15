@@ -988,61 +988,6 @@ class FT_OT_SaveFACS(Operator, ExportHelper):
         return super().invoke(context, event)
 
 
-class FT_OT_MoveWrapper(Operator):
-    bl_idname = FTConfig.ft_move_wrapper_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute '
-                   f'use_cursor_init={self.use_cursor_init}')
-        settings = ft_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        op = get_operator('view3d.move')
-        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke '
-                   f'use_cursor_init={self.use_cursor_init}')
-        settings = ft_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        work_area = settings.loader().get_work_area()
-        if work_area != context.area:
-            return {'PASS_THROUGH'}
-
-        op = get_operator('view3d.move')
-        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
-
-
-class FT_OT_PanDetector(Operator):
-    bl_idname = FTConfig.ft_pan_detector_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = ft_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        work_area = settings.loader().get_work_area()
-        if viewport_native_pan_operator_activate(work_area == context.area):
-            return {'CANCELLED'}
-        return {'PASS_THROUGH'}
-
-
 class FT_OT_ChooseFrameMode(Operator):
     bl_idname = FTConfig.ft_choose_frame_mode_idname
     bl_label = buttons[bl_idname].label
@@ -1381,8 +1326,6 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_RemoveFocalKeyframes,
                   FT_OT_ExportAnimatedEmpty,
                   FT_OT_SaveFACS,
-                  FT_OT_MoveWrapper,
-                  FT_OT_PanDetector,
                   FT_OT_ChooseFrameMode,
                   FT_OT_CreateNewHead,
                   FT_OT_EditHead,

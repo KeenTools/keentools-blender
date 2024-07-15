@@ -100,6 +100,9 @@ class Config:
 
     kt_actor_idname = operators + '.actor'
 
+    kt_move_wrapper_idname = operators + '.move_wrapper'
+    kt_pan_detector_idname = operators + '.pan_detector'
+
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
     kt_download_notification_panel_idname = _PT + 'download_notification'

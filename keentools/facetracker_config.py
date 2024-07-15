@@ -124,8 +124,6 @@ class FTConfig:
     ft_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
-    ft_move_wrapper_idname = operators + '.move_wrapper'
-    ft_pan_detector_idname = operators + '.pan_detector'
     ft_save_facs_idname = operators + '.save_facs'
 
     ft_create_new_head_idname = operators + '.create_new_head'

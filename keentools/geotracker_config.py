@@ -117,8 +117,6 @@ class GTConfig:
     gt_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
     gt_unbreak_rotation_idname = operators + '.unbreak_rotation'
-    gt_move_wrapper = operators + '.move_wrapper'
-    gt_pan_detector = operators + '.pan_detector'
 
     # Window ids
     gt_rescale_window_idname = operators + '.rescale_window'
