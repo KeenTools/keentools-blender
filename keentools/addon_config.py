@@ -485,13 +485,22 @@ def calculation_in_progress(facebuilder: bool = True,
 
 def _init_common_loader() -> Any:
     from .common.loader import CommonLoader
-    global common_loader
-    common_loader = _get_common_loader
-    return CommonLoader
+    global _common_loader_instance
+    _common_loader_instance = CommonLoader()
+    global _common_loader_func
+    _common_loader_func = _get_common_loader
+    return _common_loader_instance
 
 
 def _get_common_loader() -> Any:
-    return CommonLoader
+    global _common_loader_instance
+    return _common_loader_instance
 
 
-common_loader: Callable = _init_common_loader
+_common_loader_instance: Optional[Any] = None
+_common_loader_func: Callable = _init_common_loader
+
+
+def common_loader() -> Any:
+    global _common_loader_func
+    return _common_loader_func()
