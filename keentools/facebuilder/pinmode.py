@@ -31,7 +31,8 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType,
                             show_user_preferences,
-                            supported_gpu_backend)
+                            supported_gpu_backend,
+                            common_loader)
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (operator_with_context,
                                 bpy_view_camera,
@@ -54,9 +55,8 @@ from ..utils.localview import (exit_area_localview,
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
-                                   facebuilder_keymaps_unregister)
+                                   all_keymaps_unregister)
 from .prechecks import common_fb_checks
-from ..common.loader import CommonLoader
 from ..utils.ui_redraw import total_redraw_ui
 
 
@@ -123,12 +123,12 @@ class FB_OT_PinMode(Operator):
     bus_id: IntProperty(default=-1)
 
     def init_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         self.bus_id = message_bus.register_item(FBConfig.fb_pinmode_idname)
         _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
     def release_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         item = message_bus.remove_by_id(self.bus_id)
         _log.output(f'release_bus: {self.bus_id} -> {item}')
 
@@ -526,7 +526,7 @@ class FB_OT_PinMode(Operator):
 
     def on_finish(self) -> None:
         _log.output(f'{self.__class__.__name__}.on_finish')
-        facebuilder_keymaps_unregister()
+        all_keymaps_unregister()
         self.release_bus()
 
     def cancel(self, context) -> None:
@@ -534,7 +534,7 @@ class FB_OT_PinMode(Operator):
         self.on_finish()
 
     def modal(self, context: Any, event: Any) -> Set:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         if not message_bus.check_id(self.bus_id):
             _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
             return {'FINISHED'}

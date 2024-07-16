@@ -2006,61 +2006,6 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
         return {'FINISHED'}
 
 
-class GT_OT_MoveWrapper(Operator):
-    bl_idname = GTConfig.gt_move_wrapper
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute '
-                   f'use_cursor_init={self.use_cursor_init}')
-        settings = gt_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        op = get_operator('view3d.move')
-        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke '
-                   f'use_cursor_init={self.use_cursor_init}')
-        settings = gt_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        work_area = settings.loader().get_work_area()
-        if work_area != context.area:
-            return {'PASS_THROUGH'}
-
-        op = get_operator('view3d.move')
-        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
-
-
-class GT_OT_PanDetector(Operator):
-    bl_idname = GTConfig.gt_pan_detector
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        settings = gt_settings()
-        if not settings:
-            return {'CANCELLED'}
-
-        work_area = settings.loader().get_work_area()
-        if viewport_native_pan_operator_activate(work_area == context.area):
-            return {'CANCELLED'}
-        return {'PASS_THROUGH'}
-
-
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_SwitchToCameraMode,
@@ -2117,6 +2062,4 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,
-                  GT_OT_SwitchCameraToFixedWarning,
-                  GT_OT_MoveWrapper,
-                  GT_OT_PanDetector)
+                  GT_OT_SwitchCameraToFixedWarning)

@@ -114,94 +114,83 @@ class KTMessageBus:
 
 
 class CommonLoader:
-    _text_viewport: Any = KTTextViewport()
-    _message_bus: Any = KTMessageBus()
-    _esc_pressed: bool = False
+    def __init__(self):
+        _log.red(f'{self.__class__.__name__}.__init__')
+        self._text_viewport: Any = KTTextViewport()
+        self._message_bus: Any = KTMessageBus()
+        self._esc_pressed: bool = False
+        self._ft_head_mode_state: str = 'NONE'  # 'CHOOSE_FRAME', 'EDIT_HEAD'
 
-    ft_head_mode_state: str = 'NONE'  # 'CHOOSE_FRAME', 'EDIT_HEAD'
-
-    @classmethod
-    def ft_head_mode(cls) -> str:
-        if cls.ft_head_mode_state == 'EDIT_HEAD':
+    def ft_head_mode(self) -> str:
+        if self._ft_head_mode_state == 'EDIT_HEAD':
             settings = fb_settings()
             if not settings or not settings.pinmode:
-                cls.set_ft_head_mode('NONE')
-        return cls.ft_head_mode_state
+                self.set_ft_head_mode('NONE')
+        return self._ft_head_mode_state
 
-    @classmethod
-    def set_ft_head_mode(cls, value: str) -> None:
-        cls.ft_head_mode_state = value
+    def set_ft_head_mode(self, value: str) -> None:
+        self._ft_head_mode_state = value
 
-    @classmethod
-    def esc_pressed(cls) -> bool:
-        return cls._esc_pressed
+    def esc_pressed(self) -> bool:
+        return self._esc_pressed
 
-    @classmethod
-    def set_esc_pressed(cls, value: bool) -> None:
-        cls._esc_pressed = value
+    def set_esc_pressed(self, value: bool) -> None:
+        self._esc_pressed = value
 
-    @classmethod
-    def text_viewport(cls) -> Any:
-        return cls._text_viewport
+    def text_viewport(self) -> Any:
+        return self._text_viewport
 
-    @classmethod
-    def message_bus(cls) -> Any:
-        return cls._message_bus
+    def message_bus(self) -> Any:
+        return self._message_bus
 
-    @classmethod
-    def stop_fb_pinmode(cls) -> None:
-        message_bus = cls.message_bus()
+    def stop_fb_pinmode(self) -> None:
+        message_bus = self.message_bus()
         message_bus.remove_by_type(FBConfig.fb_pinmode_idname)
 
-    @classmethod
-    def stop_gt_pinmode(cls) -> None:
-        message_bus = cls.message_bus()
+    def stop_gt_pinmode(self) -> None:
+        message_bus = self.message_bus()
         message_bus.remove_by_type(GTConfig.gt_pinmode_idname)
 
-    @classmethod
-    def stop_ft_pinmode(cls) -> None:
-        message_bus = cls.message_bus()
+    def stop_ft_pinmode(self) -> None:
+        message_bus = self.message_bus()
         message_bus.remove_by_type(FTConfig.ft_pinmode_idname)
 
-    @classmethod
-    def stop_esc_watcher(cls) -> None:
-        message_bus = cls.message_bus()
+    def stop_esc_watcher(self) -> None:
+        message_bus = self.message_bus()
         message_bus.remove_by_type(Config.kt_interrupt_modal_idname)
 
-    @classmethod
-    def stop_fb_viewport(cls) -> None:
+    def stop_fb_viewport(self) -> None:
         vp = fb_settings().loader().viewport()
         vp.stop_viewport()
 
-    @classmethod
-    def stop_gt_viewport(cls) -> None:
+    def stop_gt_viewport(self) -> None:
         vp = gt_settings().loader().viewport()
         vp.stop_viewport()
 
-    @classmethod
-    def stop_ft_viewport(cls) -> None:
+    def stop_ft_viewport(self) -> None:
         vp = gt_settings().loader().viewport()
         vp.stop_viewport()
 
-    @classmethod
-    def stop_text_viewport(cls) -> None:
-        cls.text_viewport().stop_viewport()
+    def stop_text_viewport(self) -> None:
+        self.text_viewport().stop_viewport()
 
-    @classmethod
-    def get_current_viewport_area(cls) -> Optional[Area]:
+    def get_current_viewport_area(self) -> Optional[Area]:
         settings = fb_settings()
         if settings.pinmode:
+            _log.output('get_current_viewport_area FB')
             return settings.loader().viewport().get_work_area()
         settings = gt_settings()
         if settings.pinmode:
+            _log.output('get_current_viewport_area GT')
             return settings.loader().viewport().get_work_area()
         settings = ft_settings()
         if settings.pinmode:
+            _log.output('get_current_viewport_area FT')
             return settings.loader().viewport().get_work_area()
-        return CommonLoader.text_viewport().get_work_area()
+        _log.output('get_current_viewport_area TV')
+        return self.text_viewport().get_work_area()
 
-    @classmethod
-    def check_localview_without_pinmode(cls, area: Optional[Area]) -> bool:
+    def check_localview_without_pinmode(self, area: Optional[Area]) -> bool:
         if (not area or not area.spaces or not area.spaces.active or
                 not area.spaces.active.local_view):
             return False
@@ -214,6 +203,6 @@ class CommonLoader:
         settings = ft_settings()
         if settings and settings.pinmode:
             return False
-        if cls.ft_head_mode() == 'CHOOSE_FRAME':
+        if self.ft_head_mode() == 'CHOOSE_FRAME':
             return False
         return True

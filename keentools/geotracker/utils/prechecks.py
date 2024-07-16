@@ -186,18 +186,21 @@ def common_checks(*, object_mode: bool = False,
                     stop_fb_pinmode()
                     msg = 'FaceBuilder interactive mode stopped'
                     _log.warning(msg)
+                    _log.output(f'{pm} != {product}')
                     return ActionStatus(False, msg)
             elif pm == ProductType.GEOTRACKER:
                 if pm != product:
                     stop_gt_pinmode()
                     msg = 'GeoTracker interactive mode stopped'
                     _log.warning(msg)
+                    _log.output(f'{pm} != {product}')
                     return ActionStatus(False, msg)
             elif pm == ProductType.FACETRACKER:
                 if pm != product:
                     stop_ft_pinmode()
                     msg = 'FaceTracker interactive mode stopped'
                     _log.warning(msg)
+                    _log.output(f'{pm} != {product}')
                     return ActionStatus(False, msg)
             else:
                 msg = f'Unknown product type in common check [{pm}]'

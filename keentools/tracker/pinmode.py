@@ -27,7 +27,8 @@ from ..addon_config import (Config,
                             ProductType,
                             get_operator,
                             fb_pinmode,
-                            supported_gpu_backend)
+                            supported_gpu_backend,
+                            common_loader)
 from ..geotracker_config import GTConfig
 from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
@@ -54,7 +55,6 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
 from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
                                     subscribe_movie_clip_color_space_watcher)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
-from ..common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -81,12 +81,12 @@ class PinMode(Operator):
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
 
     def init_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         self.bus_id = message_bus.register_item(GTConfig.gt_pinmode_idname)
         _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
     def release_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         item = message_bus.remove_by_id(self.bus_id)
         _log.output(f'release_bus: {self.bus_id} -> {item}')
 
@@ -467,7 +467,7 @@ class PinMode(Operator):
         self.on_finish()
 
     def modal(self, context: Any, event: Any) -> Set:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         if not message_bus.check_id(self.bus_id):
             _log.red(f'{self.__class__.__name__} bus stop modal end *** >>>')
             return {'FINISHED'}

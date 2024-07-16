@@ -21,14 +21,13 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ft_settings, get_addon_preferences
+from ..addon_config import ft_settings, get_addon_preferences, common_loader
 from ..facetracker_config import FTConfig
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
 from ..preferences.hotkeys import (facetracker_keymaps_register,
-                                   facetracker_keymaps_unregister)
-from ..common.loader import CommonLoader
+                                   all_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -51,7 +50,7 @@ class FT_OT_PinMode(PinMode):
     bus_id: IntProperty(default=-1)
 
     def init_bus(self) -> None:
-        message_bus = CommonLoader.message_bus()
+        message_bus = common_loader().message_bus()
         self.bus_id = message_bus.register_item(FTConfig.ft_pinmode_idname)
         _log.output(f'{self.__class__.__name__} bus_id={self.bus_id}')
 
@@ -79,4 +78,4 @@ class FT_OT_PinMode(PinMode):
 
     def unregister_hotkeys(self) -> None:
         _log.yellow(f'{self.__class__.__name__} unregister_hotkeys')
-        facetracker_keymaps_unregister()
+        all_keymaps_unregister()

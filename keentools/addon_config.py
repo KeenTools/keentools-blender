@@ -100,6 +100,9 @@ class Config:
 
     kt_actor_idname = operators + '.actor'
 
+    kt_move_wrapper_idname = operators + '.move_wrapper'
+    kt_pan_detector_idname = operators + '.pan_detector'
+
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
     kt_download_notification_panel_idname = _PT + 'download_notification'
@@ -481,3 +484,26 @@ def calculation_in_progress(facebuilder: bool = True,
         if settings_fb and settings_fb.is_calculating():
             return ActionStatus(False, 'FaceBuilder calculation is in progress')
     return ActionStatus(True, 'No calculation is in progress')
+
+
+def _init_common_loader() -> Any:
+    from .common.loader import CommonLoader
+    global _common_loader_instance
+    _common_loader_instance = CommonLoader()
+    global _common_loader_func
+    _common_loader_func = _get_common_loader
+    return _common_loader_instance
+
+
+def _get_common_loader() -> Any:
+    global _common_loader_instance
+    return _common_loader_instance
+
+
+_common_loader_instance: Optional[Any] = None
+_common_loader_func: Callable = _init_common_loader
+
+
+def common_loader() -> Any:
+    global _common_loader_func
+    return _common_loader_func()

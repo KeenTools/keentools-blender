@@ -28,7 +28,7 @@ from .movepin import FT_OT_MovePin
 from .pick_operator import FT_OT_PickMode, FT_OT_PickModeStarter
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
-from ..preferences.hotkeys import facetracker_keymaps_unregister
+from ..preferences.hotkeys import all_keymaps_unregister
 
 
 _log = KTLogger(__name__)
@@ -60,7 +60,7 @@ def facetracker_unregister() -> None:
     _log.green('--- START FACETRACKER UNREGISTER ---')
 
     _log.output('FACETRACKER KEYMAPS UNREGISTER')
-    facetracker_keymaps_unregister()
+    all_keymaps_unregister()
 
     _log.output('START FACETRACKER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):

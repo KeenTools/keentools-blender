@@ -38,7 +38,7 @@ from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from ..utils.ui_redraw import (find_modules_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
-from ..preferences.hotkeys import facebuilder_keymaps_unregister
+from ..preferences.hotkeys import all_keymaps_unregister
 
 
 _log = KTLogger(__name__)
@@ -176,7 +176,7 @@ def facebuilder_unregister() -> None:
     _log.green('--- START FACEBUILDER UNREGISTER ---')
 
     _log.output('FACEBUILDER KEYMAPS UNREGISTER')
-    facebuilder_keymaps_unregister()
+    all_keymaps_unregister()
 
     _log.output('FACEBUILDER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):

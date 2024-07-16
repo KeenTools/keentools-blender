@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List
+from typing import List, Optional, Any, Set, Callable, Tuple, List
 import sys
 
 from bpy.types import Operator, AddonPreferences
@@ -60,15 +60,14 @@ from ..updater.utils import (preferences_current_active_updater_operators_info,
                              CurrentStateExecutor)
 from .operators import get_product_license_manager
 from .hotkeys import (geotracker_keymaps_register,
-                      geotracker_keymaps_unregister,
-                      facetracker_keymaps_register,
-                      facetracker_keymaps_unregister)
+                      all_keymaps_unregister,
+                      facetracker_keymaps_register)
 
 
 _log = KTLogger(__name__)
 
 
-def _multi_line_text_to_output_labels(layout, txt):
+def _multi_line_text_to_output_labels(layout: Any, txt: str) -> None:
     if txt is None:
         return
 
@@ -80,11 +79,11 @@ def _multi_line_text_to_output_labels(layout, txt):
         col.label(text=text_line)
 
 
-def _reset_user_preferences_parameter_to_default(name):
+def _reset_user_preferences_parameter_to_default(name: str) -> None:
     UserPreferences.reset_parameter_to_default(name)
 
 
-def _set_all_user_preferences_to_default():
+def _set_all_user_preferences_to_default() -> None:
     UserPreferences.reset_all_to_defaults()
 
 
@@ -94,21 +93,12 @@ def _reset_other_gt_preferences() -> None:
     prefs.gt_use_hotkeys = True
 
 
-def reset_updater_preferences_to_default():
+def reset_updater_preferences_to_default() -> None:
     UpdaterPreferences.reset_all_to_defaults()
 
 
-def _expand_icon(value):
-    return 'TRIA_RIGHT' if not value else 'TRIA_DOWN'
-
-
-def _expandable_button(layout, data, prop, text=None):
-    prop_value = getattr(data, prop)
-    if text is None:
-        layout.prop(data, prop, icon=_expand_icon(prop_value))
-    else:
-        layout.prop(data, prop, text=text, icon=_expand_icon(prop_value))
-    return prop_value
+def _expand_icon(value: bool) -> str:
+    return 'RIGHTARROW' if not value else 'DOWNARROW_HLT'
 
 
 class FBPREF_OT_UserPreferencesResetAll(Operator):
@@ -117,10 +107,10 @@ class FBPREF_OT_UserPreferencesResetAll(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Reset All'
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         pass
 
-    def execute(self, _):
+    def execute(self, context: Any) -> Set:
         _log.output('user_preferences_reset_all call')
         warn = get_operator(Config.kt_user_preferences_reset_all_warning_idname)
         warn('INVOKE_DEFAULT', product=ProductType.FACEBUILDER)
@@ -133,13 +123,14 @@ class GTPREF_OT_UserPreferencesResetAll(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Reset All'
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         pass
 
-    def execute(self, _):
-        _log.output('gt user_preferences_reset_all call')
+    def execute(self, context: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} start')
         warn = get_operator(Config.kt_user_preferences_reset_all_warning_idname)
         warn('INVOKE_DEFAULT', product=ProductType.GEOTRACKER)
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
 
@@ -149,17 +140,18 @@ class FBPREF_OT_UserPreferencesGetColors(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Get color settings from the current scene'
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         pass
 
-    def execute(self, _):
-        _log.output('user_preferences_get_colors')
+    def execute(self, context: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} start')
         settings = fb_settings()
         prefs = settings.preferences()
         prefs.fb_wireframe_color = settings.wireframe_color
         prefs.fb_wireframe_special_color = settings.wireframe_special_color
         prefs.fb_wireframe_midline_color = settings.wireframe_midline_color
         prefs.fb_wireframe_opacity = settings.wireframe_opacity
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
 
@@ -169,17 +161,18 @@ class GTPREF_OT_UserPreferencesGetColors(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Get color settings from the current scene'
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         pass
 
-    def execute(self, _):
-        _log.output('gt user_preferences_get_colors')
+    def execute(self, context: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} start')
         settings = gt_settings()
         prefs = settings.preferences()
         color = settings.wireframe_color
         opacity = settings.wireframe_opacity
         prefs.gt_wireframe_color = color
         prefs.gt_wireframe_opacity = opacity
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
 
@@ -192,24 +185,27 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
     param_string: StringProperty(name='String parameter')
     action: StringProperty(name='Action Name')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         pass
 
-    def execute(self, _):
-        _log.output('user_preferences_changer: {}'.format(self.action))
+    def execute(self, context: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} [{self.action}] start')
 
         if self.action == 'revert_default':
             _reset_user_preferences_parameter_to_default(self.param_string)
+            _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
         elif self.action == 'revert_fb_default_colors':
             _reset_user_preferences_parameter_to_default('fb_wireframe_color')
             _reset_user_preferences_parameter_to_default('fb_wireframe_special_color')
             _reset_user_preferences_parameter_to_default('fb_wireframe_midline_color')
             _reset_user_preferences_parameter_to_default('fb_wireframe_opacity')
+            _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
         elif self.action == 'revert_gt_default_colors':
             _reset_user_preferences_parameter_to_default('gt_wireframe_color')
             _reset_user_preferences_parameter_to_default('gt_wireframe_opacity')
+            _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
         elif self.action == 'revert_gt_default_mask_2d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_2d_color')
@@ -218,12 +214,15 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
             prefs = settings.preferences()
             settings.mask_2d_color = prefs.gt_mask_2d_color
             settings.mask_2d_opacity = prefs.gt_mask_2d_opacity
+            _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
         elif self.action == 'revert_gt_default_mask_3d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_3d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
+            _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
 
+        _log.output(f'{self.__class__.__name__} cancelled >>>')
         return {'CANCELLED'}
 
 
@@ -236,7 +235,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
                          default=False)
     product: IntProperty(name='all', default=ProductType.UNDEFINED)
 
-    def draw(self, _):
+    def draw(self, context: Any) -> None:
         layout = self.layout.column()
         col = layout.column()
         col.scale_y = Config.text_scale_y
@@ -244,9 +243,10 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
                     text=f'Yes, I really want '
                          f'to reset all {product_name(self.product)} settings')
 
-    def execute(self, _):
-        _log.output(f'user_preferences_reset_all {product_name(self.product)}')
+    def execute(self, context: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} [{product_name(self.product)}] start')
         if not self.accept:
+            _log.output(f'{self.__class__.__name__} cancelled >>>')
             return {'CANCELLED'}
         if self.product == ProductType.FACEBUILDER:
             _reset_user_preferences_parameter_to_default('pin_size')
@@ -269,16 +269,20 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
             _reset_other_gt_preferences()
         else:
             _set_all_user_preferences_to_default()
+
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
-    def cancel(self, context):
+    def cancel(self, context: Any) -> None:
+        _log.green(f'{self.__class__.__name__}.cancel')
         return
 
-    def invoke(self, context, _):
+    def invoke(self, context: Any, event: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} invoke')
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
-def _update_user_preferences_pin_size(addon_prefs, _):
+def _update_user_preferences_pin_size(addon_prefs: Any, context: Any) -> None:
     settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_size = addon_prefs.pin_size
@@ -287,7 +291,7 @@ def _update_user_preferences_pin_size(addon_prefs, _):
         prefs.pin_sensitivity = addon_prefs.pin_size
 
 
-def _update_user_preferences_pin_sensitivity(addon_prefs, _):
+def _update_user_preferences_pin_sensitivity(addon_prefs: Any, context: Any) -> None:
     settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_sensitivity = addon_prefs.pin_sensitivity
@@ -296,53 +300,54 @@ def _update_user_preferences_pin_sensitivity(addon_prefs, _):
         prefs.pin_size = addon_prefs.pin_sensitivity
 
 
-def _update_mask_3d(addon_prefs, _):
+def _update_mask_3d(addon_prefs: Any, context: Any) -> None:
     settings = gt_settings()
     settings.mask_3d_color = addon_prefs.gt_mask_3d_color
     settings.mask_3d_opacity = addon_prefs.gt_mask_3d_opacity
 
 
-def _update_mask_2d(addon_prefs, _):
+def _update_mask_2d(addon_prefs: Any, context: Any) -> None:
     settings = gt_settings()
     settings.mask_2d_color = addon_prefs.gt_mask_2d_color
     settings.mask_2d_opacity = addon_prefs.gt_mask_2d_opacity
 
 
-def _update_gt_wireframe(addon_prefs, _):
+def _update_gt_wireframe(addon_prefs: Any, context: Any) -> None:
     settings = gt_settings()
     settings.wireframe_color = addon_prefs.gt_wireframe_color
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
 
 
-def _update_gt_hotkeys(addon_prefs, _):
+def _update_gt_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.gt_use_hotkeys:
         geotracker_keymaps_register()
     else:
-        geotracker_keymaps_unregister()
+        all_keymaps_unregister()
 
 
-def _update_ft_hotkeys(addon_prefs, _):
+def _update_ft_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.ft_use_hotkeys:
         facetracker_keymaps_register()
     else:
-        facetracker_keymaps_unregister()
+        all_keymaps_unregister()
 
 
-def _universal_updater_getter(name, type_):
+def _universal_updater_getter(name: str, type_: str) -> Callable:
     def _getter(_):
         return UpdaterPreferences.get_value_safe(name, type_)
     return _getter
 
 
-def _universal_updater_setter(name):
+def _universal_updater_setter(name: str) -> Callable:
     def _setter(_, value):
         UpdaterPreferences.set_value(name, value)
     return _setter
 
 
-_lic_type_items = (('ONLINE', 'Online', 'Online license management', 0),
-                   ('OFFLINE', 'Offline', 'Offline license management', 1),
-                   ('FLOATING', 'Floating', 'Floating license management', 2))
+_lic_type_items: Tuple = (
+    ('ONLINE', 'Online', 'Online license management', 0),
+    ('OFFLINE', 'Offline', 'Offline license management', 1),
+    ('FLOATING', 'Floating', 'Floating license management', 2))
 
 
 def _product_prop_prefix(product: int) -> str:
@@ -675,27 +680,28 @@ class KTAddonPreferences(AddonPreferences):
         update=_update_ft_hotkeys
     )
 
-    def _license_was_accepted(self):
+    def _license_was_accepted(self) -> bool:
         return pkt_is_installed() or self.license_accepted
 
-    def _draw_plugin_license_info(self, layout, product: int):
+    def _draw_plugin_license_info(self, layout: Any, product: int) -> None:
         plugin_name = product_name(product)
         plugin_prop_prefix = _product_prop_prefix(product)
 
-        layout.label(text=f'{plugin_name} license info:')
-        box = layout.box()
+        col = layout.column(align=True)
+        col.label(text=f'{plugin_name} license info:')
+        box = col.box()
 
         lm = get_product_license_manager(product)
         _multi_line_text_to_output_labels(box, lm.license_status_text(
             strategy=pkt_module().LicenseCheckStrategy.LAZY))
 
-        box.row().prop(self, f'{plugin_prop_prefix}_lic_type', expand=True)
+        row = col.row(align=True)
+        row.prop(self, f'{plugin_prop_prefix}_lic_type', expand=True)
 
         lic_type_prop = getattr(self, f'{plugin_prop_prefix}_lic_type')
 
         if lic_type_prop == 'ONLINE':
-            box = layout.box()
-            row = box.split(factor=0.85)
+            row = layout.split(factor=0.85, align=True)
             row.prop(self, f'{plugin_prop_prefix}_license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
             install_online_op.license_key = getattr(self, f'{plugin_prop_prefix}_license_key')
@@ -704,17 +710,16 @@ class KTAddonPreferences(AddonPreferences):
         elif lic_type_prop == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
-            row = layout.split(factor=0.65)
+            row = layout.split(factor=0.55, align=True)
             row.label(text='Get an activated license file at our site:')
             op = row.operator(Config.kt_open_manual_install_page_idname, icon='URL')
             op.product = product
 
-            box = layout.box()
-            row = box.split(factor=0.85)
+            row = layout.split(factor=0.85, align=True)
             row.prop(self, 'hardware_id')
             row.operator(Config.kt_copy_hardware_id_idname)
 
-            row = box.split(factor=0.85)
+            row = layout.split(factor=0.85, align=True)
             row.prop(self, f'{plugin_prop_prefix}_lic_path')
             install_offline_op = row.operator(Config.kt_install_license_offline_idname)
             install_offline_op.lic_path = getattr(self, f'{plugin_prop_prefix}_lic_path')
@@ -730,8 +735,7 @@ class KTAddonPreferences(AddonPreferences):
             else:
                 setattr(self, f'{plugin_prop_prefix}_license_server_lock', False)
 
-            box = layout.box()
-            row = box.split(factor=0.35)
+            row = layout.split(factor=0.32, align=True)
             row.label(text='License Server host/IP')
             license_server_lock = getattr(self, f'{plugin_prop_prefix}_license_server_lock')
             license_server_auto = getattr(self, f'{plugin_prop_prefix}_license_server_auto')
@@ -740,7 +744,7 @@ class KTAddonPreferences(AddonPreferences):
             else:
                 row.prop(self, f'{plugin_prop_prefix}_license_server', text='')
 
-            row = box.split(factor=0.35)
+            row = layout.split(factor=0.32, align=True)
             row.label(text='License Server port')
             if license_server_lock and license_server_auto:
                 row.label(text=str(getattr(self, f'{plugin_prop_prefix}_license_server_port')))
@@ -748,14 +752,15 @@ class KTAddonPreferences(AddonPreferences):
                 row.prop(self, f'{plugin_prop_prefix}_license_server_port', text='')
 
             if license_server_lock:
-                box.prop(self, f'{plugin_prop_prefix}_license_server_auto', text='Auto server/port settings')
+                layout.prop(self, f'{plugin_prop_prefix}_license_server_auto', text='Auto server/port settings')
 
             floating_install_op = row.operator(Config.kt_floating_connect_idname)
             floating_install_op.license_server = getattr(self, f'{plugin_prop_prefix}_license_server')
             floating_install_op.license_server_port = getattr(self, f'{plugin_prop_prefix}_license_server_port')
             floating_install_op.product = product
 
-    def _draw_warning_labels(self, layout, content, alert=True, icon='INFO'):
+    def _draw_warning_labels(self, layout: Any, content: List,
+                             alert: bool = True, icon: str = 'INFO') -> Any:
         col = layout.column()
         col.alert = alert
         col.scale_y = Config.text_scale_y
@@ -764,7 +769,7 @@ class KTAddonPreferences(AddonPreferences):
             col.label(text=c, icon=icon_first)
         return col
 
-    def _draw_download_install_buttons(self, layout):
+    def _draw_download_install_buttons(self, layout: Any) -> None:
         row = layout.split(factor=0.7)
         col = row.column()
         col.active = self.license_accepted
@@ -784,7 +789,7 @@ class KTAddonPreferences(AddonPreferences):
                           text='Install from disk', icon='FILEBROWSER')
         op.license_accepted = self.license_accepted
 
-    def _draw_please_accept_license(self, layout):
+    def _draw_please_accept_license(self, layout: Any) -> Any:
         self._draw_warning_labels(layout, USER_MESSAGES['WE_CANNOT_SHIP'])
         row = layout.split(factor=0.85)
         row.prop(self, 'license_accepted')
@@ -793,7 +798,7 @@ class KTAddonPreferences(AddonPreferences):
         self._draw_download_install_buttons(layout)
         return layout
 
-    def _draw_accepted_license(self, layout):
+    def _draw_accepted_license(self, layout: Any) -> Any:
         box = layout.box()
         row = box.split(factor=0.75)
         row.label(text='KeenTools End-User License Agreement [accepted]')
@@ -801,7 +806,7 @@ class KTAddonPreferences(AddonPreferences):
                      text='Read', icon='URL')
         return box
 
-    def _draw_download_progress(self, layout):
+    def _draw_download_progress(self, layout: Any) -> None:
         download_state = InstallationProgress.get_state()
         if download_state['active']:
             col = layout.column()
@@ -813,7 +818,7 @@ class KTAddonPreferences(AddonPreferences):
             col.scale_y = Config.text_scale_y
             col.label(text="{}".format(download_state['status']))
 
-    def _draw_pkt_detail_error_report(self, layout, status):
+    def _draw_pkt_detail_error_report(self, layout: Any, status: str) -> None:
         status_to_errors = {
             'NOT_INSTALLED': 'CORE_NOT_INSTALLED',
             'INSTALLED_WRONG': 'INSTALLED_WRONG_INSTEAD_CORE',
@@ -835,16 +840,16 @@ class KTAddonPreferences(AddonPreferences):
             # Core Uninstall button
             layout.operator(Config.kt_uninstall_core_idname)
 
-    def _get_core_version_text(self):
+    def _get_core_version_text(self) -> Optional[str]:
         try:
-            txt = "Version {}, built {}".format(pkt_module().__version__,
-                                                pkt_module().build_time)
+            txt = (f'Core version {pkt_module().__version__}, '
+                   f'built {pkt_module().build_time} is installed')
             return txt
         except Exception as err:
-            _log.error('_get_core_version_text: {}'.format(str(err)))
+            _log.error(f'_get_core_version_text:\n{str(err)}')
             return None
 
-    def _draw_updater_info(self, layout):
+    def _draw_updater_info(self, layout: Any) -> None:
         KTUpdater.call_updater('KeenTools')
         CurrentStateExecutor.compute_current_panel_updater_state()
         settings = fb_settings()
@@ -872,18 +877,18 @@ class KTAddonPreferences(AddonPreferences):
             for info in operators_info:
                 box2.operator(info.idname, text=info.text, icon=info.icon)
 
-    def _draw_old_addon(self, layout):
+    def _draw_old_addon(self, layout: Any) -> Any:
         box = layout.box()
         draw_warning_labels(box, ERROR_MESSAGES['OLD_ADDON'])
         return box
 
-    def _draw_blender_with_unsupported_python(self, layout):
+    def _draw_blender_with_unsupported_python(self, layout: Any) -> Any:
         box = layout.box()
         draw_warning_labels(
             box, ERROR_MESSAGES['BLENDER_WITH_UNSUPPORTED_PYTHON'])
         return box
 
-    def _draw_unsupported_python(self, layout):
+    def _draw_unsupported_python(self, layout: Any) -> None:
         if is_blender_supported():
             self._draw_blender_with_unsupported_python(layout)
         else:
@@ -908,7 +913,7 @@ class KTAddonPreferences(AddonPreferences):
             info.append('No pykeentools in modules.')
         return info
 
-    def _draw_problem_library(self, layout):
+    def _draw_problem_library(self, layout: Any) -> None:
         info = self._get_problem_info()
         if len(info) == 0:
             return
@@ -920,78 +925,88 @@ class KTAddonPreferences(AddonPreferences):
         col.scale_y = Config.text_scale_y
         draw_long_labels(col, info, 120)
 
-    def _draw_pin_user_preferences(self, box):
-        box.label(text='Default pin settings')
-        row = box.split(factor=0.7)
+    def _draw_pin_user_preferences(self, layout: Any) -> None:
+        layout.label(text='Default pin settings')
+        row = layout.split(factor=0.7)
         row.prop(self, 'pin_size', slider=True)
         op = row.operator(Config.kt_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_size'
 
-        row = box.split(factor=0.7)
+        row = layout.split(factor=0.7)
         row.prop(self, 'pin_sensitivity', slider=True)
         op = row.operator(Config.kt_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_sensitivity'
 
-    def _draw_fb_user_preferences(self, layout):
-        main_box = layout
-        if not _expandable_button(main_box, self, 'show_fb_user_preferences'):
+    def _draw_fb_user_preferences(self, layout: Any) -> None:
+        row = layout.row()
+        row.prop(self, 'show_fb_user_preferences', text='', emboss=False,
+                 icon=_expand_icon(self.show_fb_user_preferences))
+        row.label(text='FaceBuilder Settings')
+
+        if not self.show_fb_user_preferences:
             return
 
-        box = main_box.box()
-        box.prop(self, 'prevent_fb_view_rotation')
+        main_col = self._make_indent_column(layout)
 
-        box = main_box.box()
-        self._draw_pin_user_preferences(box)
+        main_col.prop(self, 'prevent_fb_view_rotation')
+        main_col.separator()
 
-        box = main_box.box()
-        split = box.split(factor=0.7)
+        self._draw_pin_user_preferences(main_col)
+        main_col.separator()
+
+        split = main_col.split(factor=0.7)
         split.label(text='Default wireframe colors')
         split.operator(FBConfig.fb_user_preferences_get_colors)
 
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.prop(self, 'fb_wireframe_color', text='')
         row.prop(self, 'fb_wireframe_special_color', text='')
         row.prop(self, 'fb_wireframe_midline_color', text='')
         row.prop(self, 'fb_wireframe_opacity', text='', slider=True)
-
         op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_fb_default_colors'
+        main_col.separator()
 
-        main_box.operator(FBConfig.fb_user_preferences_reset_all)
+        main_col.operator(FBConfig.fb_user_preferences_reset_all)
 
-    def _draw_gt_user_preferences(self, layout):
-        main_box = layout
-        if not _expandable_button(main_box, self, 'show_gt_user_preferences'):
+    def _draw_gt_user_preferences(self, layout: Any) -> None:
+        row = layout.row()
+        row.prop(self, 'show_gt_user_preferences', text='', emboss=False,
+                 icon=_expand_icon(self.show_gt_user_preferences))
+        row.label(text='GeoTracker Settings')
+
+        if not self.show_gt_user_preferences:
             return
 
-        col = main_box.column(align=True)
+        main_col = self._make_indent_column(layout)
+
+        col = main_col.column(align=True)
         col.prop(self, 'prevent_gt_view_rotation')
         col.prop(self, 'gt_auto_unbreak_rotation')
         col.prop(self, 'gt_use_hotkeys')
+        main_col.separator()
 
-        box = main_box.box()
-        self._draw_pin_user_preferences(box)
+        self._draw_pin_user_preferences(main_col)
+        main_col.separator()
 
-        box = main_box.box()
-        split = box.split(factor=0.7)
+        split = main_col.split(factor=0.7)
         split.label(text='Default wireframe colors')
         split.operator(GTConfig.gt_user_preferences_get_colors)
 
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.prop(self, 'gt_wireframe_color', text='')
         row.prop(self, 'gt_wireframe_opacity', text='', slider=True)
-
         op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_gt_default_colors'
+        main_col.separator()
 
-        box = main_box.box()
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.label(text='3d mask color')
         row.prop(self, 'gt_mask_3d_color', text='')
@@ -1000,7 +1015,7 @@ class KTAddonPreferences(AddonPreferences):
                                  text='Reset')
         op.action = 'revert_gt_default_mask_3d_colors'
 
-        colors_row = box.split(factor=0.7)
+        colors_row = main_col.split(factor=0.7)
         row = colors_row.row()
         row.label(text='2d mask color')
         row.prop(self, 'gt_mask_2d_color', text='')
@@ -1008,25 +1023,30 @@ class KTAddonPreferences(AddonPreferences):
         op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_gt_default_mask_2d_colors'
+        main_col.separator()
 
-        main_box.operator(GTConfig.gt_user_preferences_reset_all)
+        main_col.operator(GTConfig.gt_user_preferences_reset_all)
 
-    def _draw_ft_user_preferences(self, layout):
-        main_box = layout
-        if not _expandable_button(main_box, self, 'show_ft_user_preferences'):
+    def _draw_ft_user_preferences(self, layout: Any) -> None:
+        row = layout.row()
+        row.prop(self, 'show_ft_user_preferences', text='', emboss=False,
+                 icon=_expand_icon(self.show_ft_user_preferences))
+        row.label(text='FaceTracker Settings')
+
+        if not self.show_ft_user_preferences:
             return
 
-        box = main_box.box()
-        self._draw_pin_user_preferences(box)
+        main_col = self._make_indent_column(layout)
+        self._draw_pin_user_preferences(main_col)
 
-    def _draw_core_python_problem(self, layout):
+    def _draw_core_python_problem(self, layout: Any) -> bool:
         if not pkt_is_python_supported():
             self._draw_unsupported_python(layout)
             draw_system_info(layout)
             return True
         return False
 
-    def _draw_core_installation_progress(self, layout):
+    def _draw_core_installation_progress(self, layout: Any) -> bool:
         cached_status = pkt_installation_status()
         if cached_status[1] == 'NOT_INSTALLED':
             if pkt_loaded():
@@ -1042,52 +1062,62 @@ class KTAddonPreferences(AddonPreferences):
             return True
         return False
 
-    def _draw_pykeentools_problem_report(self, layout, pykeentools_status):
+    def _draw_pykeentools_problem_report(self, layout: Any,
+                                         pykeentools_status: str) -> None:
         box = layout.box()
         self._draw_pkt_detail_error_report(box, pykeentools_status)
         self._draw_problem_library(box)
         draw_system_info(layout)
         self._draw_download_progress(layout)
 
-    def _draw_pykeentools_problem(self, layout):
+    def _draw_pykeentools_problem(self, layout: Any) -> bool:
         cached_status = pkt_installation_status()
         if cached_status[1] != 'PYKEENTOOLS_OK':
             self._draw_pykeentools_problem_report(layout, cached_status[1])
             return True
         return False
 
-    def _draw_core_info(self, layout):
+    def _draw_core_info(self, layout: Any) -> bool:
         cached_status = pkt_installation_status()
         if cached_status[1] == 'PYKEENTOOLS_OK':
             core_txt = self._get_core_version_text()
             if core_txt is not None:
-                box = layout.box()
-                msg = [core_txt,
-                       'The core library has been installed successfully']
-                draw_warning_labels(box, msg, alert=False, icon='INFO')
+                draw_warning_labels(layout, [core_txt],
+                                    alert=False, icon='INFO')
                 return True
 
         self._draw_pykeentools_problem_report(layout, 'NO_VERSION')
         return False
 
-    def _draw_facebuilder_preferences(self, layout):
-        self._draw_plugin_license_info(layout, ProductType.FACEBUILDER)
-        self._draw_fb_user_preferences(layout)
+    def _draw_facebuilder_preferences(self, layout: Any) -> None:
+        col = self._make_indent_column(layout)
+        self._draw_plugin_license_info(col, ProductType.FACEBUILDER)
+        col.separator()
+        self._draw_fb_user_preferences(col)
 
-    def _draw_geotracker_preferences(self, layout):
-        self._draw_plugin_license_info(layout, ProductType.GEOTRACKER)
-        self._draw_gt_user_preferences(layout)
+    def _draw_geotracker_preferences(self, layout: Any) -> None:
+        col = self._make_indent_column(layout)
+        self._draw_plugin_license_info(col, ProductType.GEOTRACKER)
+        col.separator()
+        self._draw_gt_user_preferences(col)
 
-    def _draw_facetracker_preferences(self, layout):
-        self._draw_plugin_license_info(layout, ProductType.FACETRACKER)
-        self._draw_ft_user_preferences(layout)
+    def _draw_facetracker_preferences(self, layout: Any) -> None:
+        col = self._make_indent_column(layout)
+        self._draw_plugin_license_info(col, ProductType.FACETRACKER)
+        col.separator()
+        self._draw_ft_user_preferences(col)
 
-    def _draw_unsupported_gpu_detected(self, layout):
+    def _draw_unsupported_gpu_detected(self, layout: Any) -> None:
         box = layout.box()
         box.alert = True
         draw_warning_labels(box, ERROR_MESSAGES['UNSUPPORTED_GPU_BACKEND'])
 
-    def draw(self, _):
+    def _make_indent_column(self, layout: Any) -> Any:
+        indent_row = layout.row(align=True)
+        indent_row.label(text='', icon='BLANK1')
+        return indent_row.column()
+
+    def draw(self, context: Any) -> None:
         layout = self.layout
 
         if not supported_gpu_backend():
@@ -1104,22 +1134,32 @@ class KTAddonPreferences(AddonPreferences):
             return
         self._draw_updater_info(layout)
 
-        box = layout.box()
-        row = box.row(align=True)
+        row = layout.row(align=True)
+        row.prop(self, 'facebuilder_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.facebuilder_expanded))
         row.prop(self, 'facebuilder_enabled', text='')
-        if _expandable_button(row, self, 'facebuilder_expanded'):
-            self._draw_facebuilder_preferences(box)
+        row.label(text='KeenTools FaceBuilder')
 
-        box = layout.box()
-        row = box.row(align=True)
+        if self.facebuilder_expanded:
+            self._draw_facebuilder_preferences(layout)
+
+        row = layout.row(align=True)
+        row.prop(self, 'geotracker_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.geotracker_expanded))
         row.prop(self, 'geotracker_enabled', text='')
-        if _expandable_button(row, self, 'geotracker_expanded'):
-            self._draw_geotracker_preferences(box)
+        row.label(text='KeenTools GeoTracker')
+
+        if self.geotracker_expanded:
+            self._draw_geotracker_preferences(layout)
 
         if not Config.show_facetracker:
             return
-        box = layout.box()
-        row = box.row(align=True)
+
+        row = layout.row(align=True)
+        row.prop(self, 'facetracker_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.facetracker_expanded))
         row.prop(self, 'facetracker_enabled', text='')
-        if _expandable_button(row, self, 'facetracker_expanded'):
-            self._draw_facetracker_preferences(box)
+        row.label(text='KeenTools FaceTracker')
+
+        if self.facetracker_expanded:
+            self._draw_facetracker_preferences(layout)

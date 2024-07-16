@@ -28,7 +28,7 @@ from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
-from ..preferences.hotkeys import geotracker_keymaps_unregister
+from ..preferences.hotkeys import all_keymaps_unregister
 from .actor import GT_OT_Actor
 
 
@@ -61,7 +61,7 @@ def geotracker_unregister() -> None:
     _log.green('--- START GEOTRACKER UNREGISTER ---')
 
     _log.output('GEOTRACKER KEYMAPS UNREGISTER')
-    geotracker_keymaps_unregister()
+    all_keymaps_unregister()
 
     _log.output('START GEOTRACKER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):

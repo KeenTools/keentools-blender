@@ -28,7 +28,8 @@ from ...addon_config import (Config,
                              ft_settings, fb_settings,
                              facetracker_enabled,
                              addon_pinmode,
-                             ProductType)
+                             ProductType,
+                             common_loader)
 from ...facebuilder_config import FBConfig
 from ...facetracker_config import FTConfig
 from ...geotracker_config import GTConfig
@@ -44,7 +45,6 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
-from ...common.loader import CommonLoader
 
 
 _log = KTLogger(__name__)
@@ -60,7 +60,7 @@ def _pinmode_escaper(area: Area) -> None:
 
 
 def _exit_from_localview_button(layout, context):
-    if not CommonLoader.check_localview_without_pinmode(context.area):
+    if not common_loader().check_localview_without_pinmode(context.area):
         return
     settings = ft_settings()
     if settings.is_calculating():
@@ -104,7 +104,7 @@ def _start_geomobj_delete_handler() -> None:
 
 
 def _fb_head_in_ft_mode_active() -> bool:
-    return CommonLoader.ft_head_mode() != 'NONE'
+    return common_loader().ft_head_mode() != 'NONE'
 
 
 class View3DPanel(Panel):
@@ -124,7 +124,7 @@ class AllVisible(View3DPanel):
             return False
         if not pkt_is_installed():
             return False
-        if CommonLoader.ft_head_mode() != 'NONE':
+        if common_loader().ft_head_mode() != 'NONE':
             return False
         settings = ft_settings()
         if not settings.current_tracker_num() >= 0:
@@ -220,7 +220,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             return
 
         col = layout.column(align=True)
-        col.enabled = CommonLoader.ft_head_mode() == 'NONE'
+        col.enabled = common_loader().ft_head_mode() == 'NONE'
         self._output_geotrackers_list(col)
         self._facetracker_creation_button(col)
 
@@ -230,7 +230,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
 
 
 def _fb_view_panel_active() -> bool:
-    return CommonLoader.ft_head_mode() == 'EDIT_HEAD'
+    return common_loader().ft_head_mode() == 'EDIT_HEAD'
 
 
 class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
@@ -310,7 +310,7 @@ class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
         settings = ft_settings()
         if not settings.current_tracker_num() >= 0:
             return False
-        return CommonLoader.ft_head_mode() == 'CHOOSE_FRAME'
+        return common_loader().ft_head_mode() == 'CHOOSE_FRAME'
 
     def draw(self, context: Any) -> None:
         settings = ft_settings()
