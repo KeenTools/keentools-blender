@@ -55,7 +55,7 @@ from ..utils.localview import (exit_area_localview,
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
-                                   facebuilder_keymaps_unregister)
+                                   all_keymaps_unregister)
 from .prechecks import common_fb_checks
 from ..utils.ui_redraw import total_redraw_ui
 
@@ -526,7 +526,7 @@ class FB_OT_PinMode(Operator):
 
     def on_finish(self) -> None:
         _log.output(f'{self.__class__.__name__}.on_finish')
-        facebuilder_keymaps_unregister()
+        all_keymaps_unregister()
         self.release_bus()
 
     def cancel(self, context) -> None:

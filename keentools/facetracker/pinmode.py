@@ -27,7 +27,7 @@ from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
 from ..preferences.hotkeys import (facetracker_keymaps_register,
-                                   facetracker_keymaps_unregister)
+                                   all_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -78,4 +78,4 @@ class FT_OT_PinMode(PinMode):
 
     def unregister_hotkeys(self) -> None:
         _log.yellow(f'{self.__class__.__name__} unregister_hotkeys')
-        facetracker_keymaps_unregister()
+        all_keymaps_unregister()

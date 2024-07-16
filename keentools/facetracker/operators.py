@@ -84,9 +84,8 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 create_soft_empties_from_selected_pins_action,
                                                 save_facs_as_csv_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
-from ..preferences.hotkeys import viewport_native_pan_operator_activate
-from ..preferences.hotkeys import (facebuilder_keymaps_register,
-                                   facebuilder_keymaps_unregister)
+from ..preferences.hotkeys import (pan_keymaps_register,
+                                   all_keymaps_unregister)
 from ..utils.localview import exit_area_localview
 from ..utils.viewport_state import force_show_ui_overlays
 
@@ -1035,7 +1034,7 @@ class FT_OT_ChooseFrameMode(Operator):
                          geotracker.animatable_object())
 
         common_loader().text_viewport().start_viewport(area=area)
-        facebuilder_keymaps_register()
+        pan_keymaps_register()
         common_loader().set_ft_head_mode('CHOOSE_FRAME')
 
         _log.red(f'{self.__class__.__name__} start pinmode modal >>>')
@@ -1045,7 +1044,7 @@ class FT_OT_ChooseFrameMode(Operator):
 
     def on_finish(self) -> None:
         _log.output(f'{self.__class__.__name__}.on_finish')
-        facebuilder_keymaps_unregister()
+        all_keymaps_unregister()
         common_loader().text_viewport().stop_viewport()
         self.release_bus()
 
@@ -1143,6 +1142,7 @@ class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
 
         common_loader().text_viewport().stop_viewport()
         common_loader().set_ft_head_mode('NONE')
+        all_keymaps_unregister()
 
         settings_ft = ft_settings()
         geotracker = settings_ft.get_current_geotracker_item()
@@ -1168,7 +1168,6 @@ class FT_OT_EditHead(ButtonOperator, Operator):
 
         product = ProductType.FACETRACKER
         check_status = common_checks(product=product, reload_geotracker=True,
-                                     stop_other_pinmode=True,
                                      object_mode=True, is_calculating=True,
                                      geotracker=True, geometry=True,
                                      camera=True)

@@ -177,13 +177,17 @@ class CommonLoader:
     def get_current_viewport_area(self) -> Optional[Area]:
         settings = fb_settings()
         if settings.pinmode:
+            _log.output('get_current_viewport_area FB')
             return settings.loader().viewport().get_work_area()
         settings = gt_settings()
         if settings.pinmode:
+            _log.output('get_current_viewport_area GT')
             return settings.loader().viewport().get_work_area()
         settings = ft_settings()
         if settings.pinmode:
+            _log.output('get_current_viewport_area FT')
             return settings.loader().viewport().get_work_area()
+        _log.output('get_current_viewport_area TV')
         return self.text_viewport().get_work_area()
 
     def check_localview_without_pinmode(self, area: Optional[Area]) -> bool:

@@ -26,7 +26,7 @@ from ..geotracker_config import GTConfig
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 from ..preferences.hotkeys import (geotracker_keymaps_register,
-                                   geotracker_keymaps_unregister)
+                                   all_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -62,4 +62,4 @@ class GT_OT_PinMode(PinMode):
 
     def unregister_hotkeys(self) -> None:
         _log.yellow(f'{self.__class__.__name__} unregister_hotkeys')
-        geotracker_keymaps_unregister()
+        all_keymaps_unregister()

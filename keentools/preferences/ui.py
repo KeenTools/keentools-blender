@@ -60,9 +60,8 @@ from ..updater.utils import (preferences_current_active_updater_operators_info,
                              CurrentStateExecutor)
 from .operators import get_product_license_manager
 from .hotkeys import (geotracker_keymaps_register,
-                      geotracker_keymaps_unregister,
-                      facetracker_keymaps_register,
-                      facetracker_keymaps_unregister)
+                      all_keymaps_unregister,
+                      facetracker_keymaps_register)
 
 
 _log = KTLogger(__name__)
@@ -323,14 +322,14 @@ def _update_gt_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.gt_use_hotkeys:
         geotracker_keymaps_register()
     else:
-        geotracker_keymaps_unregister()
+        all_keymaps_unregister()
 
 
 def _update_ft_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.ft_use_hotkeys:
         facetracker_keymaps_register()
     else:
-        facetracker_keymaps_unregister()
+        all_keymaps_unregister()
 
 
 def _universal_updater_getter(name: str, type_: str) -> Callable:
