@@ -210,6 +210,8 @@ class FB_OT_SelectCamera(ButtonOperator, Operator):
         pinmode_op = get_operator(FBConfig.fb_pinmode_idname)
         if not bpy_background_mode():
             try:
+                _log.green(f'{self.__class__.__name__} calls '
+                           f'FBConfig.fb_pinmode_idname')
                 pinmode_op('INVOKE_DEFAULT', headnum=self.headnum,
                            camnum=self.camnum, detect_face=self.detect_face)
             except Exception as err:

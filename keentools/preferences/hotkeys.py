@@ -92,7 +92,7 @@ def common_keymaps_register(keymap: Optional[Any] = None) -> None:
 
 
 def facebuilder_keymaps_register() -> None:
-    _log.yellow('facebuilder_keymaps_register start')
+    _log.magenta('facebuilder_keymaps_register start')
     all_keymaps_unregister()
 
     keyconfig = get_keyconfig()
@@ -106,7 +106,7 @@ pan_keymaps_register: Callable = facebuilder_keymaps_register
 
 
 def geotracker_keymaps_register() -> None:
-    _log.yellow('geotracker_keymaps_register start')
+    _log.magenta('geotracker_keymaps_register start')
     all_keymaps_unregister()
 
     global _all_keymaps
@@ -137,7 +137,7 @@ def geotracker_keymaps_register() -> None:
 
 
 def facetracker_keymaps_register() -> None:
-    _log.yellow('facetracker_keymaps_register start')
+    _log.magenta('facetracker_keymaps_register start')
     all_keymaps_unregister()
 
     global _all_keymaps
@@ -168,7 +168,7 @@ def facetracker_keymaps_register() -> None:
 
 
 def all_keymaps_unregister() -> None:
-    _log.yellow('all_keymaps_unregister start')
+    _log.magenta('all_keymaps_unregister start')
     global _all_keymaps
     for km, kmi in _all_keymaps:
         try:
@@ -178,4 +178,4 @@ def all_keymaps_unregister() -> None:
             _log.error(f'all_keymaps_unregister Exception:\n{str(err)}')
     _all_keymaps.clear()
     set_native_pan_operator_kmi(None)
-    _log.output('facebuilder_keymaps_unregister end >>>')
+    _log.output('all_keymaps_unregister end >>>')

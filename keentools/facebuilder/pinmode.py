@@ -452,9 +452,14 @@ class FB_OT_PinMode(Operator):
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
+        if settings.preferences().prevent_fb_view_rotation:
+            facebuilder_keymaps_register()
+
         if first_start:
             if (len(head.cameras) == 1 and not camera.has_pins()) or self.detect_face:
                 total_redraw_ui()  # for proper background image data loading
+                _log.green(f'{self.__class__.__name__} calls '
+                           f'FBConfig.fb_pickmode_starter_idname')
                 op = get_operator(FBConfig.fb_pickmode_starter_idname)
                 op('INVOKE_DEFAULT',
                    headnum=settings.current_headnum,
@@ -462,9 +467,6 @@ class FB_OT_PinMode(Operator):
                    auto_detect_single=True)
 
             push_head_in_undo_history(head, 'Pin Mode Start')
-
-            if settings.preferences().prevent_fb_view_rotation:
-                facebuilder_keymaps_register()
         else:
             push_head_in_undo_history(head, 'Pin Mode Switch')
             _log.red(f'{self.__class__.__name__} Switch only finished >>>')
@@ -525,9 +527,10 @@ class FB_OT_PinMode(Operator):
         return False
 
     def on_finish(self) -> None:
-        _log.output(f'{self.__class__.__name__}.on_finish')
+        _log.yellow(f'{self.__class__.__name__}.on_finish start')
         all_keymaps_unregister()
         self.release_bus()
+        _log.output(f'{self.__class__.__name__}.on_finish end >>>')
 
     def cancel(self, context) -> None:
         _log.magenta(f'{self.__class__.__name__} cancel ***')

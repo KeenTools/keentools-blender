@@ -1022,6 +1022,7 @@ class FT_OT_ChooseFrameMode(Operator):
 
         common_loader().stop_fb_viewport()
         common_loader().stop_fb_pinmode()
+        fb_settings().pinmode = False
 
         vp = common_loader().text_viewport()
         default_txt = deepcopy(vp.texter().get_default_text())
@@ -1043,13 +1044,14 @@ class FT_OT_ChooseFrameMode(Operator):
         return {'RUNNING_MODAL'}
 
     def on_finish(self) -> None:
-        _log.output(f'{self.__class__.__name__}.on_finish')
-        all_keymaps_unregister()
+        _log.yellow(f'{self.__class__.__name__}.on_finish start')
         common_loader().text_viewport().stop_viewport()
         self.release_bus()
+        _log.output(f'{self.__class__.__name__}.on_finish end >>>')
 
     def cancel(self, context) -> None:
         _log.magenta(f'{self.__class__.__name__} cancel ***')
+        all_keymaps_unregister()
         self.on_finish()
 
     def modal(self, context: Any, event: Any) -> Set:
@@ -1065,10 +1067,12 @@ class FT_OT_ChooseFrameMode(Operator):
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             bpy_view_camera()
 
-        if event.value == 'PRESS' and event.type == 'ESC':
-            _log.error(f'ESC in {self.__class__.__name__}')
-            exit_area_localview(context.area)
-            self.on_finish()
+        if event.value == 'RELEASE' and event.type == 'ESC':
+            _log.red(f'ESC pressed in {self.__class__.__name__}')
+            _log.green(f'{self.__class__.__name__} calls '
+                       f'FTConfig.ft_cancel_choose_frame_idname')
+            op = get_operator(FTConfig.ft_cancel_choose_frame_idname)
+            op('EXEC_DEFAULT')
             return {'FINISHED'}
 
         return {'PASS_THROUGH'}
@@ -1151,6 +1155,8 @@ class FT_OT_CancelChooseFrame(ButtonOperator, Operator):
         headnum = settings_fb.head_by_obj(geotracker.geomobj)
         head = settings_fb.get_head(headnum)
         if headnum >= 0 and head and len(head.cameras) > 0:
+            _log.green(f'{self.__class__.__name__} calls '
+                       f'FTConfig.ft_edit_head_idname')
             op = get_operator(FTConfig.ft_edit_head_idname)
             op('EXEC_DEFAULT')
 
@@ -1195,6 +1201,8 @@ class FT_OT_EditHead(ButtonOperator, Operator):
 
         if len(head.cameras) == 0:
             if geotracker.movie_clip:
+                _log.green(f'{self.__class__.__name__} calls '
+                           f'FTConfig.ft_choose_frame_mode_idname')
                 op = get_operator(FTConfig.ft_choose_frame_mode_idname)
                 op('INVOKE_DEFAULT')
             else:
@@ -1214,6 +1222,8 @@ class FT_OT_EditHead(ButtonOperator, Operator):
             self.report({'INFO'}, 'No Camera in FaceBuilder')
             return {'CANCELLED'}
 
+        _log.green(f'{self.__class__.__name__} calls '
+                   f'FBConfig.fb_select_camera_idname')
         op = get_operator(FBConfig.fb_select_camera_idname)
         op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
            detect_face=not camera.has_pins())

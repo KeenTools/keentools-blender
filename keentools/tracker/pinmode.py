@@ -457,10 +457,12 @@ class PinMode(Operator):
         _log.red(f'{self.__class__.__name__} Start pinmode -- modal >>>')
         return {'RUNNING_MODAL'}
 
-    def on_finish(self) -> None:
-        _log.output(f'{self.__class__.__name__}.on_finish')
-        self.unregister_hotkeys()
+    def on_finish(self, skip_hotkeys: bool = False) -> None:
+        _log.yellow(f'{self.__class__.__name__}.on_finish start')
+        if not skip_hotkeys:
+            self.unregister_hotkeys()
         self.release_bus()
+        _log.output(f'{self.__class__.__name__}.on_finish end >>>')
 
     def cancel(self, context) -> None:
         _log.magenta(f'{self.__class__.__name__} cancel ***')
@@ -480,7 +482,7 @@ class PinMode(Operator):
         if self.pinmode_id != settings.pinmode_id:
             _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
 
-            self.on_finish()
+            self.on_finish(skip_hotkeys=True)
             _log.red(f'{self.__class__.__name__} Extreme pinmode stop -- finished >>>')
             return {'FINISHED'}
 
