@@ -495,15 +495,70 @@ def _init_common_loader() -> Any:
     return _common_loader_instance
 
 
+def _init_fb_loader() -> Any:
+    from .facebuilder.fbloader import FBLoader
+    global _fb_loader_instance
+    _fb_loader_instance = FBLoader
+    global _fb_loader_func
+    _fb_loader_func = _get_fb_loader
+    return FBLoader
+
+
+def _init_gt_loader() -> Any:
+    from .geotracker.gtloader import GTLoader
+    global _gt_loader_instance
+    _gt_loader_instance = GTLoader
+    global _gt_loader_func
+    _gt_loader_func = _get_gt_loader
+    return GTLoader
+
+
+def _init_ft_loader() -> Any:
+    from .facetracker.ftloader import FTLoader
+    global _ft_loader_instance
+    _ft_loader_instance = FTLoader
+    global _ft_loader_func
+    _ft_loader_func = _get_ft_loader
+    return FTLoader
+
+
 def _get_common_loader() -> Any:
-    global _common_loader_instance
     return _common_loader_instance
+
+
+def _get_fb_loader() -> Any:
+    return _fb_loader_instance
+
+
+def _get_gt_loader() -> Any:
+    return _gt_loader_instance
+
+
+def _get_ft_loader() -> Any:
+    return _ft_loader_instance
 
 
 _common_loader_instance: Optional[Any] = None
 _common_loader_func: Callable = _init_common_loader
+_fb_loader_instance: Optional[Any] = None
+_fb_loader_func: Callable = _init_fb_loader
+_gt_loader_instance: Optional[Any] = None
+_gt_loader_func: Callable = _init_gt_loader
+_ft_loader_instance: Optional[Any] = None
+_ft_loader_func: Callable = _init_ft_loader
 
 
 def common_loader() -> Any:
-    global _common_loader_func
     return _common_loader_func()
+
+
+def fb_loader() -> Any:
+    return _fb_loader_func()
+
+
+def gt_loader() -> Any:
+    return _gt_loader_func()
+
+
+def ft_loader() -> Any:
+    return _ft_loader_func()
