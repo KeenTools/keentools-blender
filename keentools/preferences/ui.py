@@ -683,7 +683,8 @@ class KTAddonPreferences(AddonPreferences):
     def _license_was_accepted(self) -> bool:
         return pkt_is_installed() or self.license_accepted
 
-    def _draw_plugin_license_info(self, layout: Any, product: int) -> None:
+    def _draw_plugin_license_info(self, layout: Any, product: int,
+                                  message_only: bool = False) -> None:
         plugin_name = product_name(product)
         plugin_prop_prefix = _product_prop_prefix(product)
 
@@ -694,6 +695,9 @@ class KTAddonPreferences(AddonPreferences):
         lm = get_product_license_manager(product)
         _multi_line_text_to_output_labels(box, lm.license_status_text(
             strategy=pkt_module().LicenseCheckStrategy.LAZY))
+
+        if message_only:
+            return
 
         row = col.row(align=True)
         row.prop(self, f'{plugin_prop_prefix}_lic_type', expand=True)
@@ -1102,7 +1106,8 @@ class KTAddonPreferences(AddonPreferences):
 
     def _draw_facetracker_preferences(self, layout: Any) -> None:
         col = self._make_indent_column(layout)
-        self._draw_plugin_license_info(col, ProductType.FACETRACKER)
+        self._draw_plugin_license_info(col, ProductType.FACETRACKER,
+                                       message_only=True)
         col.separator()
         self._draw_ft_user_preferences(col)
 
@@ -1137,7 +1142,7 @@ class KTAddonPreferences(AddonPreferences):
         row.prop(self, 'facebuilder_expanded', text='', emboss=False,
                  icon=_expand_icon(self.facebuilder_expanded))
         row.prop(self, 'facebuilder_enabled', text='')
-        row.label(text='KeenTools FaceBuilder')
+        row.label(text='FaceBuilder')
 
         if self.facebuilder_expanded:
             self._draw_facebuilder_preferences(layout)
@@ -1146,7 +1151,7 @@ class KTAddonPreferences(AddonPreferences):
         row.prop(self, 'geotracker_expanded', text='', emboss=False,
                  icon=_expand_icon(self.geotracker_expanded))
         row.prop(self, 'geotracker_enabled', text='')
-        row.label(text='KeenTools GeoTracker')
+        row.label(text='GeoTracker')
 
         if self.geotracker_expanded:
             self._draw_geotracker_preferences(layout)
@@ -1158,7 +1163,7 @@ class KTAddonPreferences(AddonPreferences):
         row.prop(self, 'facetracker_expanded', text='', emboss=False,
                  icon=_expand_icon(self.facetracker_expanded))
         row.prop(self, 'facetracker_enabled', text='')
-        row.label(text='KeenTools FaceTracker')
+        row.label(text='FaceTracker (Beta)')
 
         if self.facetracker_expanded:
             self._draw_facetracker_preferences(layout)

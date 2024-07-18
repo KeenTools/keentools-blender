@@ -123,7 +123,7 @@ class UserPreferences:
         try:
             pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
         except Exception as _:
-            _log.error(f'save_dict: {dict_to_save}')
+            _log.red(f'save_dict: {dict_to_save}')
         # cls.print_dict()  # Debug only call
 
     @classmethod
