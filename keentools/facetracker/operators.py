@@ -1226,7 +1226,7 @@ class FT_OT_EditHead(ButtonOperator, Operator):
                    f'FBConfig.fb_select_camera_idname')
         op = get_operator(FBConfig.fb_select_camera_idname)
         op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
-           detect_face=not camera.has_pins())
+           detect_face=False)
 
         common_loader().set_ft_head_mode('EDIT_HEAD')
 
