@@ -1064,9 +1064,8 @@ class KTAddonPreferences(AddonPreferences):
 
     def _draw_pykeentools_problem_report(self, layout: Any,
                                          pykeentools_status: str) -> None:
-        box = layout.box()
-        self._draw_pkt_detail_error_report(box, pykeentools_status)
-        self._draw_problem_library(box)
+        self._draw_pkt_detail_error_report(layout, pykeentools_status)
+        self._draw_problem_library(layout)
         draw_system_info(layout)
         self._draw_download_progress(layout)
 

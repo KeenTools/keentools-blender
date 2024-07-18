@@ -21,7 +21,6 @@ import os
 import sys
 import tempfile
 import shutil
-import logging
 import subprocess
 import re
 from threading import Thread, Lock
@@ -29,6 +28,7 @@ from enum import Enum
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+from ...utils.kt_logging import KTLogger
 from .config import *
 
 
@@ -39,11 +39,7 @@ __all__ = ['is_installed', 'uninstall_core', 'installation_status',
            'remove_downloaded_zips', 'install_downloaded_zips']
 
 
-logger = logging.getLogger(__name__)
-log_error = logger.error
-log_output = logger.debug
-
-
+_log = KTLogger(__name__)
 _unpack_mutex = Lock()
 
 
@@ -206,9 +202,10 @@ def _download_and_process(url, process_callback, progress_callback=None,
         with _download_with_progress_callback(url, progress_callback,
                                               max_callback_updates_count, timeout) as archive_data:
             process_callback(archive_data)
-    except Exception as error:
+    except Exception as err:
+        _log.error(f'_download_and_process:\n---\n{type(err)}:\n{str(err)}\n---')
         if error_callback is not None:
-            error_callback(error)
+            error_callback(err)
     else:
         if final_callback is not None:
             final_callback()
@@ -326,8 +323,8 @@ def _remove_dir(dir):
     try:
         shutil.rmtree(dir, ignore_errors=True)
     except Exception as err:
-        log_error(f'remove_dir: Cannot delete dir {dir}')
-        log_error(f'Exception info:\n{str(err)}')
+        _log.error(f'remove_dir: Cannot delete dir {dir}')
+        _log.error(f'Exception info:\n{str(err)}')
 
 
 def _get_all_pids_on_windows():
@@ -336,10 +333,10 @@ def _get_all_pids_on_windows():
         output = subprocess.run(['tasklist', '/NH', '/FO', 'CSV'],
                                 capture_output=True)
     except FileNotFoundError as err:
-        log_error(f'_get_all_pids_on_windows error:\n{str(err)}')
+        _log.error(f'_get_all_pids_on_windows error:\n{str(err)}')
         return None
     except Exception as err:
-        log_error(f'_get_all_pids_on_windows Exception:\n{str(err)}')
+        _log.error(f'_get_all_pids_on_windows Exception:\n{str(err)}')
         return None
     rows = re.split(b'\n', output.stdout)
     pids: List[int] = []
@@ -376,7 +373,7 @@ def _remove_old_dirs(base_dir):
 
 
 def _do_pkt_shadow_copy():
-    log_output('_do_pkt_shadow_copy start')
+    _log.output('_do_pkt_shadow_copy start')
     os.makedirs(SHADOW_COPIES_DIRECTORY, exist_ok=True)
     _remove_old_dirs(SHADOW_COPIES_DIRECTORY)
 
@@ -385,8 +382,8 @@ def _do_pkt_shadow_copy():
                                             dir=SHADOW_COPIES_DIRECTORY)
     shadow_copy_dir = os.path.join(shadow_copy_base_dir, 'pykeentools')
     shutil.copytree(pkt_installation_dir(), shadow_copy_dir)
-    log_output(f'shadow_copy_dir: {shadow_copy_dir}')
-    log_output('_do_pkt_shadow_copy end >>>')
+    _log.output(f'shadow_copy_dir: {shadow_copy_dir}')
+    _log.output('_do_pkt_shadow_copy end >>>')
     return shadow_copy_dir
 
 

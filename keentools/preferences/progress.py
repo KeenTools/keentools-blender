@@ -102,7 +102,8 @@ class InstallationProgress:
     def _update_progress(cls, value):
         cls._state_mutex.acquire()
         try:
-            assert(value <= 1.0)
+            if value > 1.0:
+                _log.error(f'{cls.__name__}._update_progress: {value}')
             assert(cls.state['active'])
             cls.state['progress'] = value
         finally:
@@ -144,12 +145,17 @@ class InstallationProgress:
 
     @classmethod
     def _final_callback(cls):
-        cls._on_finish_download(
-            'The core library has been downloaded and installed successfully.')
+        msg = 'The core library has been downloaded and installed successfully.'
+        _log.info(f'\n---\n{msg}\n---')
+        cls._on_finish_download(msg)
 
     @classmethod
     def _error_callback(cls, err):
-        cls._on_finish_download('Downloading error: {}'.format(str(err)))
+        msg = f'{str(err)}'
+        if len(msg) == 0:
+            msg = 'no error info'
+        _log.error(f'{cls.__name__}._error_callback:\n---\n{msg}\n---')
+        cls._on_finish_download(f'Downloading error: {msg}')
 
     @classmethod
     def start_download(cls):
