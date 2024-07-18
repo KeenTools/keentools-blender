@@ -1,13 +1,13 @@
 schema_version = "1.0.0"
 
 id = "keentools"
-name = "KeenTools extension"
+name = "KeenTools extension 2024.1.1"  # (6/7)
 tagline = "KeenTools: FaceBuilder, FaceTracker, GeoTracker"
 type = "add-on"
 permissions = ["files", "network"]
 website = "https://keentools.io"
 tags = ["3D View", "Animation", "Modeling", "Import-Export", "Tracking", "User Interface"]
-version = "2024.1.0"  # (6/6)
+version = "2024.1.1"  # (7/7)
 blender_version_min = "2.80.0"
 maintainer = "KeenTools"
 license = ["GPL-3.0-or-later", "EULA"]

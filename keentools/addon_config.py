@@ -35,11 +35,11 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2024.1.0'  # (5/6)
+    addon_version = '2024.1.1'  # (5/7)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
-                                  (3, 5), (3, 6), (4, 0), (4, 1))
+                                  (3, 5), (3, 6), (4, 0), (4, 1), (4, 2))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
