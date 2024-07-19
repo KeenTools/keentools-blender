@@ -384,8 +384,9 @@ class ErrorType:
     DownloadingProblem: int = 8
     FBGracePeriod: int = 9
     GTGracePeriod: int = 10
-    ShaderProblem: int = 11
-    UnsupportedGPUBackend: int = 12
+    FTGracePeriod: int = 11
+    ShaderProblem: int = 12
+    UnsupportedGPUBackend: int = 13
 
 
 @dataclass(frozen=True)

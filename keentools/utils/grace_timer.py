@@ -57,6 +57,9 @@ class KTGraceTimer(KTTimer):
             elif self._product == ProductType.GEOTRACKER:
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.GTGracePeriod)
+            elif self._product == ProductType.FACETRACKER:
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.FTGracePeriod)
             _log.output(f'{product_name(self._product)} GRACE PERIOD HAS BEEN '
                         f'DETECTED. TIMER IS SWITCHED OFF')
             self.stop()
