@@ -48,7 +48,6 @@ from .bpy_common import (bpy_localview,
 from ..ui_strings import buttons
 from ..common.actor import KT_OT_Actor
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
-from ..common.license_checker import get_upgrade_url
 
 
 _log = KTLogger(__name__)
@@ -315,6 +314,7 @@ class KT_OT_UpgradeProduct(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute [{product_name(self.product)}]')
+        from ..common.license_checker import get_upgrade_url
         url = get_upgrade_url(self.product)
         _log.output(f'\n{url}')
         bpy_url_open(url)
