@@ -491,6 +491,16 @@ def calculation_in_progress(facebuilder: bool = True,
     return ActionStatus(True, 'No calculation is in progress')
 
 
+_common_loader_instance: Optional[Any]
+_common_loader_func: Callable
+_fb_loader_instance: Optional[Any]
+_fb_loader_func: Callable
+_gt_loader_instance: Optional[Any]
+_gt_loader_func: Callable
+_ft_loader_instance: Optional[Any]
+_ft_loader_func: Callable
+
+
 def _init_common_loader() -> Any:
     from .common.loader import CommonLoader
     global _common_loader_instance
@@ -543,16 +553,6 @@ def _get_ft_loader() -> Any:
     return _ft_loader_instance
 
 
-_common_loader_instance: Optional[Any] = None
-_common_loader_func: Callable = _init_common_loader
-_fb_loader_instance: Optional[Any] = None
-_fb_loader_func: Callable = _init_fb_loader
-_gt_loader_instance: Optional[Any] = None
-_gt_loader_func: Callable = _init_gt_loader
-_ft_loader_instance: Optional[Any] = None
-_ft_loader_func: Callable = _init_ft_loader
-
-
 def common_loader() -> Any:
     return _common_loader_func()
 
@@ -567,3 +567,13 @@ def gt_loader() -> Any:
 
 def ft_loader() -> Any:
     return _ft_loader_func()
+
+
+_common_loader_instance = None
+_common_loader_func = _init_common_loader
+_fb_loader_instance = None
+_fb_loader_func = _init_fb_loader
+_gt_loader_instance = None
+_gt_loader_func = _init_gt_loader
+_ft_loader_instance = None
+_ft_loader_func = _init_ft_loader
