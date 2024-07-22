@@ -140,11 +140,14 @@ def check_license(product: int) -> Optional[float]:
 
         license_status = get_product_license_status(product)
         license_status.response = res
-        license_status.parse_response()
+        if not license_status.parse_response():
+            return Config.kt_license_recheck_timeout
         license_status.checked = True
     except Exception as err:
         _log.error(f'check_license Exception:\n{str(err)}')
         return Config.kt_license_recheck_timeout
+
+    _log.output('LICENSE CHECK end >>>')
     return None
 
 
