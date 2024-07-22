@@ -19,6 +19,7 @@
 from typing import Optional, Any
 
 from ..utils.kt_logging import KTLogger
+from ..utils.version import BVersion
 from ..addon_config import (Config,
                             get_operator,
                             ErrorType,
@@ -54,20 +55,10 @@ class KTLicenseStatus:
 
         successfull_set = {'succeed'}
         try:
-            if self.response.trial_status.status in successfull_set:
-                self.trial_licensed = True
-
-            if self.response.floating_license_installed:
-                if self.response.floating_status.status in successfull_set:
-                    self.float_licensed = True
-            else:
-                self.float_licensed = False
-
+            self.trial_licensed = self.response.trial_status.status in successfull_set
+            self.float_licensed = self.response.floating_status.status in successfull_set
             self.subscription_licensed = self.response.subscription_license_used
-
-            if self.response.license_status.status in successfull_set:
-                self.licensed = True
-
+            self.licensed = self.response.license_status.status in successfull_set
             self.days_left = self.response.days_left
         except Exception as err:
             _log.error(f'{self.__class__.__name__} Exception:\n{str(err)}')
@@ -127,32 +118,35 @@ def get_product_license_status(product: int) -> Any:
 def _upgrade_url(plugin_name: str,
                  plugin_version: str,
                  days_left: int = -1,
-                 host: str = 'Blender') -> str:
-    url_txt = (f'https://keentools.io/buy?utm_source={plugin_name}'
-               f'&utm_medium={host}'
-               f'&utm_campaign={plugin_version}'
-               f'&utm_content={days_left}'
-               f'#{plugin_name}/Freelancer%20Annual')
+                 os_name: str = BVersion.os_name,
+                 plugin_host: str = 'blender',
+                 current_license: str = 'trial') -> str:
+    url_txt = (f'https://keentools.io/buy-from-plugin?os={os_name}'
+               f'&plugin_host={plugin_host}'
+               f'&plugin_name={plugin_name}'
+               f'&plugin_version={plugin_version}'
+               f'&days_left={days_left}'
+               f'&current_license={current_license}')
     return url_txt
 
 
 def _fb_upgrade_url() -> str:
     license_status = get_product_license_status(ProductType.FACEBUILDER)
-    return _upgrade_url(plugin_name='FaceBuilder',
+    return _upgrade_url(plugin_name='facebuilder',
                         plugin_version=f'{Config.addon_version}',
                         days_left=license_status.days_left)
 
 
 def _gt_upgrade_url() -> str:
     license_status = get_product_license_status(ProductType.GEOTRACKER)
-    return _upgrade_url(plugin_name='GeoTracker',
+    return _upgrade_url(plugin_name='geotracker',
                         plugin_version=f'{Config.addon_version}',
                         days_left=license_status.days_left)
 
 
 def _ft_upgrade_url() -> str:
     license_status = get_product_license_status(ProductType.GEOTRACKER)
-    return _upgrade_url(plugin_name='FaceTracker',
+    return _upgrade_url(plugin_name='facetracker',
                         plugin_version=f'{Config.addon_version}',
                         days_left=license_status.days_left)
 
