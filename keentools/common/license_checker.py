@@ -124,6 +124,51 @@ def get_product_license_status(product: int) -> Any:
     assert False, 'Unknown product type in check_license'
 
 
+def _upgrade_url(plugin_name: str,
+                 plugin_version: str,
+                 days_left: int = -1,
+                 host: str = 'Blender') -> str:
+    url_txt = (f'https://keentools.io/buy?utm_source={plugin_name}'
+               f'&utm_medium={host}'
+               f'&utm_campaign={plugin_version}'
+               f'&utm_content={days_left}'
+               f'#{plugin_name}/Freelancer%20Annual')
+    return url_txt
+
+
+def _fb_upgrade_url() -> str:
+    license_status = get_product_license_status(ProductType.FACEBUILDER)
+    return _upgrade_url(plugin_name='FaceBuilder',
+                        plugin_version=f'{Config.addon_version}',
+                        days_left=license_status.days_left)
+
+
+def _gt_upgrade_url() -> str:
+    license_status = get_product_license_status(ProductType.GEOTRACKER)
+    return _upgrade_url(plugin_name='GeoTracker',
+                        plugin_version=f'{Config.addon_version}',
+                        days_left=license_status.days_left)
+
+
+def _ft_upgrade_url() -> str:
+    license_status = get_product_license_status(ProductType.GEOTRACKER)
+    return _upgrade_url(plugin_name='FaceTracker',
+                        plugin_version=f'{Config.addon_version}',
+                        days_left=license_status.days_left)
+
+
+def get_upgrade_url(product: int) -> str:
+    if product == ProductType.FACEBUILDER:
+        url = _fb_upgrade_url()
+    elif product == ProductType.GEOTRACKER:
+        url = _gt_upgrade_url()
+    elif product == ProductType.FACETRACKER:
+        url = _ft_upgrade_url()
+    else:
+        assert False, 'Wrong product in get_upgrade_url'
+    return url
+
+
 def check_license(product: int) -> Optional[float]:
     _log.output(f'LICENSE CHECK FOR {product_name(product)}')
     if not pkt_is_installed():
@@ -171,5 +216,5 @@ def draw_upgrade_license_box(layout, product):
         col.alert = True
         col.scale_y = Config.text_scale_y
         col.label(text='Your free trial is over')
-    op = main_col.operator(Config.kt_buy_product_idname, icon='WORLD')
+    op = main_col.operator(Config.kt_upgrade_product_idname, icon='WORLD')
     op.product = product

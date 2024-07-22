@@ -94,7 +94,7 @@ class Config:
     kt_exit_localview_idname = operators + '.exit_localview'
     kt_share_feedback_idname = operators + '.share_feedback'
     kt_report_bug_idname = operators + '.report_bug'
-    kt_buy_product_idname = operators + '.buy_product'
+    kt_upgrade_product_idname = operators + '.upgrade_product'
 
     kt_warning_idname = operators + '.common_addon_warning'
     kt_interrupt_modal_idname = operators + '.interrupt_modal'

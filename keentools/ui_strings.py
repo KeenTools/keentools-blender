@@ -136,7 +136,7 @@ buttons = {
         'Report Bug',
         'Report a Bug'
     ),
-    Config.kt_buy_product_idname: Button(
+    Config.kt_upgrade_product_idname: Button(
         'Upgrade Now',
         'Upgrade your license'
     ),
