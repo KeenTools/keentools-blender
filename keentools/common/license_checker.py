@@ -171,6 +171,5 @@ def draw_upgrade_license_box(layout, product):
         col.alert = True
         col.scale_y = Config.text_scale_y
         col.label(text='Your free trial is over')
-        col.label(text='Choose your plan to continue')
     op = main_col.operator(Config.kt_buy_product_idname, icon='WORLD')
     op.product = product

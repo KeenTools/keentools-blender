@@ -137,7 +137,7 @@ buttons = {
         'Report a Bug'
     ),
     Config.kt_buy_product_idname: Button(
-        'Upgrade now',
+        'Upgrade Now',
         'Upgrade your license'
     ),
     Config.kt_interrupt_modal_idname: Button(

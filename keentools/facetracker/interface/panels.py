@@ -266,9 +266,9 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         col.scale_y = scale
         row = col.row(align=True)
         row.operator(FTConfig.ft_choose_frame_mode_idname,
-                     text='snapshot', icon='ADD')
+                     text='+ snapshot', icon='FILE_MOVIE')
         op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
-                          text='from file', icon='IMAGE')
+                          text='+ image file', icon='FILE_IMAGE')
         op.headnum = headnum
 
 
@@ -327,7 +327,7 @@ class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.scale_y = 2.0
-        row.operator(FTConfig.ft_add_chosen_frame_idname, icon='IMAGE')
+        row.operator(FTConfig.ft_add_chosen_frame_idname, icon='FILE_MOVIE')
         col.operator(FTConfig.ft_cancel_choose_frame_idname, icon='X')
 
 
