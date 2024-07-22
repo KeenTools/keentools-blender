@@ -1156,9 +1156,6 @@ class KTAddonPreferences(AddonPreferences):
         if self.geotracker_expanded:
             self._draw_geotracker_preferences(layout)
 
-        if not Config.show_facetracker:
-            return
-
         row = layout.row(align=True)
         row.prop(self, 'facetracker_expanded', text='', emboss=False,
                  icon=_expand_icon(self.facetracker_expanded))

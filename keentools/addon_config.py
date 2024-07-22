@@ -214,7 +214,6 @@ class Config:
     keyframe_line_length: float = 1000.0
 
     integration_enabled: bool = True
-    show_facetracker: bool = 'KEENTOOLS_ENABLE_BLENDER_FACETRACKER' in os.environ
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
@@ -274,8 +273,6 @@ def geotracker_enabled() -> bool:
 
 
 def facetracker_enabled() -> bool:
-    if not Config.show_facetracker:
-        return False
     prefs = get_addon_preferences()
     return prefs.facetracker_enabled
 
