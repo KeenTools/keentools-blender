@@ -45,10 +45,13 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
+from ...common.license_checker import check_license, draw_upgrade_license_box
 
 
 _log = KTLogger(__name__)
 _ft_grace_timer = KTGraceTimer(ProductType.FACETRACKER)
+bpy_timer_register(partial(check_license, ProductType.FACETRACKER),
+                   first_interval=Config.ft_license_check_timeout)
 
 
 def _pinmode_escaper(area: Area) -> None:
@@ -218,6 +221,8 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         if not pkt_is_installed():
             self._pkt_install_offer(layout)
             return
+
+        draw_upgrade_license_box(layout, ProductType.FACETRACKER)
 
         col = layout.column(align=True)
         col.enabled = common_loader().ft_head_mode() == 'NONE'

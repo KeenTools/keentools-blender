@@ -101,6 +101,9 @@ class KT_OT_OpenURL(KT_OT_OpenURLBase, Operator):
     bl_idname = Config.kt_open_url_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    url: StringProperty(name='URL', default='')
 
 
 class KT_OT_AddonSearch(Operator):
@@ -286,6 +289,33 @@ class KT_OT_ReportBug(Operator):
         _log.green(f'{self.__class__.__name__} execute [{product_name(self.product)}]')
 
         if self.product == ProductType.FACEBUILDER:
+            url = Config.keentools_website_url
+        elif self.product == ProductType.GEOTRACKER:
+            url = Config.keentools_website_url
+        elif self.product == ProductType.FACETRACKER:
+            url = Config.keentools_website_url
+        else:
+            self.report({'ERROR', 'Wrong Product ID'})
+            url = Config.keentools_website_url
+
+        _log.output(f'\n{url}')
+        bpy_url_open(url)
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
+class KT_OT_BuyProduct(Operator):
+    bl_idname = Config.kt_buy_product_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute [{product_name(self.product)}]')
+
+        if self.product == ProductType.FACEBUILDER:
             url = _fb_report_bug_url()
         elif self.product == ProductType.GEOTRACKER:
             url = _gt_report_bug_url()
@@ -428,6 +458,7 @@ CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_ExitLocalview,
                        KT_OT_ShareFeedback,
                        KT_OT_ReportBug,
+                       KT_OT_BuyProduct,
                        KT_OT_Actor,
                        KT_OT_InterruptModal,
                        KT_OT_MoveWrapper,

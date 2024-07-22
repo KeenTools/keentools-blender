@@ -75,7 +75,7 @@ class Config:
         prefs_operators + '.install_pkt_from_file_with_warning'
     kt_install_pkt_from_file_idname = prefs_operators + '.install_pkt_from_file'
     kt_pref_open_url_idname = prefs_operators + '.open_url'
-    kt_pref_downloads_url_idname = prefs_operators + '.downloads_url'
+    kt_pref_core_download_url_idname = prefs_operators + '.core_download_url'
     kt_pref_computer_info_idname = prefs_operators + '.computer_info'
 
     kt_open_manual_install_page_idname = prefs_operators + '.gt_open_manual_install_page'
@@ -94,6 +94,7 @@ class Config:
     kt_exit_localview_idname = operators + '.exit_localview'
     kt_share_feedback_idname = operators + '.share_feedback'
     kt_report_bug_idname = operators + '.report_bug'
+    kt_buy_product_idname = operators + '.buy_product'
 
     kt_warning_idname = operators + '.common_addon_warning'
     kt_interrupt_modal_idname = operators + '.interrupt_modal'
@@ -144,6 +145,12 @@ class Config:
     default_tex_height: int = 2048
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
+
+    license_minimum_days_for_warning: int = 7
+    fb_license_check_timeout: float = 1.0
+    gt_license_check_timeout: float = 2.0
+    ft_license_check_timeout: float = 3.0
+    kt_license_recheck_timeout: float = 360.0
 
     # FaceBuilder Default Colors
     fb_midline_color = (0.960784, 0.007843, 0.615686)

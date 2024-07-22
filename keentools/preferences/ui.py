@@ -785,7 +785,7 @@ class KTAddonPreferences(AddonPreferences):
 
         col = row.column(align=True)
         col.active = self.license_accepted
-        op = col.operator(Config.kt_pref_downloads_url_idname,
+        op = col.operator(Config.kt_pref_core_download_url_idname,
                           text='Download page', icon='URL')
         op.url = Config.core_download_website_url
 
@@ -898,7 +898,7 @@ class KTAddonPreferences(AddonPreferences):
         else:
             self._draw_old_addon(layout)
             row = layout.split(factor=0.35)
-            op = row.operator(Config.kt_pref_downloads_url_idname,
+            op = row.operator(Config.kt_pref_core_download_url_idname,
                               text='Download', icon='URL')
             op.url = Config.core_download_website_url
 

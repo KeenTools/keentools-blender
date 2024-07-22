@@ -47,12 +47,13 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
+from ...common.license_checker import check_license, draw_upgrade_license_box
 
 
 _log = KTLogger(__name__)
-
-
 _fb_grace_timer = KTGraceTimer(ProductType.FACEBUILDER)
+bpy_timer_register(partial(check_license, ProductType.FACEBUILDER),
+                   first_interval=Config.fb_license_check_timeout)
 
 
 def _state_valid_to_show(state):
@@ -287,6 +288,8 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
         if not pkt_is_installed():
             self._draw_start_panel(layout)
             return
+
+        draw_upgrade_license_box(layout, ProductType.FACEBUILDER)
 
         state, headnum = what_is_state()
 
