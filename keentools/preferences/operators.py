@@ -365,12 +365,14 @@ class KTPREF_OT_OpenURL(KT_OT_OpenURLBase, Operator):
     bl_idname = Config.kt_pref_open_url_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    url: StringProperty(name='URL', default='')
 
 
 class KTPREF_OT_DownloadsURL(KT_OT_OpenURLBase, Operator):
-    bl_idname = Config.kt_pref_downloads_url_idname
+    bl_idname = Config.kt_pref_core_download_url_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    url: StringProperty(name='URL', default='')
 
 
 class KTPREF_OT_ComputerInfo(Operator):

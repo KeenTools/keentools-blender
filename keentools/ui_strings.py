@@ -66,7 +66,7 @@ buttons = {
         'Open URL',
         'Open URL in web browser'
     ),
-    Config.kt_pref_downloads_url_idname: Button(
+    Config.kt_pref_core_download_url_idname: Button(
         'Download',
         'Open Core Library download page in web browser'
     ),
@@ -135,6 +135,10 @@ buttons = {
     Config.kt_report_bug_idname: Button(
         'Report Bug',
         'Report a Bug'
+    ),
+    Config.kt_upgrade_product_idname: Button(
+        'Upgrade Now',
+        'Upgrade your license'
     ),
     Config.kt_interrupt_modal_idname: Button(
         'KeenTools Interruptor',

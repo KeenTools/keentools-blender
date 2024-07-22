@@ -43,11 +43,14 @@ from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
+from ...common.license_checker import check_license, draw_upgrade_license_box
 from ...utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
 _gt_grace_timer = KTGraceTimer(ProductType.GEOTRACKER)
+bpy_timer_register(partial(check_license, ProductType.GEOTRACKER),
+                   first_interval=Config.gt_license_check_timeout)
 
 
 def _pinmode_escaper(area: Area) -> None:
@@ -224,6 +227,8 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         if not pkt_is_installed():
             self._pkt_install_offer(layout)
             return
+
+        draw_upgrade_license_box(layout, ProductType.GEOTRACKER)
 
         col = layout.column(align=True)
         self._output_geotrackers_list(col)
