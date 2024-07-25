@@ -577,3 +577,8 @@ _gt_loader_instance = None
 _gt_loader_func = _init_gt_loader
 _ft_loader_instance = None
 _ft_loader_func = _init_ft_loader
+
+
+def license_checker_module() -> Any:
+    from .common import license_checker
+    return license_checker

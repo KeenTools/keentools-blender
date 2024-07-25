@@ -31,7 +31,8 @@ from ..addon_config import (Config,
                             show_tool_preferences,
                             product_name,
                             ProductType,
-                            common_loader)
+                            common_loader,
+                            license_checker_module)
 from .localview import check_context_localview
 from .viewport_state import force_show_ui_overlays
 from ..utils.ui_redraw import (force_ui_redraw,
@@ -314,8 +315,7 @@ class KT_OT_UpgradeProduct(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute [{product_name(self.product)}]')
-        from ..common.license_checker import get_upgrade_url
-        url = get_upgrade_url(self.product)
+        url = license_checker_module().get_upgrade_url(self.product)
         _log.output(f'\n{url}')
         bpy_url_open(url)
         _log.output(f'{self.__class__.__name__} execute end >>>')

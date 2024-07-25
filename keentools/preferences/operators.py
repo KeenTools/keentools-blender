@@ -21,6 +21,7 @@ from typing import Any, List
 from bpy.types import Operator
 from bpy.props import BoolProperty, StringProperty, IntProperty
 
+from ..addon_config import license_checker_module
 from ..utils.common_operators import KT_OT_OpenURLBase
 from ..utils.kt_logging import KTLogger
 from ..blender_independent_packages.pykeentools_loader import (
@@ -78,6 +79,7 @@ class KTPREF_OT_OpenPktLicensePage(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         bpy_url_open(url=Config.pykeentools_license_url)
         return {'FINISHED'}
 
@@ -91,6 +93,7 @@ class KTPREF_OT_InstallPkt(Operator):
     license_accepted: BoolProperty()
 
     def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
         if self.license_accepted:
             return self.execute(context)
         else:
@@ -98,6 +101,7 @@ class KTPREF_OT_InstallPkt(Operator):
             return {'FINISHED'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         InstallationProgress.start_download()
         return {'FINISHED'}
 
@@ -128,6 +132,7 @@ class KTPREF_OT_InstalFromFilePktWithWarning(Operator):
         layout.prop(self, 'confirm_install')
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         if not self.confirm_install:
             self._report_canceled()
             return {'CANCELLED'}
@@ -135,9 +140,11 @@ class KTPREF_OT_InstalFromFilePktWithWarning(Operator):
         InstallationProgress.start_zip_install(self.filepath)
         self.report({'INFO'}, 'The core library has been '
                               'installed successfully.')
+        license_checker_module().check_all_licenses()
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
         return context.window_manager.invoke_props_dialog(self, width=600)
 
 
@@ -177,6 +184,7 @@ class KTPREF_OT_InstallFromFilePkt(Operator):
         op.url = Config.core_download_website_url
 
     def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
         if self.license_accepted:
             context.window_manager.fileselect_add(self)
             return {'RUNNING_MODAL'}
@@ -185,6 +193,7 @@ class KTPREF_OT_InstallFromFilePkt(Operator):
             return {'FINISHED'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         filename_info = pkt_core_filename_info(self.filepath)
         warning = None
 
@@ -212,6 +221,7 @@ class KTPREF_OT_InstallFromFilePkt(Operator):
             return {'FINISHED'}
 
         InstallationProgress.start_zip_install(self.filepath)
+        license_checker_module().check_all_licenses()
         return {'FINISHED'}
 
 
@@ -224,6 +234,7 @@ class KTPREF_OT_OpenManualInstallPage(Operator):
     product: IntProperty(default=ProductType.UNDEFINED)
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         hardware_id = _get_hardware_id(self.product)
         bpy_url_open(url=Config.manual_install_url + '#' + hardware_id)
         return {'FINISHED'}
@@ -236,6 +247,7 @@ class KTPREF_OT_CopyHardwareId(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         hardware_id = _get_hardware_id()
         context.window_manager.clipboard = hardware_id
         self.report({'INFO'}, 'Hardware ID is in clipboard!')
@@ -259,6 +271,7 @@ class KTPREF_OT_InstallLicenseOnline(Operator):
             prefs.gt_license_key = ''
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         _log.info('Start InstallLicenseOnline')
         lm = get_product_license_manager(self.product)
         res = lm.install_license_online(self.license_key)
@@ -282,6 +295,7 @@ class KTPREF_OT_InstallLicenseOnline(Operator):
         msg = 'License installed online'
         _log.info(msg)
         self.report({'INFO'}, msg)
+        license_checker_module().check_all_licenses()
         return {'FINISHED'}
 
 
@@ -299,6 +313,7 @@ class KTPREF_OT_InstallLicenseOffline(Operator):
         pref.fb_lic_path = ''
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         _log.info('Start InstallLicenseOffline')
         lm = get_product_license_manager(self.product)
         res = lm.install_license_offline(self.lic_path)
@@ -322,6 +337,7 @@ class KTPREF_OT_InstallLicenseOffline(Operator):
         msg = 'License installed offline'
         _log.info(msg)
         self.report({'INFO'}, msg)
+        license_checker_module().check_all_licenses()
         return {'FINISHED'}
 
 
@@ -336,6 +352,7 @@ class KTPREF_OT_FloatingConnect(Operator):
     license_server_port: IntProperty()
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         _log.info('Start FloatingConnect')
         lm = get_product_license_manager(self.product)
         res = lm.install_floating_license(self.license_server,
@@ -358,6 +375,7 @@ class KTPREF_OT_FloatingConnect(Operator):
         msg = 'Floating server settings saved'
         _log.info(msg)
         self.report({'INFO'}, msg)
+        license_checker_module().check_all_licenses()
         return {'FINISHED'}
 
 
@@ -382,6 +400,7 @@ class KTPREF_OT_ComputerInfo(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         addon_info = ['---'] + _get_addon_and_core_version_info()
         system_info = ['---'] + get_system_info()
         gpu_info = ['---'] + get_gpu_info()
@@ -399,6 +418,7 @@ class KTPREFS_OT_UninstallCore(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         from ..blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
         _log.info('START CORE UNINSTALL')
         pkt_uninstall()

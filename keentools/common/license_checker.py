@@ -78,8 +78,23 @@ class KTLicenseStatus:
             self.license_type = 'expired trial'
             self.show_message = True
 
+        self.output_state()
         _log.output('parse_response end >>>')
         return True
+
+    def output_state(self) -> None:
+        _log.yellow(f'output_state:\n---\n'
+                    f'product: {self.product}\n'
+                    f'response: {self.response}\n'
+                    f'attempts: {self.attempts}\n'
+                    f'trial_licensed: {self.trial_licensed}\n'
+                    f'float_licensed: {self.float_licensed}\n'
+                    f'subscription_licensed: {self.subscription_licensed}\n'
+                    f'licensed: {self.licensed}\n'
+                    f'checked: {self.checked}\n'
+                    f'days_left: {self.days_left}\n'
+                    f'license_type: {self.license_type}\n'
+                    f'show_message: {self.show_message}\n---')
 
 
 def _output_check_result(res) -> None:
@@ -190,11 +205,19 @@ def check_license(product: int) -> Optional[float]:
     return None
 
 
+def check_all_licenses() -> None:
+    _log.yellow('check_all_licenses start')
+    check_license(ProductType.FACEBUILDER)
+    check_license(ProductType.GEOTRACKER)
+    check_license(ProductType.FACETRACKER)
+    _log.output('check_all_licenses end >>>')
+
+
 def draw_upgrade_license_box(layout, product):
-    if not fb_license_status.checked and not fb_license_status.show_message:
+    license_status = get_product_license_status(product)
+    if not license_status.checked or not license_status.show_message:
         return
 
-    license_status = get_product_license_status(product)
     box = layout.box()
     main_col = box.column(align=True)
     split = main_col.split(factor=0.1, align=True)
