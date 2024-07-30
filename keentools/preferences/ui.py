@@ -62,6 +62,7 @@ from .operators import get_product_license_manager
 from .hotkeys import (geotracker_keymaps_register,
                       all_keymaps_unregister,
                       facetracker_keymaps_register)
+from ..common.license_checker import ft_license_timer, draw_upgrade_license_box
 
 
 _log = KTLogger(__name__)
@@ -1105,9 +1106,11 @@ class KTAddonPreferences(AddonPreferences):
         self._draw_gt_user_preferences(col)
 
     def _draw_facetracker_preferences(self, layout: Any) -> None:
+        ft_license_timer.start_timer()
         col = self._make_indent_column(layout)
-        self._draw_plugin_license_info(col, ProductType.FACETRACKER,
-                                       message_only=True)
+        draw_upgrade_license_box(col, ProductType.FACETRACKER)
+        # self._draw_plugin_license_info(col, ProductType.FACETRACKER,
+        #                                message_only=True)
         col.separator()
         self._draw_ft_user_preferences(col)
 

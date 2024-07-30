@@ -47,13 +47,11 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
-from ...common.license_checker import check_license, draw_upgrade_license_box
+from ...common.license_checker import fb_license_timer, draw_upgrade_license_box
 
 
 _log = KTLogger(__name__)
 _fb_grace_timer = KTGraceTimer(ProductType.FACEBUILDER)
-bpy_timer_register(partial(check_license, ProductType.FACEBUILDER),
-                   first_interval=Config.fb_license_check_timeout)
 
 
 def _state_valid_to_show(state):
@@ -319,6 +317,7 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
             self._draw_start_panel(layout)
             KTUpdater.call_updater('FaceBuilder')
             _fb_grace_timer.start()
+            fb_license_timer.start_timer()
             _exit_from_localview_button(layout, context)
             return
 
@@ -329,6 +328,7 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
             _exit_from_localview_button(layout, context)
             KTUpdater.call_updater('FaceBuilder')
             _fb_grace_timer.start()
+            fb_license_timer.start_timer()
 
 
 class FB_PT_UpdatePanel(KT_PT_UpdatePanel):
@@ -673,6 +673,9 @@ class FB_PT_SupportPanel(AllVisible, Panel):
         op = col.operator(Config.kt_share_feedback_idname,
                           icon='OUTLINER_OB_LIGHT')
         op.product = ProductType.FACEBUILDER
+
+
+fb_license_timer.start_timer()
 
 
 CLASSES_TO_REGISTER = (FB_PT_HeaderPanel,

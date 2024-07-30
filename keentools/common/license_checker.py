@@ -26,6 +26,7 @@ from ..addon_config import (Config,
                             ProductType,
                             product_name)
 from ..preferences.operators import get_product_license_manager
+from ..utils.timer import KTTimer
 from ..blender_independent_packages.pykeentools_loader \
     import is_installed as pkt_is_installed, module as pkt_module
 
@@ -35,6 +36,7 @@ _log = KTLogger(__name__)
 
 class KTLicenseStatus:
     def __init__(self, product: int):
+        _log.red(f'{self.__class__.__name__}.__init__ {product_name(product)}')
         self.product: int = product
         self.response: Any = None
         self.attempts: int = 0
@@ -179,7 +181,7 @@ def get_upgrade_url(product: int) -> str:
 
 
 def check_license(product: int) -> Optional[float]:
-    _log.output(f'LICENSE CHECK FOR {product_name(product)}')
+    _log.magenta(f'LICENSE CHECK FOR {product_name(product)}')
     if not pkt_is_installed():
         _log.info(f'Core is not installed. '
                   f'Wait for {Config.kt_license_recheck_timeout} sec.')
@@ -235,3 +237,32 @@ def draw_upgrade_license_box(layout, product):
         col.label(text='Your free trial is over')
     op = main_col.operator(Config.kt_upgrade_product_idname, icon='WORLD')
     op.product = product
+
+
+class KTLicenseTimer(KTTimer):
+    def __init__(self, product: int, interval: float = 600.0):
+        super().__init__()
+        self._interval: float = interval
+        self._product: int = product
+
+    def _callback(self) -> Optional[float]:
+        if self.check_stop_all_timers():
+            return None
+        check_result = check_license(self._product)
+        if check_result is None:
+            self.disable_timer()
+            return None
+        return check_result
+
+    def start_timer(self) -> None:
+        if not self.is_active() and self.is_enabled() and pkt_is_installed():
+            _log.red(f'timer started {product_name(self._product)}')
+            self._start(self._callback, persistent=True)
+
+    def stop_timer(self) -> None:
+        self._stop(self._callback)
+
+
+fb_license_timer = KTLicenseTimer(ProductType.FACEBUILDER)
+gt_license_timer = KTLicenseTimer(ProductType.GEOTRACKER)
+ft_license_timer = KTLicenseTimer(ProductType.FACETRACKER)

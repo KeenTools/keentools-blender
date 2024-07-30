@@ -35,6 +35,7 @@ def stop_all_working_timers(value: bool = True) -> None:
 class KTTimer:
     def __init__(self):
         self._active: bool = False
+        self._enabled: bool = True
 
     def check_stop_all_timers(self) -> bool:
         if _stop_all_timers:
@@ -49,6 +50,16 @@ class KTTimer:
 
     def is_active(self) -> bool:
         return self._active
+
+    def disable_timer(self) -> None:
+        self._enabled = False
+        _log.red('timer is disabled')
+
+    def enable_timer(self) -> None:
+        self._enabled = True
+
+    def is_enabled(self) -> bool:
+        return self._enabled
 
     def _start(self, callback: Callable, persistent: bool=True) -> None:
         self._stop(callback)
