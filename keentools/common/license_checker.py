@@ -78,12 +78,12 @@ class KTLicenseStatus:
             self.license_type = 'expired trial'
             self.show_message = True
 
-        self.output_state()
+        self.log_state()
         _log.output('parse_response end >>>')
         return True
 
-    def output_state(self) -> None:
-        _log.yellow(f'output_state:\n---\n'
+    def log_state(self) -> None:
+        _log.yellow(f'{self.__class__.__name__} state:\n---\n'
                     f'product: {self.product}\n'
                     f'response: {self.response}\n'
                     f'attempts: {self.attempts}\n'
