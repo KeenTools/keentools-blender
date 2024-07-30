@@ -45,6 +45,7 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
 from ...tracker.calc_timer import CalcTimer
+from ...preferences.operators import get_product_license_manager
 
 
 _log = KTLogger(__name__)
@@ -219,10 +220,11 @@ def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
     text_viewport.start_viewport(area=area)
 
     rw, rh = bpy_render_frame()
+    license_manager = get_product_license_manager(product)
     runner = KTClassLoader.PrecalcRunner_class()(
         precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,
-        KTClassLoader.GeoTracker_class().license_manager(), True)
+        license_manager, True)
 
     pt = PrecalcTimer(area, runner, product=product, viewport=text_viewport)
     if pt.start():
