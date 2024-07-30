@@ -138,19 +138,43 @@ def get_mesh_vert_set(me: Any) -> Set:
             for k in range(me.face_size(i))}
 
 
-def change_mask_config(fb: Any, geo_mesh: Any) -> None:
+def change_mask_config(fb: Any, geo_mesh: Any) -> bool:
+    def _looking_for_mask_with_non_unique_points(
+            fb: Any, masks: List, geo_mesh_faces_count: int) -> bool:
+        _log.red('looking for mask having zero unique points (mouth) start')
+        for i in range(len(masks)):
+            if not masks[i]:
+                continue
+            fb.set_mask(i, not masks[i])
+            mesh = get_fb_mesh_for_texturing(fb)
+            if geo_mesh_faces_count == mesh.faces_count():
+                _log.output(f'zero unique points mask (mouth) [{i}] was found')
+                return True
+            fb.set_mask(i, masks[i])
+        return False
+
     _log.yellow('change_mask_config start')
+    geo_mesh_faces_count = geo_mesh.faces_count()
+
     all_points_set = {x for x in range(geo_mesh.points_count())}
     rest_points_set = all_points_set.difference(get_mesh_vert_set(geo_mesh))
     masks = fb.masks()
-    masks_count = len(fb.masks())
+    masks_count = len(masks)
 
     if not rest_points_set:
         for i in range(masks_count):
             fb.set_mask(i, True)
         _log.output(f'change_mask_config: all parts are visible >>>')
-        return
 
+        mesh = get_fb_mesh_for_texturing(fb)
+        if geo_mesh_faces_count == mesh.faces_count():
+            _log.output(f'change_mask_config: all visible end >>>')
+            return True
+
+        _log.red('change_mask_config: polycounts differ')
+        return _looking_for_mask_with_non_unique_points(fb,
+                                                        [True] * masks_count,
+                                                        geo_mesh_faces_count)
     for i in range(masks_count):
         fb.set_mask(i, False)
 
@@ -162,7 +186,20 @@ def change_mask_config(fb: Any, geo_mesh: Any) -> None:
 
     for i in range(masks_count):
         fb.set_mask(i, masks[i])
-    _log.output(f'change_mask_config: {masks} >>>')
+
+    mesh = get_fb_mesh_for_texturing(fb)
+    _log.output(f'change_mask_config:\n'
+                f'geo_mesh.faces_count: {geo_mesh_faces_count}\n'
+                f'mesh.faces_count: {mesh.faces_count()}\n'
+                f'geo_mesh.points_count: {geo_mesh.points_count()}\n'
+                f'mesh.points_count: {mesh.points_count()}\n')
+
+    if geo_mesh_faces_count == mesh.faces_count():
+        return True
+
+    return _looking_for_mask_with_non_unique_points(fb,
+                                                    [True] * masks_count,
+                                                    geo_mesh_faces_count)
 
 
 def empty_edge_indices_and_uvs() -> Tuple[Any, Any]:
