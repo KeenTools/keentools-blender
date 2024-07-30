@@ -180,12 +180,13 @@ def get_upgrade_url(product: int) -> str:
     return url
 
 
-def check_license(product: int) -> Optional[float]:
+def check_license(
+        product: int,
+        timeout: float = Config.kt_license_recheck_timeout) -> Optional[float]:
     _log.magenta(f'LICENSE CHECK FOR {product_name(product)}')
     if not pkt_is_installed():
-        _log.info(f'Core is not installed. '
-                  f'Wait for {Config.kt_license_recheck_timeout} sec.')
-        return Config.kt_license_recheck_timeout
+        _log.info(f'Core is not installed. Wait for {timeout} sec.')
+        return timeout
 
     try:
         lm = get_product_license_manager(product=product)
@@ -197,11 +198,11 @@ def check_license(product: int) -> Optional[float]:
         license_status = get_product_license_status(product)
         license_status.response = res
         if not license_status.parse_response():
-            return Config.kt_license_recheck_timeout
+            return timeout
         license_status.checked = True
     except Exception as err:
         _log.error(f'check_license Exception:\n{str(err)}')
-        return Config.kt_license_recheck_timeout
+        return timeout
 
     _log.output('LICENSE CHECK end >>>')
     return None
@@ -248,7 +249,7 @@ class KTLicenseTimer(KTTimer):
     def _callback(self) -> Optional[float]:
         if self.check_stop_all_timers():
             return None
-        check_result = check_license(self._product)
+        check_result = check_license(self._product, self._interval)
         if check_result is None:
             self.disable_timer()
             return None
@@ -263,6 +264,9 @@ class KTLicenseTimer(KTTimer):
         self._stop(self._callback)
 
 
-fb_license_timer = KTLicenseTimer(ProductType.FACEBUILDER)
-gt_license_timer = KTLicenseTimer(ProductType.GEOTRACKER)
-ft_license_timer = KTLicenseTimer(ProductType.FACETRACKER)
+fb_license_timer = KTLicenseTimer(ProductType.FACEBUILDER,
+                                  Config.kt_license_recheck_timeout)
+gt_license_timer = KTLicenseTimer(ProductType.GEOTRACKER,
+                                  Config.kt_license_recheck_timeout)
+ft_license_timer = KTLicenseTimer(ProductType.FACETRACKER,
+                                  Config.kt_license_recheck_timeout)
