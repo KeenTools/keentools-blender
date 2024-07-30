@@ -140,8 +140,9 @@ def get_mesh_vert_set(me: Any) -> Set:
 
 def change_mask_config(fb: Any, geo_mesh: Any) -> bool:
     def _looking_for_mask_with_non_unique_points(
-            fb: Any, masks: List, geo_mesh_faces_count: int) -> bool:
+            fb: Any, geo_mesh_faces_count: int) -> bool:
         _log.red('looking for mask having zero unique points (mouth) start')
+        masks = fb.masks()
         for i in range(len(masks)):
             if not masks[i]:
                 continue
@@ -173,7 +174,6 @@ def change_mask_config(fb: Any, geo_mesh: Any) -> bool:
 
         _log.red('change_mask_config: polycounts differ')
         return _looking_for_mask_with_non_unique_points(fb,
-                                                        [True] * masks_count,
                                                         geo_mesh_faces_count)
     for i in range(masks_count):
         fb.set_mask(i, False)
@@ -197,9 +197,7 @@ def change_mask_config(fb: Any, geo_mesh: Any) -> bool:
     if geo_mesh_faces_count == mesh.faces_count():
         return True
 
-    return _looking_for_mask_with_non_unique_points(fb,
-                                                    [True] * masks_count,
-                                                    geo_mesh_faces_count)
+    return _looking_for_mask_with_non_unique_points(fb, geo_mesh_faces_count)
 
 
 def empty_edge_indices_and_uvs() -> Tuple[Any, Any]:
