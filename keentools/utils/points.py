@@ -49,7 +49,7 @@ class KTScreenPins:
         return self._pins
 
     def set_pins(self, arr: Any) -> None:
-        _log.output(f'set_pins:\n{arr}')
+        _log.output(f'set_pins: {len(arr)}')
         self._pins = arr
         assert len(self._pins.shape) == 2
 

@@ -52,8 +52,12 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                        in_edit_mode_screen_message,
                                        how_to_show_wireframe_screen_message,
                                        clipping_changed_screen_message)
-from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
-                                    subscribe_movie_clip_color_space_watcher)
+from ..geotracker.callbacks import (
+    subscribe_camera_lens_watcher as gt_subscribe_camera_lens_watcher,
+    subscribe_movie_clip_color_space_watcher as gt_subscribe_movie_clip_color_space_watcher)
+from ..facetracker.callbacks import (
+    subscribe_camera_lens_watcher as ft_subscribe_camera_lens_watcher,
+    subscribe_movie_clip_color_space_watcher as ft_subscribe_movie_clip_color_space_watcher)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
@@ -363,8 +367,9 @@ class PinMode(Operator):
         _log.output(f'self.geotracker_num: {self.geotracker_num}')
 
         settings = self.get_settings()
+        product = settings.product_type()
         check_status = common_checks(
-            product = settings.product_type(),
+            product=product,
             object_mode=True, is_calculating=True,
             stop_other_pinmode=True,
             reload_geotracker=True, geotracker=True,
@@ -435,8 +440,14 @@ class PinMode(Operator):
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
 
-        subscribe_camera_lens_watcher(new_geotracker.camobj)
-        subscribe_movie_clip_color_space_watcher(new_geotracker)
+        if product == ProductType.GEOTRACKER:
+            gt_subscribe_camera_lens_watcher(new_geotracker.camobj)
+            gt_subscribe_movie_clip_color_space_watcher(new_geotracker)
+        elif product == ProductType.FACETRACKER:
+            ft_subscribe_camera_lens_watcher(new_geotracker.camobj)
+            ft_subscribe_movie_clip_color_space_watcher(new_geotracker)
+        else:
+            assert False, 'Wrong product in tracker Pinmode'
 
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:

@@ -439,6 +439,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
+            _log.red('static_focal_length: no geotracker')
             return focal_mm_to_px(50.0, *bpy_render_frame())  # Undefined case
         return geotracker.static_focal_length
 
@@ -470,4 +471,4 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
                                            cam_data.sensor_width)
 
     def reset(self) -> None:
-        _log.output('gt reset call')
+        _log.output('tracker reset call')
