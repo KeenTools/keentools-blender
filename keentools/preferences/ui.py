@@ -1108,7 +1108,10 @@ class KTAddonPreferences(AddonPreferences):
     def _draw_facetracker_preferences(self, layout: Any) -> None:
         ft_license_timer.start_timer()
         col = self._make_indent_column(layout)
-        draw_upgrade_license_box(col, ProductType.FACETRACKER)
+        draw_upgrade_license_box(col, ProductType.FACETRACKER,
+                                 days_left_template='Beta: {} days left',
+                                 over_template='Your beta is expired',
+                                 button=False)
         # self._draw_plugin_license_info(col, ProductType.FACETRACKER,
         #                                message_only=True)
         col.separator()

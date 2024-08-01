@@ -216,7 +216,10 @@ def check_all_licenses() -> None:
     _log.output('check_all_licenses end >>>')
 
 
-def draw_upgrade_license_box(layout, product):
+def draw_upgrade_license_box(layout, product: int,
+                             days_left_template: str = 'Trial: {} days left',
+                             over_template: str = 'Your free trial is over',
+                             button: bool = True) -> None:
     license_status = get_product_license_status(product)
     if not license_status.checked or not license_status.show_message:
         return
@@ -230,14 +233,16 @@ def draw_upgrade_license_box(layout, product):
     if license_status.license_type == 'trial':
         col = split.column(align=True)
         col.alert = license_status.days_left <= Config.license_minimum_days_for_warning
-        col.label(text=f'{license_status.days_left} days of free trial remaining')
+        col.label(text=days_left_template.format(license_status.days_left))
     else:
         col = split.column(align=True)
         col.alert = True
         col.scale_y = Config.text_scale_y
-        col.label(text='Your free trial is over')
-    op = main_col.operator(Config.kt_upgrade_product_idname, icon='WORLD')
-    op.product = product
+        col.label(text=over_template)
+
+    if button:
+        op = main_col.operator(Config.kt_upgrade_product_idname, icon='WORLD')
+        op.product = product
 
 
 class KTLicenseTimer(KTTimer):

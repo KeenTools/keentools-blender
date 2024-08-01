@@ -220,7 +220,10 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             self._pkt_install_offer(layout)
             return
 
-        draw_upgrade_license_box(layout, ProductType.FACETRACKER)
+        draw_upgrade_license_box(layout, ProductType.FACETRACKER,
+                                 days_left_template='Beta: {} days left',
+                                 over_template='Your beta is expired',
+                                 button=False)
 
         col = layout.column(align=True)
         col.enabled = common_loader().ft_head_mode() == 'NONE'
