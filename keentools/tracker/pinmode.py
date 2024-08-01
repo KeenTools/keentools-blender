@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Set, Optional, Tuple
+from typing import Any, Set, Optional, Tuple, Callable
 from uuid import uuid4
 
 from bpy.types import Area, Operator
@@ -55,9 +55,6 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
 from ..geotracker.callbacks import (
     subscribe_camera_lens_watcher as gt_subscribe_camera_lens_watcher,
     subscribe_movie_clip_color_space_watcher as gt_subscribe_movie_clip_color_space_watcher)
-from ..facetracker.callbacks import (
-    subscribe_camera_lens_watcher as ft_subscribe_camera_lens_watcher,
-    subscribe_movie_clip_color_space_watcher as ft_subscribe_movie_clip_color_space_watcher)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
@@ -83,6 +80,9 @@ def _playback_message(area: Area, *, product: int) -> None:
 class PinMode(Operator):
     _shift_pressed: bool = False
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
+
+    subscribe_camera_lens_watcher: Callable = gt_subscribe_camera_lens_watcher
+    subscribe_movie_clip_color_space_watcher: Callable = gt_subscribe_movie_clip_color_space_watcher
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()
@@ -440,14 +440,8 @@ class PinMode(Operator):
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
 
-        if product == ProductType.GEOTRACKER:
-            gt_subscribe_camera_lens_watcher(new_geotracker.camobj)
-            gt_subscribe_movie_clip_color_space_watcher(new_geotracker)
-        elif product == ProductType.FACETRACKER:
-            ft_subscribe_camera_lens_watcher(new_geotracker.camobj)
-            ft_subscribe_movie_clip_color_space_watcher(new_geotracker)
-        else:
-            assert False, 'Wrong product in tracker Pinmode'
+        self.subscribe_camera_lens_watcher(new_geotracker.camobj)
+        self.subscribe_movie_clip_color_space_watcher(new_geotracker)
 
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:
