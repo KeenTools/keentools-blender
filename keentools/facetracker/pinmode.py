@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Callable
 
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
@@ -28,7 +28,9 @@ from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
 from ..preferences.hotkeys import (facetracker_keymaps_register,
                                    all_keymaps_unregister)
-
+from ..facetracker.callbacks import (
+    subscribe_camera_lens_watcher as ft_subscribe_camera_lens_watcher,
+    subscribe_movie_clip_color_space_watcher as ft_subscribe_movie_clip_color_space_watcher)
 
 _log = KTLogger(__name__)
 
@@ -48,6 +50,9 @@ class FT_OT_PinMode(PinMode):
     movepin_operator_idname: str = FTConfig.ft_movepin_idname
 
     bus_id: IntProperty(default=-1)
+
+    subscribe_camera_lens_watcher: Callable = ft_subscribe_camera_lens_watcher
+    subscribe_movie_clip_color_space_watcher: Callable = ft_subscribe_movie_clip_color_space_watcher
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()

@@ -43,14 +43,12 @@ from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
-from ...common.license_checker import check_license, draw_upgrade_license_box
+from ...common.license_checker import gt_license_timer, draw_upgrade_license_box
 from ...utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
 _gt_grace_timer = KTGraceTimer(ProductType.GEOTRACKER)
-bpy_timer_register(partial(check_license, ProductType.GEOTRACKER),
-                   first_interval=Config.gt_license_check_timeout)
 
 
 def _pinmode_escaper(area: Area) -> None:
@@ -236,6 +234,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
         _gt_grace_timer.start()
+        gt_license_timer.start_timer()
 
 
 class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
@@ -1140,3 +1139,6 @@ class GT_PT_SupportPanel(AllVisible, Panel):
         op = col.operator(Config.kt_share_feedback_idname,
                           icon='OUTLINER_OB_LIGHT')
         op.product = ProductType.GEOTRACKER
+
+
+gt_license_timer.start_timer()

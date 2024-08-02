@@ -1556,9 +1556,9 @@ def _get_operator_origin_matrix(origin_point: str, *, product: int) -> Matrix:
     return origin_matrix
 
 
-def scale_scene_tracking_preview_func(
-        operator: Operator, context: Any, *,
-        product: int = ProductType.GEOTRACKER) -> None:
+def scale_scene_tracking_preview_func(operator: Operator, context: Any) -> None:
+    product = operator.product
+
     if not revert_object_states(product=product):
         return
 

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Set, Optional, Tuple
+from typing import Any, Set, Optional, Tuple, Callable
 from uuid import uuid4
 
 from bpy.types import Area, Operator
@@ -52,8 +52,9 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                        in_edit_mode_screen_message,
                                        how_to_show_wireframe_screen_message,
                                        clipping_changed_screen_message)
-from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
-                                    subscribe_movie_clip_color_space_watcher)
+from ..geotracker.callbacks import (
+    subscribe_camera_lens_watcher as gt_subscribe_camera_lens_watcher,
+    subscribe_movie_clip_color_space_watcher as gt_subscribe_movie_clip_color_space_watcher)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
@@ -79,6 +80,9 @@ def _playback_message(area: Area, *, product: int) -> None:
 class PinMode(Operator):
     _shift_pressed: bool = False
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
+
+    subscribe_camera_lens_watcher: Callable = gt_subscribe_camera_lens_watcher
+    subscribe_movie_clip_color_space_watcher: Callable = gt_subscribe_movie_clip_color_space_watcher
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()
@@ -363,8 +367,9 @@ class PinMode(Operator):
         _log.output(f'self.geotracker_num: {self.geotracker_num}')
 
         settings = self.get_settings()
+        product = settings.product_type()
         check_status = common_checks(
-            product = settings.product_type(),
+            product=product,
             object_mode=True, is_calculating=True,
             stop_other_pinmode=True,
             reload_geotracker=True, geotracker=True,
@@ -435,8 +440,8 @@ class PinMode(Operator):
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
 
-        subscribe_camera_lens_watcher(new_geotracker.camobj)
-        subscribe_movie_clip_color_space_watcher(new_geotracker)
+        self.subscribe_camera_lens_watcher(new_geotracker.camobj)
+        self.subscribe_movie_clip_color_space_watcher(new_geotracker)
 
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:

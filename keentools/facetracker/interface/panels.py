@@ -45,13 +45,11 @@ from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
-from ...common.license_checker import check_license, draw_upgrade_license_box
+from ...common.license_checker import ft_license_timer, draw_upgrade_license_box
 
 
 _log = KTLogger(__name__)
 _ft_grace_timer = KTGraceTimer(ProductType.FACETRACKER)
-bpy_timer_register(partial(check_license, ProductType.FACETRACKER),
-                   first_interval=Config.ft_license_check_timeout)
 
 
 def _pinmode_escaper(area: Area) -> None:
@@ -222,7 +220,10 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             self._pkt_install_offer(layout)
             return
 
-        draw_upgrade_license_box(layout, ProductType.FACETRACKER)
+        draw_upgrade_license_box(layout, ProductType.FACETRACKER,
+                                 days_left_template='Beta: {} days left',
+                                 over_template='Your beta is expired',
+                                 button=False)
 
         col = layout.column(align=True)
         col.enabled = common_loader().ft_head_mode() == 'NONE'
@@ -232,6 +233,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('FaceTracker')
         _ft_grace_timer.start()
+        ft_license_timer.start_timer()
 
 
 def _fb_view_panel_active() -> bool:
@@ -1231,3 +1233,6 @@ class FT_PT_SupportPanel(View3DPanel):
         op = col.operator(Config.kt_share_feedback_idname,
                           icon='OUTLINER_OB_LIGHT')
         op.product = ProductType.FACETRACKER
+
+
+ft_license_timer.start_timer()

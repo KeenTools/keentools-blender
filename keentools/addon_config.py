@@ -147,9 +147,6 @@ class Config:
     default_tex_uv_expand_percents: float = 0.1
 
     license_minimum_days_for_warning: int = 7
-    fb_license_check_timeout: float = 1.0
-    gt_license_check_timeout: float = 2.0
-    ft_license_check_timeout: float = 3.0
     kt_license_recheck_timeout: float = 360.0
 
     # FaceBuilder Default Colors

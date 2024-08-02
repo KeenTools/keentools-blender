@@ -108,6 +108,7 @@ class TrackerItem(PropertyGroup):
         return self.serial_str
 
     def save_serial_str(self, serial: str) -> None:
+        _log.blue('save_serial_str')
         self.serial_str = serial
 
     def camera_mode(self) -> None:
