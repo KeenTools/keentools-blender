@@ -16,8 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Callable
+from typing import Any, Optional
 
+from bpy.types import Object
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
@@ -51,8 +52,11 @@ class FT_OT_PinMode(PinMode):
 
     bus_id: IntProperty(default=-1)
 
-    subscribe_camera_lens_watcher: Callable = ft_subscribe_camera_lens_watcher
-    subscribe_movie_clip_color_space_watcher: Callable = ft_subscribe_movie_clip_color_space_watcher
+    def subscribe_camera_lens_watcher(self, camobj: Optional[Object]) -> None:
+        return ft_subscribe_camera_lens_watcher(camobj)
+
+    def subscribe_movie_clip_color_space_watcher(self, geotracker: Any) -> None:
+        return ft_subscribe_movie_clip_color_space_watcher(geotracker)
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()

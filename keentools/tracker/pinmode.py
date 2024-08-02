@@ -19,7 +19,7 @@
 from typing import Any, Set, Optional, Tuple, Callable
 from uuid import uuid4
 
-from bpy.types import Area, Operator
+from bpy.types import Area, Operator, Object
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -81,8 +81,11 @@ class PinMode(Operator):
     _shift_pressed: bool = False
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
 
-    subscribe_camera_lens_watcher: Callable = gt_subscribe_camera_lens_watcher
-    subscribe_movie_clip_color_space_watcher: Callable = gt_subscribe_movie_clip_color_space_watcher
+    def subscribe_camera_lens_watcher(self, camobj: Optional[Object]) -> None:
+        return gt_subscribe_camera_lens_watcher(camobj)
+
+    def subscribe_movie_clip_color_space_watcher(self, geotracker: Any) -> None:
+        return gt_subscribe_movie_clip_color_space_watcher(geotracker)
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()
