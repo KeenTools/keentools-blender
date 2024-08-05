@@ -30,6 +30,7 @@ from ..tracker.tracking_blendshapes import reorder_tracking_frames
 from ..preferences.hotkeys import (facetracker_keymaps_register,
                                    all_keymaps_unregister)
 from ..facetracker.callbacks import (
+    recalculate_focal as ft_recalculate_focal,
     subscribe_camera_lens_watcher as ft_subscribe_camera_lens_watcher,
     subscribe_movie_clip_color_space_watcher as ft_subscribe_movie_clip_color_space_watcher)
 
@@ -57,6 +58,9 @@ class FT_OT_PinMode(PinMode):
 
     def subscribe_movie_clip_color_space_watcher(self, geotracker: Any) -> None:
         return ft_subscribe_movie_clip_color_space_watcher(geotracker)
+
+    def recalculate_focal(self, use_current_frame: bool) -> bool:
+        return ft_recalculate_focal(use_current_frame)
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()

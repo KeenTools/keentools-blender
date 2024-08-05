@@ -146,6 +146,8 @@ class Config:
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
 
+    focal_length_tolerance: float = 0.01
+
     license_minimum_days_for_warning: int = 7
     kt_license_recheck_timeout: float = 360.0
 

@@ -290,7 +290,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         geotracker.focal_length_mode = enum_value.name
 
     def _set_static_fl(self, static_fl: float) -> None:
-        _log.output(f'_set_static_fl: {static_fl}')
+        _log.yellow(f'_set_static_fl: {static_fl} start')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -299,17 +299,19 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         if not geotracker.camobj:
             return
         cam_data = geotracker.camobj.data
-        _log.output('remove_fcurve_from_object: lens')
+        _log.output(f'remove_fcurve_from_object: lens={cam_data.lens}')
         remove_fcurve_from_object(cam_data, 'lens')
-        cam_data.lens = focal_px_to_mm(static_fl, *bpy_render_frame(),
-                                       cam_data.sensor_width)
+        value = focal_px_to_mm(static_fl, *bpy_render_frame(),
+                               cam_data.sensor_width)
+        cam_data.lens = value
+        _log.output(f'_set_static_fl lens={value} >>>')
 
     def serialize(self) -> str:
-        _log.output('serialize call')
+        _log.cyan('serialize call')
         return ''
 
     def deserialize(self, serial_txt: str) -> bool:
-        _log.output(f'deserialize: {serial_txt}')
+        _log.cyan(f'deserialize: {serial_txt}')
         return True
 
     def model_mat_at(self, frame: int) -> Any:
@@ -329,7 +331,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return geotracker.calc_model_matrix()
 
     def set_model_mat_at(self, frame: int, model_mat: Any) -> None:
-        _log.output(f'set_model_mat_at1: {frame}')
+        _log.cyan(f'set_model_mat_at1: {frame}')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -382,17 +384,17 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
                 remove_relative_shape_keyframe(frame)
 
     def trackframes(self) -> List[int]:
-        _log.output('trackframes call')
+        _log.cyan('trackframes start')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return []
         track_frames = get_object_keyframe_numbers(geotracker.animatable_object())
-        _log.output(f'trackframes: {track_frames}')
+        _log.output(f'trackframes: {track_frames} >>>')
         return track_frames
 
     def zoom_focal_length_at(self, frame: int) -> float:
-        _log.output(f'zoom_focal_length_at: {frame}')
+        _log.cyan(f'zoom_focal_length_at: {frame}')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.camobj:
@@ -404,7 +406,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
     def get_default_zoom_focal_length(self) -> float:
-        _log.output('get_default_zoom_focal_length')
+        _log.cyan('get_default_zoom_focal_length')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -414,7 +416,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
                               camera_sensor_width(geotracker.camobj))
 
     def set_default_zoom_focal_length(self, default_fl: float) -> None:
-        _log.output(f'set_default_zoom_focal_length: {default_fl}')
+        _log.cyan(f'set_default_zoom_focal_length: {default_fl}')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -422,16 +424,16 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         geotracker.default_zoom_focal_length = default_fl
 
     def set_zoom_focal_length_mode(self, default_fl: float) -> None:
-        _log.output('set_zoom_focal_length_mode call')
+        _log.cyan('set_zoom_focal_length_mode')
         self.set_default_zoom_focal_length(default_fl)
         self._set_fl_mode(pkt_module().TrackerFocalLengthMode.ZOOM_FOCAL_LENGTH)
 
     def set_static_focal_length(self, static_fl: float) -> None:
-        _log.output(f'set_static_focal_length: {static_fl}')
+        _log.cyan(f'set_static_focal_length: {static_fl}')
         self._set_static_fl(static_fl)
 
     def set_static_focal_length_mode(self, static_fl: float) -> None:
-        _log.output(f'set_static_focal_length_mode: {static_fl}')
+        _log.cyan(f'set_static_focal_length_mode: {static_fl}')
         self._set_fl_mode(pkt_module().TrackerFocalLengthMode.STATIC_FOCAL_LENGTH)
         self._set_static_fl(static_fl)
 
@@ -444,7 +446,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         return geotracker.static_focal_length
 
     def set_camera_focal_length_mode(self) -> None:
-        _log.output('set_camera_focal_length_mode')
+        _log.cyan('set_camera_focal_length_mode')
         self._set_fl_mode(pkt_module().TrackerFocalLengthMode.CAMERA_FOCAL_LENGTH)
 
     def focal_length_mode(self) -> Any:
@@ -455,7 +457,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         return self._mode_by_value(geotracker.focal_length_mode)
 
     def set_zoom_focal_length_at(self, frame: int, fl: float) -> None:
-        _log.output('set_zoom_focal_length_at')
+        _log.cyan(f'set_zoom_focal_length_at {frame} {fl}')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.camobj:
@@ -471,4 +473,4 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
                                            cam_data.sensor_width)
 
     def reset(self) -> None:
-        _log.output('tracker reset call')
+        _log.cyan('tracker reset call')
