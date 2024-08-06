@@ -42,7 +42,7 @@ buttons = {
     ),
     FBConfig.fb_multiple_filebrowser_exec_idname: Button(
         'Add more images',
-        'New cameras will be created according to number of views'
+        'Add one or multiple reference images from files'
     ),
     FBConfig.fb_multiple_filebrowser_idname: Button(
         'Open Images',

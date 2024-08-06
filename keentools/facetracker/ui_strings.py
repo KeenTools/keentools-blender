@@ -116,7 +116,7 @@ buttons = {
     ),
     FTConfig.ft_create_facetracker_idname: Button(
         'Create new FaceTracker',
-        'Track new object'
+        'Track facial performance'
     ),
     FTConfig.ft_delete_facetracker_idname: Button(
         'Delete FaceTracker',
@@ -336,11 +336,11 @@ buttons = {
     ),
     FTConfig.ft_choose_frame_mode_idname: Button(
         'Choose frame mode',
-        'Choose frame mode description'
+        'Add another snapshot of a video frame'
     ),
     FTConfig.ft_cancel_choose_frame_idname: Button(
         'Cancel',
-        'Cancel Choose Frame Mode'
+        'Just go back'
     ),
     FTConfig.ft_add_chosen_frame_idname: Button(
         'Take Snapshot',
@@ -412,7 +412,9 @@ help_texts = {
         'Select three main elements needed for successful tracking:',
         ' ',
         'Clip - your footage (sequence or a movie file)',
-        'Geometry - 3D model of a similar shape to the object you want to track',
+        'Head - 3D head with FaceBuilder topology',
+        'New - create new FaceBuilder head using snapshots of video frames and image files',
+        'Edit - edit face geometry with FaceBuilder',
         'Camera - the viewing point relevant to which your object will be tracked',
         ' ',
         'Use Analyse option for faster tracking',
@@ -450,11 +452,12 @@ help_texts = {
         'Select whether the focal length in your shot is variable or fixed',
     ]),
     FTConfig.ft_help_tracking_idname: HelpText(_help_default_width, [
-        'Select whether you’ll be tracking Geometry or Camera.',
-        'Overlay Geometry on top of the shot in Pinmode as precisely as possible.',
+        'Select whether you\'re tracking \'Head + facial performance\' or \'Camera + facial performance\'.',
+        'Use Auto Align for automatic model placement.',
+        'Line up face geometry to the background image as precisely as possible using pins.',
         'Track forward or backwards using tracking buttons.',
-        'Adjust Geometry position manually whenever you see it\'s off.',
-        'Use the Refine button to update tracking data',
+        'Pause tracking whenever you see the mesh is off, click and drag pins to adjust its position.',
+        'Use Refine button to update tracking data.',
     ]),
     FTConfig.ft_help_appearance_idname: HelpText(_help_default_width, [
         'Here you can tweak how pins look and react to mouse and change ',

@@ -270,7 +270,7 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         row.operator(FTConfig.ft_choose_frame_mode_idname,
                      text='+ snapshot', icon='FILE_MOVIE')
         op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
-                          text='+ image file', icon='FILE_IMAGE')
+                          text='+ img file', icon='FILE_IMAGE')
         op.headnum = headnum
 
 
