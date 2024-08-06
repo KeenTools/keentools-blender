@@ -229,7 +229,7 @@ def draw_upgrade_license_box(layout, product: int,
 
     box = layout.box()
     main_col = box.column(align=True)
-    if license_status.license_type != 'trial':
+    if license_status.license_type == 'trial':
         row = main_col.row(align=True)
         col = row.column(align=True)
         col.alert = red_icon
