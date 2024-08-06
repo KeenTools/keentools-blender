@@ -303,6 +303,9 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
     def _draw_topology_is_needed(self) -> bool:
         return False
 
+    def _draw_resulting_expression_is_needed(self) -> bool:
+        return False
+
 
 class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
     bl_idname = FTConfig.ft_choose_snapshot_frame_idname

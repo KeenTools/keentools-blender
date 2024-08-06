@@ -324,6 +324,9 @@ class COMMON_FB_PT_Model:
     def _draw_topology_is_needed(self) -> bool:
         return True
 
+    def _draw_resulting_expression_is_needed(self) -> bool:
+        return True
+
     def draw(self, context):
         layout = self.layout
         settings = fb_settings()
@@ -348,7 +351,7 @@ class COMMON_FB_PT_Model:
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(layout)
 
-        if head.should_use_emotions():
+        if self._draw_resulting_expression_is_needed() and head.should_use_emotions():
             col = layout.column(align=True)
             col.label(text='Resulting expression in 3D:')
             col.prop(head, 'expression_view', text='')
