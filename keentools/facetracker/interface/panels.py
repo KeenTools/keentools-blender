@@ -273,6 +273,9 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
                           text='+ img file', icon='FILE_IMAGE')
         op.headnum = headnum
 
+    def _draw_fb_trial_info(self, layout) -> None:
+        draw_upgrade_license_box(layout, ProductType.FACEBUILDER)
+
 
 class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
     bl_idname = FTConfig.ft_fb_options_panel_idname
@@ -300,10 +303,10 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
     def poll(cls, context):
         return True
 
-    def _draw_topology_is_needed(self) -> bool:
+    def _draw_topology_enabled(self) -> bool:
         return False
 
-    def _draw_resulting_expression_is_needed(self) -> bool:
+    def _draw_resulting_expression_enabled(self) -> bool:
         return False
 
 
