@@ -1112,8 +1112,8 @@ class KTAddonPreferences(AddonPreferences):
                                  days_left_template='Beta: {} days left',
                                  over_template='Current Beta expired. Check Update!',
                                  button=False, red_icon=False, separator=False)
-        # self._draw_plugin_license_info(col, ProductType.FACETRACKER,
-        #                                message_only=True)
+        if Config.show_ft_licensing:
+            self._draw_plugin_license_info(col, ProductType.FACETRACKER)
         col.separator()
         self._draw_ft_user_preferences(col)
 
