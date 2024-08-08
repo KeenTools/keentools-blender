@@ -107,7 +107,7 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int) -> Option
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException _add_pins_to_face\n{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
         return None
     except Exception as err:
         _log.error(f'UNKNOWN EXCEPTION detect_face_pose '

@@ -110,7 +110,7 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException _add_pins_to_face\n{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceTrackerLicense)
         return None
     except Exception as err:
         _log.error(f'UNKNOWN EXCEPTION detect_face_pose '

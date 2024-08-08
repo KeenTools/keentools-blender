@@ -312,10 +312,13 @@ class KT_OT_UpgradeProduct(Operator):
     bl_options = {'REGISTER'}
 
     product: IntProperty(default=ProductType.UNDEFINED)
+    source: StringProperty(default='none')
 
     def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute [{product_name(self.product)}]')
-        url = license_checker_module().get_upgrade_url(self.product)
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'[{product_name(self.product)}] source={self.source}')
+        url = license_checker_module().get_upgrade_url(product=self.product,
+                                                       source=self.source)
         _log.output(f'\n{url}')
         bpy_url_open(url)
         _log.output(f'{self.__class__.__name__} execute end >>>')

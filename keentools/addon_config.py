@@ -379,19 +379,21 @@ def get_operator(operator_id_name: str) -> Any:
 class ErrorType:
     Unknown: int = -1
     CustomMessage: int = 0
-    NoLicense: int = 1
-    SceneDamaged: int = 2
-    CannotReconstruct: int = 3
-    CannotCreateObject: int = 4
-    MeshCorrupted: int = 5
-    PktProblem: int = 6
-    PktModelProblem: int = 7
-    DownloadingProblem: int = 8
-    FBGracePeriod: int = 9
-    GTGracePeriod: int = 10
-    FTGracePeriod: int = 11
-    ShaderProblem: int = 12
-    UnsupportedGPUBackend: int = 13
+    NoFaceBuilderLicense: int = 1
+    NoGeoTrackerLicense: int = 2
+    NoFaceTrackerLicense: int = 3
+    SceneDamaged: int = 4
+    CannotReconstruct: int = 5
+    CannotCreateObject: int = 6
+    MeshCorrupted: int = 7
+    PktProblem: int = 8
+    PktModelProblem: int = 9
+    DownloadingProblem: int = 10
+    FBGracePeriod: int = 11
+    GTGracePeriod: int = 12
+    FTGracePeriod: int = 13
+    ShaderProblem: int = 14
+    UnsupportedGPUBackend: int = 15
 
 
 @dataclass(frozen=True)

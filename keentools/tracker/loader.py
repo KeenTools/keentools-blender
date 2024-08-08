@@ -474,7 +474,10 @@ class Loader:
             cls.out_pinmode()
             show_user_preferences(facebuilder=False, geotracker=False)
             warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            warn('INVOKE_DEFAULT',
+                 msg=ErrorType.NoFaceTrackerLicense
+                 if settings.product_type() == ProductType.FACETRACKER
+                 else ErrorType.NoGeoTrackerLicense)
             return False
         except Exception as err:
             _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')

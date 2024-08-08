@@ -254,7 +254,7 @@ def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
         _log.error(f'UnlicensedException load_csv_animation_to_blendshapes:\n'
                    f'{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
         # status=True in result for non-conflict operator report as {'INFO'}
         return {'status': True, 'message': 'No FaceBuilder license',
                 'ignored': [], 'read_facs': []}

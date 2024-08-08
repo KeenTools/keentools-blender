@@ -498,7 +498,7 @@ class FB_OT_PinMode(Operator):
             if settings.license_error:
                 # Show License Warning
                 warn = get_operator(Config.kt_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
                 settings.license_error = False
                 show_user_preferences(facebuilder=False, geotracker=False)
             return True
