@@ -747,7 +747,8 @@ def remove_pins_action(*, product: int) -> ActionStatus:
         selected_pins.sort()
         for i in reversed(selected_pins):
             gt.remove_pin(i)
-            selected_pins.remove(i)
+            pins.remove_pin(i)
+        pins.clear_selected_pins()
         if gt.is_key_at(bpy_current_frame()) and not loader.solve():
             return ActionStatus(False, 'Could not remove selected pins')
         loader.load_pins_into_viewport()

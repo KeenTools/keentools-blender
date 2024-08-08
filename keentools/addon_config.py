@@ -146,6 +146,8 @@ class Config:
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
 
+    focal_length_tolerance: float = 0.01
+
     license_minimum_days_for_warning: int = 7
     kt_license_recheck_timeout: float = 360.0
 
@@ -213,6 +215,8 @@ class Config:
     integration_enabled: bool = True
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
+
+    show_ft_licensing: bool = False
 
     # Colors
     pin_color = (1.0, 0.0, 0.0, 1.0)

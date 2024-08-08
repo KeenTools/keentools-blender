@@ -24,8 +24,6 @@ from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             gt_settings,
-                            get_operator,
-                            ErrorType,
                             ActionStatus,
                             ProductType)
 from ..geotracker_config import GTConfig
@@ -88,6 +86,9 @@ class GTViewport(KTViewport):
 
     def product_type(self) -> int:
         return ProductType.GEOTRACKER
+
+    def get_settings(self) -> Any:
+        return gt_settings()
 
     def clear_stabilization_point(self):
         _log.output(_log.color('yellow', 'clear_stabilization_point'))
@@ -204,11 +205,11 @@ class GTViewport(KTViewport):
         _log.output('update_surface_points end >>>')
 
     def update_pin_sensitivity(self) -> None:
-        settings = gt_settings()
+        settings = self.get_settings()
         self._point_sensitivity = settings.pin_sensitivity
 
     def update_pin_size(self) -> None:
-        settings = gt_settings()
+        settings = self.get_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)

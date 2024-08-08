@@ -387,18 +387,14 @@ def _do_pkt_shadow_copy():
     return shadow_copy_dir
 
 
-def _add_pykeentools_to_sys_path():
+def _pkt_lib_directory() -> str:
     if os_name() == 'windows':
         pkt_directory = _do_pkt_shadow_copy()
     else:
         pkt_directory = pkt_installation_dir()
 
     pkt_lib_directory = os.path.join(pkt_directory, RELATIVE_LIB_DIRECTORY)
-    if pkt_lib_directory not in sys.path:
-        sys.path.append(pkt_lib_directory)
-    else:
-        import importlib
-        importlib.invalidate_caches()
+    return pkt_lib_directory
 
 
 def loaded():
@@ -412,7 +408,24 @@ def module():
     :return: pykeentools module
     """
     if not loaded() and _is_installed_impl():
-        _add_pykeentools_to_sys_path()
+        _log.red('* pykeentools installation start *')
+        pkt_lib_directory = _pkt_lib_directory()
+        if pkt_lib_directory not in sys.path:
+            sys.path.append(pkt_lib_directory)
+        else:
+            import importlib
+            importlib.invalidate_caches()
+
+        import pykeentools
+
+        if os_name() != 'windows':
+            _log.output('* remove installation items *')
+            if sys.path[-1] == pkt_lib_directory:
+                sys.path = sys.path[:-1]
+            m = sys.modules['pykeentools']
+            m.__file__ = f' {m.__file__}'  # invalidate path
+        _log.red('* pykeentools installation end *')
+        return pykeentools
 
     import pykeentools
     return pykeentools

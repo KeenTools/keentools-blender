@@ -1110,10 +1110,10 @@ class KTAddonPreferences(AddonPreferences):
         col = self._make_indent_column(layout)
         draw_upgrade_license_box(col, ProductType.FACETRACKER,
                                  days_left_template='Beta: {} days left',
-                                 over_template='Your beta is expired',
-                                 button=False)
-        # self._draw_plugin_license_info(col, ProductType.FACETRACKER,
-        #                                message_only=True)
+                                 over_template='Current Beta expired. Check Update!',
+                                 button=False, red_icon=False, separator=False)
+        if Config.show_ft_licensing:
+            self._draw_plugin_license_info(col, ProductType.FACETRACKER)
         col.separator()
         self._draw_ft_user_preferences(col)
 

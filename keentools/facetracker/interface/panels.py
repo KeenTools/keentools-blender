@@ -222,8 +222,8 @@ class FT_PT_FacetrackersPanel(View3DPanel):
 
         draw_upgrade_license_box(layout, ProductType.FACETRACKER,
                                  days_left_template='Beta: {} days left',
-                                 over_template='Your beta is expired',
-                                 button=False)
+                                 over_template='Current Beta expired\nCheck Update',
+                                 button=False, red_icon=False, separator=False)
 
         col = layout.column(align=True)
         col.enabled = common_loader().ft_head_mode() == 'NONE'
@@ -270,8 +270,11 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         row.operator(FTConfig.ft_choose_frame_mode_idname,
                      text='+ snapshot', icon='FILE_MOVIE')
         op = row.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
-                          text='+ image file', icon='FILE_IMAGE')
+                          text='+ img file', icon='FILE_IMAGE')
         op.headnum = headnum
+
+    def _draw_fb_trial_info(self, layout) -> None:
+        draw_upgrade_license_box(layout, ProductType.FACEBUILDER)
 
 
 class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
@@ -300,7 +303,10 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
     def poll(cls, context):
         return True
 
-    def _draw_topology_is_needed(self) -> bool:
+    def _draw_topology_enabled(self) -> bool:
+        return False
+
+    def _draw_resulting_expression_enabled(self) -> bool:
         return False
 
 

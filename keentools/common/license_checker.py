@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Optional, Any
+import re
 
 from ..utils.kt_logging import KTLogger
 from ..utils.version import BVersion
@@ -219,26 +220,36 @@ def check_all_licenses() -> None:
 def draw_upgrade_license_box(layout, product: int,
                              days_left_template: str = 'Trial: {} days left',
                              over_template: str = 'Your free trial is over',
-                             button: bool = True) -> None:
+                             button: bool = True,
+                             red_icon: bool = True,
+                             separator: bool = True) -> None:
     license_status = get_product_license_status(product)
     if not license_status.checked or not license_status.show_message:
         return
 
     box = layout.box()
     main_col = box.column(align=True)
-    split = main_col.split(factor=0.1, align=True)
-    col = split.column(align=True)
-    col.alert = True
-    col.label(text='', icon='ERROR')
     if license_status.license_type == 'trial':
-        col = split.column(align=True)
-        col.alert = license_status.days_left <= Config.license_minimum_days_for_warning
+        row = main_col.row(align=True)
+        col = row.column(align=True)
+        col.alert = red_icon
+        col.label(text='', icon='ERROR')
+
+        col = row.column(align=True)
+        col.alert = red_icon and license_status.days_left <= Config.license_minimum_days_for_warning
         col.label(text=days_left_template.format(license_status.days_left))
     else:
-        col = split.column(align=True)
-        col.alert = True
-        col.scale_y = Config.text_scale_y
-        col.label(text=over_template)
+        row = main_col.row(align=True)
+        row.alert = True
+        row.scale_y = Config.text_scale_y
+        row.label(text='', icon='ERROR')
+
+        col = row.column(align=True)
+        arr = re.split('\r\n|\n', over_template)
+        for txt in arr:
+            col.label(text=txt)
+        if separator:
+            col.separator()
 
     if button:
         op = main_col.operator(Config.kt_upgrade_product_idname, icon='WORLD')

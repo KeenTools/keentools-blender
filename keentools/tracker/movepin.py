@@ -133,6 +133,7 @@ class MovePin(bpy.types.Operator):
         return True
 
     def update_focal_length_in_all_keyframes(self) -> None:
+        _log.yellow('update_focal_length_in_all_keyframes start')
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
@@ -148,12 +149,14 @@ class MovePin(bpy.types.Operator):
             current_frame = bpy_current_frame()
             settings.start_calculating('ESTIMATE_FL')
             gt = settings.loader().kt_geotracker()
+            _log.magenta('movepin recalculate_model_for_new_focal_length')
             gt.recalculate_model_for_new_focal_length(self.old_focal_length,
                                                       new_focal_length, False,
                                                       current_frame)
             bpy_set_current_frame(current_frame)
             settings.stop_calculating()
             _log.output('FOCAL LENGTH CHANGED')
+        _log.output('update_focal_length_in_all_keyframes end >>>')
 
     def update_wireframe(self):
         pass

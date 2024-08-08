@@ -28,10 +28,8 @@ from ..addon_config import (Config,
                             ErrorType,
                             ProductType)
 from ..facetracker_config import FTConfig
-from ..utils.coords import update_head_mesh_non_neutral, get_image_space_coord, get_area_region
-from ..utils.focal_length import configure_focal_mode_and_fixes
+from ..utils.coords import get_image_space_coord, get_area_region
 from ..utils.manipulate import force_undo_push
-from ..utils.images import load_rgba
 from ..utils.bpy_common import bpy_view_camera, operator_with_context, bpy_current_frame
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .ui_strings import buttons
@@ -41,8 +39,7 @@ from ..utils.detect_faces import (get_detected_faces,
                                   not_enough_face_features_warning)
 from ..utils.images import np_array_from_background_image
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
-from ..facetracker.callbacks import (subscribe_camera_lens_watcher,
-                                     unsubscribe_camera_lens_watcher)
+from ..facetracker.callbacks import recalculate_focal
 
 
 _log = KTLogger(__name__)
@@ -125,9 +122,8 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
         _log.output(f'\ngeotracker.focal_length_estimation: {geotracker.focal_length_estimation}'
                     f'\ngeotracker.lens_mode: {geotracker.lens_mode}')
 
-        unsubscribe_camera_lens_watcher()
         ft.add_preset_pins_and_solve(current_frame)
-        subscribe_camera_lens_watcher(geotracker.camobj)
+        recalculate_focal(False)
 
         _log.output(f'pins\n{[tuple(ft.pin(current_frame, i).img_pos[:]) for i in range(ft.pins_count())]}')
 
