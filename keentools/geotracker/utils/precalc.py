@@ -71,7 +71,7 @@ class PrecalcTimer(CalcTimer):
                 _log.error(f'runner Exception:\n{str(err)}\n{type(err)}')
                 try:
                     if type(err) == pkt_module().precalc.PrecalcUnlicensedException:
-                        show_unlicensed_warning()
+                        show_unlicensed_warning(self.product)
                     elif type(err) == pkt_module().precalc.PrecalcOpenFileException:
                         show_warning_dialog('Precalc file is locked.\n'
                                             'See the System Console to get\n'

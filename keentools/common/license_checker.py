@@ -46,7 +46,7 @@ class KTLicenseStatus:
         self.subscription_licensed: bool = False
         self.licensed: bool = False
         self.checked: bool = False
-        self.days_left: int = 0
+        self.days_left: int = -1
         self.license_type: str = 'undefined'
         self.show_message: bool = False
 
@@ -130,55 +130,45 @@ def get_product_license_status(product: int) -> Any:
         return gt_license_status
     elif product == ProductType.FACETRACKER:
         return ft_license_status
-    assert False, 'Unknown product type in check_license'
+    assert False, f'Unknown product type in check_license [{product}]'
 
 
-def _upgrade_url(plugin_name: str,
-                 plugin_version: str,
-                 days_left: int = -1,
-                 os_name: str = BVersion.os_name,
-                 plugin_host: str = 'blender',
-                 current_license: str = 'trial') -> str:
-    url_txt = (f'https://keentools.io/buy-from-plugin?os={os_name}'
+def url_with_data(*, url: str = 'https://keentools.io/buy-from-plugin',
+                  plugin_name: str,
+                  plugin_version: str = f'{Config.addon_version}',
+                  days_left: int = -1,
+                  os_name: str = BVersion.os_name,
+                  plugin_host: str = 'blender',
+                  current_license: str = 'trial',
+                  source: str = 'missing_license_dialog') -> str:
+    url_txt = (f'{url}?os={os_name}'
                f'&plugin_host={plugin_host}'
                f'&plugin_name={plugin_name}'
                f'&plugin_version={plugin_version}'
                f'&days_left={days_left}'
-               f'&current_license={current_license}')
+               f'&current_license={current_license}'
+               f'&source={source}')
     return url_txt
 
 
-def _fb_upgrade_url() -> str:
-    license_status = get_product_license_status(ProductType.FACEBUILDER)
-    return _upgrade_url(plugin_name='facebuilder',
-                        plugin_version=f'{Config.addon_version}',
-                        days_left=license_status.days_left)
-
-
-def _gt_upgrade_url() -> str:
-    license_status = get_product_license_status(ProductType.GEOTRACKER)
-    return _upgrade_url(plugin_name='geotracker',
-                        plugin_version=f'{Config.addon_version}',
-                        days_left=license_status.days_left)
-
-
-def _ft_upgrade_url() -> str:
-    license_status = get_product_license_status(ProductType.GEOTRACKER)
-    return _upgrade_url(plugin_name='facetracker',
-                        plugin_version=f'{Config.addon_version}',
-                        days_left=license_status.days_left)
-
-
-def get_upgrade_url(product: int) -> str:
+def get_upgrade_url(*, product: int = ProductType.UNDEFINED,
+                    source: str = 'none') -> str:
     if product == ProductType.FACEBUILDER:
-        url = _fb_upgrade_url()
+        license_status = get_product_license_status(ProductType.FACEBUILDER)
+        return url_with_data(plugin_name='facebuilder',
+                             days_left=license_status.days_left,
+                             source=source)
     elif product == ProductType.GEOTRACKER:
-        url = _gt_upgrade_url()
+        license_status = get_product_license_status(ProductType.GEOTRACKER)
+        return url_with_data(plugin_name='geotracker',
+                             days_left=license_status.days_left,
+                             source=source)
     elif product == ProductType.FACETRACKER:
-        url = _ft_upgrade_url()
-    else:
-        assert False, 'Wrong product in get_upgrade_url'
-    return url
+        license_status = get_product_license_status(ProductType.GEOTRACKER)
+        return url_with_data(plugin_name='facetracker',
+                             days_left=license_status.days_left,
+                             source=source)
+    assert False, f'Wrong product in get_upgrade_url [{product}]'
 
 
 def check_license(
@@ -254,6 +244,7 @@ def draw_upgrade_license_box(layout, product: int,
     if button:
         op = main_col.operator(Config.kt_upgrade_product_idname, icon='WORLD')
         op.product = product
+        op.source = 'trial_notice'
 
 
 class KTLicenseTimer(KTTimer):

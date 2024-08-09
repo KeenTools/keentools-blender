@@ -134,10 +134,17 @@ def show_warning_dialog(err: Any, limit=70) -> None:
     _log.output('show_warning_dialog end >>>')
 
 
-def show_unlicensed_warning() -> None:
-    _log.output('show_unlicensed_warning call')
+def show_unlicensed_warning(product: int = ProductType.UNDEFINED) -> None:
+    _log.output(f'show_unlicensed_warning call {product_name(product)}')
     warn = get_operator(Config.kt_warning_idname)
-    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+    if product == ProductType.FACEBUILDER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
+    elif product == ProductType.GEOTRACKER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoGeoTrackerLicense)
+    elif product == ProductType.FACETRACKER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceTrackerLicense)
+    else:
+        assert False, f'Unknown product in show_unlicensed_warning [{product}]'
 
 
 def common_checks(*, object_mode: bool = False,

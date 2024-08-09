@@ -23,7 +23,11 @@ from bpy.types import Operator
 from bpy.props import IntProperty, StringProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
+from ..addon_config import (Config,
+                            get_operator,
+                            ErrorType,
+                            ProductType,
+                            product_name)
 from ..facebuilder_config import FBConfig
 from ..ui_strings import error_messages
 
@@ -46,6 +50,9 @@ class KT_OT_AddonWarning(Operator):
     content: List[str] = []
     width: int = _default_width
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+    source: StringProperty(default='missing_license_dialog')
+
     def set_content(self, txt_list: List) -> None:
         self.content = txt_list + [' ']
 
@@ -56,18 +63,33 @@ class KT_OT_AddonWarning(Operator):
         for txt in self.content:
             layout.label(text=txt)
 
-        if self.msg == ErrorType.NoLicense:
-            op = self.layout.operator(Config.kt_open_url_idname,
+        if self.msg == ErrorType.NoFaceBuilderLicense:
+            op = self.layout.operator(Config.kt_upgrade_product_idname,
                                       text='Purchase a license')
-            op.url = FBConfig.fb_license_purchase_url
+            op.product = ProductType.FACEBUILDER
+            op.source = self.source
+
+        elif self.msg == ErrorType.NoGeoTrackerLicense:
+            op = self.layout.operator(Config.kt_upgrade_product_idname,
+                                      text='Purchase a license')
+            op.product = ProductType.GEOTRACKER
+            op.source = self.source
+
+        elif self.msg == ErrorType.NoFaceTrackerLicense:
+            op = self.layout.operator(Config.kt_open_url_idname,
+                                      text='Download from Website')
+            op.url = 'https://keentools.io/products/facetracker-for-blender?utm_source=outdated-beta'
 
     def execute(self, context: Any) -> Set:
-        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense,
-                            ErrorType.FBGracePeriod, ErrorType.GTGracePeriod):
-            return {'FINISHED'}
+        if self.msg in (ErrorType.PktProblem,
+                        ErrorType.NoFaceBuilderLicense,
+                        ErrorType.NoGeoTrackerLicense,
+                        ErrorType.NoFaceTrackerLicense,
+                        ErrorType.FBGracePeriod,
+                        ErrorType.GTGracePeriod):
+            op = get_operator(Config.kt_addon_settings_idname)
+            op('EXEC_DEFAULT', show='all')
 
-        op = get_operator(Config.kt_addon_settings_idname)
-        op('EXEC_DEFAULT', show='all')
         return {'FINISHED'}
 
     def _output_error_to_console(self) -> None:

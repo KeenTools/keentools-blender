@@ -389,7 +389,7 @@ def track_to(forward: bool, *, product: int) -> ActionStatus:
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_to:\n{str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -442,7 +442,7 @@ def track_next_frame_action(forward: bool=True, *,
 
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_action: {str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -509,7 +509,7 @@ def refine_async_action(*, product: int) -> ActionStatus:
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException refine_async_action:\n{str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -563,7 +563,7 @@ def refine_all_async_action(*, product: int) -> ActionStatus:
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException refine_all_async_action: {str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
