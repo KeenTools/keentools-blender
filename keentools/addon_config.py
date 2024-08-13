@@ -217,6 +217,7 @@ class Config:
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
     show_ft_licensing: bool = False
+    show_trial_warnings: bool = True
 
     # Colors
     pin_color = (1.0, 0.0, 0.0, 1.0)
