@@ -217,6 +217,9 @@ def draw_upgrade_license_box(layout, product: int,
     if not license_status.checked or not license_status.show_message:
         return
 
+    if not Config.show_trial_warnings:
+        return
+
     box = layout.box()
     main_col = box.column(align=True)
     if license_status.license_type == 'trial':
