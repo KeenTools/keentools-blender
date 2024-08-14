@@ -65,6 +65,16 @@ def bpy_winman() -> Any:
     return bpy.data.window_managers['WinMan']
 
 
+def bpy_window_width() -> int:
+    try:
+        window = bpy_winman().windows[0]
+        width = window.width
+    except Exception as err:
+        _log.error(f'bpy_window_width:\n{str(err)}')
+        width = -1
+    return width
+
+
 def bpy_screen() -> Any:
     return bpy.context.screen
 

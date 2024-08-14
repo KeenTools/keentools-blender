@@ -423,6 +423,7 @@ class FB_OT_PinMode(Operator):
                                             wireframe_colors=True,
                                             wireframe_image=True,
                                             camera_pos=True,
+                                            ui_scale=True,
                                             load_pins=True,
                                             wireframe=True)
         if first_start:
@@ -569,6 +570,7 @@ class FB_OT_PinMode(Operator):
         if region_check or area_check:
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
             FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
+                                                ui_scale=True,
                                                 tag_redraw=True)
 
         if event.value == 'PRESS' and event.type == 'TAB':
