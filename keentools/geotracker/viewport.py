@@ -20,6 +20,7 @@ from typing import Any, List, Tuple, Optional, Callable
 import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
+from mathutils import Vector
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -42,6 +43,7 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
                                 bpy_scene_camera,
                                 bpy_background_mode,
+                                bpy_current_frame,
                                 get_scene_camera_shift)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
@@ -57,6 +59,31 @@ from ..utils.ui_redraw import force_ui_redraw
 
 
 _log = KTLogger(__name__)
+
+
+def _get_camera_2d_point(area: Area, geomobj: Object,
+                         point3d: Vector) -> Optional[Tuple]:
+    shift_x, shift_y = get_scene_camera_shift()
+    x1, y1, x2, y2 = get_camera_border(area)
+    rx, ry = bpy_render_frame()
+    camobj = bpy_scene_camera()
+    projection = camera_projection(camobj)
+    p3d = geomobj.matrix_world @ point3d
+    try:
+        transform = projection @ camobj.matrix_world.inverted()
+        vv = transform @ p3d.to_4d()
+        denom = vv[3]
+        if denom == 0:
+            return None
+
+        x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
+                                    rx, ry, shift_x, shift_y)
+        point = image_space_to_region(x, y, x1, y1, x2, y2,
+                                      shift_x, shift_y)
+    except Exception as err:
+        _log.error(f'stabilize exception:\n{str(err)}')
+        return None
+    return point
 
 
 class GTViewport(KTViewport):
@@ -105,29 +132,32 @@ class GTViewport(KTViewport):
         shift_x, shift_y = get_scene_camera_shift()
         x1, y1, x2, y2 = get_camera_border(area)
 
-        pins_average_point = self.pins().average_point_of_selected_pins()
-        if pins_average_point is None:
-            rx, ry = bpy_render_frame()
-            camobj = bpy_scene_camera()
-            projection = camera_projection(camobj)
-            p3d = geomobj.matrix_world @ bound_box_center(geomobj)
-            try:
-                transform = projection @ camobj.matrix_world.inverted()
-                vv = transform @ p3d.to_4d()
-                denom = vv[3]
-                if denom == 0:
-                    return False
+        pins = self.pins()
+        selected_pins = pins.get_selected_pins(len(pins.arr()))
 
-                x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
-                                            rx, ry, shift_x, shift_y)
-                point = image_space_to_region(x, y, x1, y1, x2, y2,
-                                              shift_x, shift_y)
+        point = None
+        if len(selected_pins) > 0:
+            loader = self.get_settings().loader()
+            gt = loader.kt_geotracker()
+            kt_pins = gt.projected_pins(bpy_current_frame())
+            rx, ry = bpy_render_frame()
+
+            try:
+                verts = [frame_to_image_space(*kt_pins[i].surface_point,
+                                              rx, ry, shift_x, shift_y)
+                         for i in selected_pins]
+                point = image_space_to_region(*np.average(verts, axis=0),
+                                              x1, y1, x2, y2, shift_x, shift_y)
             except Exception as err:
                 _log.error(f'stabilize exception:\n{str(err)}')
-                return False
-        else:
-            point = image_space_to_region(*pins_average_point,
-                                          x1, y1, x2, y2, shift_x, shift_y)
+                point = None
+
+        if point is None:
+            point3d = geomobj.matrix_world @ bound_box_center(geomobj)
+            point = _get_camera_2d_point(area, geomobj, point3d)
+
+        if point is None:
+            return False
 
         _log.output(_log.color('red', f'point: {point}'))
         if self.stabilization_region_point is None:
