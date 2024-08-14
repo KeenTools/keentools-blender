@@ -640,6 +640,7 @@ class Loader:
                                 edge_indices: bool = False,
                                 wireframe: bool = False,
                                 wireframe_data: bool = False,
+                                ui_scale: bool = False,
                                 pins_and_residuals: bool = False,
                                 timeline: bool = False,
                                 mask: bool = False,
@@ -713,6 +714,9 @@ class Loader:
                 _log.red('update_viewport_shaders edge_indices inaccessible')
         if wireframe:
             cls._update_viewport_wireframe(wireframe_data=wireframe_data)
+        if ui_scale:
+            vp = cls.viewport()
+            vp.update_ui_scale()
         if pins_and_residuals:
             cls._update_viewport_pins_and_residuals(area)
         if timeline:
