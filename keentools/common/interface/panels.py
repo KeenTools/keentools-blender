@@ -215,6 +215,9 @@ class COMMON_FB_PT_ViewsPanel:
                           text='Add Images' if icon != 'ADD' else '', icon=icon)
         op.headnum = headnum
 
+    def call_escaper(self, context) -> None:
+        pass
+
     def draw(self, context):
         settings = fb_settings()
         if settings is None:
@@ -239,6 +242,8 @@ class COMMON_FB_PT_ViewsPanel:
 
         if head.headobj and head.headobj.users == 1:
             _start_geomobj_delete_handler()
+
+        self.call_escaper(context)
 
 
 def _draw_camera_info(layout):
