@@ -39,6 +39,7 @@ from ..addon_config import (Config,
                             get_operator,
                             ProductType,
                             product_name,
+                            calculation_in_progress,
                             show_user_preferences,
                             show_tool_preferences,
                             common_loader)
@@ -161,6 +162,10 @@ class FT_OT_ExitPinMode(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
+        check_status = calculation_in_progress()
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         FTLoader.out_pinmode()
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}

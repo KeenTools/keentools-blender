@@ -37,6 +37,7 @@ from ..addon_config import (Config,
                             product_name,
                             get_operator,
                             ProductType,
+                            calculation_in_progress,
                             show_user_preferences,
                             show_tool_preferences)
 from ..geotracker_config import GTConfig
@@ -692,6 +693,10 @@ class GT_OT_ExitPinMode(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
+        check_status = calculation_in_progress()
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         GTLoader.out_pinmode()
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
