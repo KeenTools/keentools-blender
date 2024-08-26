@@ -61,6 +61,7 @@ class BVersion:
     property_keywords_enabled: bool = ver >= (2, 93, 0)
     LocRotScale_exist: bool = version >= (3, 0, 0)
     operator_with_context_exists: bool = ver >= (3, 2, 0)
+    fcurve_has_clear: bool = ver >= (3, 3, 0)
     property_gpu_backend_exists: bool = ver >= (3, 5, 0)
     use_old_bgl_shaders: bool = ver < (3, 4, 0)
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
