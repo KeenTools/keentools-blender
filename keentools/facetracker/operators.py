@@ -1281,7 +1281,7 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         if not bpy_start_frame() <= bpy_current_frame() <= bpy_end_frame():
-            msg = 'Selected frame should be in Scene range'
+            msg = 'Selected frame should be in Scene playback range'
             _log.error(msg)
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
