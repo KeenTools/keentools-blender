@@ -69,7 +69,7 @@ class KTViewport:
         self._work_area: Optional[Area] = None
         self._prev_camera_state: Tuple = ()
         self._prev_area_state: Tuple = ()
-        self._ui_scale: float = 1.0
+        self._viewport_ui_scale: float = 1.0
 
     def product_type(self) -> int:
         return ProductType.UNDEFINED
@@ -161,7 +161,7 @@ class KTViewport:
         self._pixel_size = ps
 
     def tolerance_dist(self) -> float:  # distance * sensitivity
-        return self._point_sensitivity * self._ui_scale * self._pixel_size
+        return self._point_sensitivity * self._viewport_ui_scale * self._pixel_size
 
     def tolerance_dist2(self) -> float:  # squared distance
         return self.tolerance_dist()**2
@@ -170,20 +170,20 @@ class KTViewport:
         pins = self.pins()
         return pins.current_pin_num() >= 0
 
-    def get_ui_scale(self) -> float:
-        return self._ui_scale
+    def get_viewport_ui_scale(self) -> float:
+        return self._viewport_ui_scale
 
-    def set_ui_scale(self, scale: float) -> None:
-        self._ui_scale = scale
+    def set_viewport_ui_scale(self, scale: float) -> None:
+        self._viewport_ui_scale = scale
 
-    def calc_ui_scale(self) -> float:
-        if not Config.use_pin_scale:
-            self.set_ui_scale(1.0)
+    def calc_viewport_ui_scale(self) -> float:
+        if not Config.use_ui_scale:
+            self.set_viewport_ui_scale(1.0)
             return 1.0
         width = bpy_window_width()
         scale = width / Config.default_window_width \
             if width >= Config.default_window_width else 1.0
-        self.set_ui_scale(scale)
+        self.set_viewport_ui_scale(scale)
         return scale
 
     def unregister_draw_update_timer(self) -> None:

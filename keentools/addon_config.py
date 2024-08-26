@@ -147,7 +147,7 @@ class Config:
     default_tex_uv_expand_percents: float = 0.1
 
     default_window_width: int = 1920
-    use_pin_scale: bool = True
+    use_ui_scale: bool = True
 
     focal_length_tolerance: float = 0.01
 

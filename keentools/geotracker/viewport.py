@@ -235,9 +235,10 @@ class GTViewport(KTViewport):
         self.update_ui_scale()
 
     def update_ui_scale(self) -> None:
-        scale = self.calc_ui_scale()
-        self.points2d().set_point_scale(scale)
-        self.points3d().set_point_scale(scale)
+        scale = self.calc_viewport_ui_scale()
+        self.points2d().set_point_ui_scale(scale)
+        self.points3d().set_point_ui_scale(scale)
+        self.wireframer().set_line_ui_scale(scale)
 
     def surface_points_from_mesh(self, gt: Any, geomobj: Object,
                                  keyframe: int) -> Any:

@@ -195,7 +195,7 @@ class KTShaderPoints(KTShaderBase):
 
         self._point_size: float = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
-        self._point_scale: float = 1.0
+        self._point_ui_scale: float = 1.0
 
     def get_vertices(self) -> Any:
         return self.vertices
@@ -206,8 +206,8 @@ class KTShaderPoints(KTShaderBase):
     def get_point_size(self) -> float:
         return self._point_size
 
-    def set_point_scale(self, ps: float) -> None:
-        self._point_scale = ps
+    def set_point_ui_scale(self, ps: float) -> None:
+        self._point_ui_scale = ps
 
     def set_vertices_and_colors(self, verts: Any, colors: Any) -> None:
         self.vertices = verts
@@ -236,7 +236,7 @@ class KTShaderPoints(KTShaderBase):
         return True
 
     def draw_main(self) -> None:
-        set_point_size(self.get_point_size() * self._point_scale)
+        set_point_size(self.get_point_size() * self._point_ui_scale)
         set_blend_alpha()
         self.shader.bind()
         self.batch.draw(self.shader)
