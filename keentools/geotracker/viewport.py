@@ -20,12 +20,11 @@ from typing import Any, List, Tuple, Optional, Callable
 import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
+from mathutils import Vector
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             gt_settings,
-                            get_operator,
-                            ErrorType,
                             ActionStatus,
                             ProductType)
 from ..geotracker_config import GTConfig
@@ -44,6 +43,7 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
                                 bpy_scene_camera,
                                 bpy_background_mode,
+                                bpy_current_frame,
                                 get_scene_camera_shift)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
@@ -89,6 +89,9 @@ class GTViewport(KTViewport):
     def product_type(self) -> int:
         return ProductType.GEOTRACKER
 
+    def get_settings(self) -> Any:
+        return gt_settings()
+
     def clear_stabilization_point(self):
         _log.output(_log.color('yellow', 'clear_stabilization_point'))
         self.stabilization_region_point = None
@@ -104,8 +107,27 @@ class GTViewport(KTViewport):
         shift_x, shift_y = get_scene_camera_shift()
         x1, y1, x2, y2 = get_camera_border(area)
 
-        pins_average_point = self.pins().average_point_of_selected_pins()
-        if pins_average_point is None:
+        pins = self.pins()
+        selected_pins = pins.get_selected_pins(len(pins.arr()))
+
+        point = None
+        if len(selected_pins) > 0:
+            loader = self.get_settings().loader()
+            gt = loader.kt_geotracker()
+            kt_pins = gt.projected_pins(bpy_current_frame())
+            rx, ry = bpy_render_frame()
+
+            try:
+                verts = [frame_to_image_space(*kt_pins[i].surface_point,
+                                              rx, ry, shift_x, shift_y)
+                         for i in selected_pins]
+                point = image_space_to_region(*np.average(verts, axis=0),
+                                              x1, y1, x2, y2, shift_x, shift_y)
+            except Exception as err:
+                _log.error(f'stabilize exception:\n{str(err)}')
+                point = None
+
+        if point is None:
             rx, ry = bpy_render_frame()
             camobj = bpy_scene_camera()
             projection = camera_projection(camobj)
@@ -124,9 +146,6 @@ class GTViewport(KTViewport):
             except Exception as err:
                 _log.error(f'stabilize exception:\n{str(err)}')
                 return False
-        else:
-            point = image_space_to_region(*pins_average_point,
-                                          x1, y1, x2, y2, shift_x, shift_y)
 
         _log.output(_log.color('red', f'point: {point}'))
         if self.stabilization_region_point is None:
@@ -204,11 +223,11 @@ class GTViewport(KTViewport):
         _log.output('update_surface_points end >>>')
 
     def update_pin_sensitivity(self) -> None:
-        settings = gt_settings()
+        settings = self.get_settings()
         self._point_sensitivity = settings.pin_sensitivity
 
     def update_pin_size(self) -> None:
-        settings = gt_settings()
+        settings = self.get_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)

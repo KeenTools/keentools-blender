@@ -16,10 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Set, Optional, Tuple
+from typing import Any, Set, Optional, Tuple, Callable
 from uuid import uuid4
 
-from bpy.types import Area, Operator
+from bpy.types import Area, Operator, Object
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -52,8 +52,10 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                        in_edit_mode_screen_message,
                                        how_to_show_wireframe_screen_message,
                                        clipping_changed_screen_message)
-from ..geotracker.callbacks import (subscribe_camera_lens_watcher,
-                                    subscribe_movie_clip_color_space_watcher)
+from ..geotracker.callbacks import (
+    recalculate_focal as gt_recalculate_focal,
+    subscribe_camera_lens_watcher as gt_subscribe_camera_lens_watcher,
+    subscribe_movie_clip_color_space_watcher as gt_subscribe_movie_clip_color_space_watcher)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
@@ -79,6 +81,15 @@ def _playback_message(area: Area, *, product: int) -> None:
 class PinMode(Operator):
     _shift_pressed: bool = False
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
+
+    def subscribe_camera_lens_watcher(self, camobj: Optional[Object]) -> None:
+        return gt_subscribe_camera_lens_watcher(camobj)
+
+    def subscribe_movie_clip_color_space_watcher(self, geotracker: Any) -> None:
+        return gt_subscribe_movie_clip_color_space_watcher(geotracker)
+
+    def recalculate_focal(self, use_current_frame: bool) -> bool:
+        return gt_recalculate_focal(use_current_frame)
 
     def init_bus(self) -> None:
         message_bus = common_loader().message_bus()
@@ -161,14 +172,15 @@ class PinMode(Operator):
         return {'PASS_THROUGH'}
 
     def _on_right_mouse_press(self, area: Area, event: Any) -> Set:
+        _log.yellow('_on_right_mouse_press start')
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
 
         if not point_is_in_area(area, mouse_x, mouse_y):
-            _log.output('RIGHT CLICK OUTSIDE OF VIEWPORT AREA')
+            _log.output('RIGHT CLICK OUTSIDE OF VIEWPORT AREA >>>')
             return {'PASS_THROUGH'}
 
         if point_is_in_service_region(area, mouse_x, mouse_y):
-            _log.output('RIGHT CLICK IN SERVICE REGION OF AREA')
+            _log.output('RIGHT CLICK IN SERVICE REGION OF AREA >>>')
             return {'PASS_THROUGH'}
 
         settings = self.get_settings()
@@ -184,11 +196,11 @@ class PinMode(Operator):
         vp.pins().clear_selected_pins()
         vp.create_batch_2d(area)
         vp.tag_redraw()
-        _log.output('_on_right_mouse_press finish')
+        _log.output('_on_right_mouse_press end >>>')
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.output('_delete_found_pin call')
+        _log.green('_delete_found_pin start')
         settings = self.get_settings()
         loader = settings.loader()
         gt = loader.kt_geotracker()
@@ -206,6 +218,7 @@ class PinMode(Operator):
         if not loader.solve():
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
+        self.recalculate_focal(False)
 
         vp = loader.viewport()
 
@@ -233,6 +246,7 @@ class PinMode(Operator):
 
         loader.save_geotracker()
         force_undo_push('Delete GeoTracker pin')
+        _log.output('_delete_found_pin end >>>')
         return {'RUNNING_MODAL'}
 
     def _new_pinmode_id(self) -> None:
@@ -363,8 +377,9 @@ class PinMode(Operator):
         _log.output(f'self.geotracker_num: {self.geotracker_num}')
 
         settings = self.get_settings()
+        product = settings.product_type()
         check_status = common_checks(
-            product = settings.product_type(),
+            product=product,
             object_mode=True, is_calculating=True,
             stop_other_pinmode=True,
             reload_geotracker=True, geotracker=True,
@@ -435,8 +450,8 @@ class PinMode(Operator):
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
 
-        subscribe_camera_lens_watcher(new_geotracker.camobj)
-        subscribe_movie_clip_color_space_watcher(new_geotracker)
+        self.subscribe_camera_lens_watcher(new_geotracker.camobj)
+        self.subscribe_movie_clip_color_space_watcher(new_geotracker)
 
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:

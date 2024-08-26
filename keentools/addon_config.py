@@ -35,7 +35,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2024.1.1'  # (5/7)
+    addon_version = '2024.2.0'  # (5/7)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -146,10 +146,9 @@ class Config:
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
 
+    focal_length_tolerance: float = 0.01
+
     license_minimum_days_for_warning: int = 7
-    fb_license_check_timeout: float = 1.0
-    gt_license_check_timeout: float = 2.0
-    ft_license_check_timeout: float = 3.0
     kt_license_recheck_timeout: float = 360.0
 
     # FaceBuilder Default Colors
@@ -164,7 +163,7 @@ class Config:
         'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
         'black': ((0.04, 0.04, 0.04), (0.0, 0.0, 0.85)),
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
-        'facetracker': ((0.04, 0.04, 0.04), (0.0, 0.4, 0.03)),
+        'facetracker': ((0.02, 0.02, 0.04), (0.0, 0.4, 0.03)),
         'default': ((0.04, 0.04, 0.04), (0.0, 0.0, 0.85))
     }
 
@@ -214,9 +213,11 @@ class Config:
     keyframe_line_length: float = 1000.0
 
     integration_enabled: bool = True
-    show_facetracker: bool = 'KEENTOOLS_ENABLE_BLENDER_FACETRACKER' in os.environ
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
+
+    show_ft_licensing: bool = False
+    show_trial_warnings: bool = True
 
     # Colors
     pin_color = (1.0, 0.0, 0.0, 1.0)
@@ -274,8 +275,6 @@ def geotracker_enabled() -> bool:
 
 
 def facetracker_enabled() -> bool:
-    if not Config.show_facetracker:
-        return False
     prefs = get_addon_preferences()
     return prefs.facetracker_enabled
 
@@ -381,19 +380,21 @@ def get_operator(operator_id_name: str) -> Any:
 class ErrorType:
     Unknown: int = -1
     CustomMessage: int = 0
-    NoLicense: int = 1
-    SceneDamaged: int = 2
-    CannotReconstruct: int = 3
-    CannotCreateObject: int = 4
-    MeshCorrupted: int = 5
-    PktProblem: int = 6
-    PktModelProblem: int = 7
-    DownloadingProblem: int = 8
-    FBGracePeriod: int = 9
-    GTGracePeriod: int = 10
-    FTGracePeriod: int = 11
-    ShaderProblem: int = 12
-    UnsupportedGPUBackend: int = 13
+    NoFaceBuilderLicense: int = 1
+    NoGeoTrackerLicense: int = 2
+    NoFaceTrackerLicense: int = 3
+    SceneDamaged: int = 4
+    CannotReconstruct: int = 5
+    CannotCreateObject: int = 6
+    MeshCorrupted: int = 7
+    PktProblem: int = 8
+    PktModelProblem: int = 9
+    DownloadingProblem: int = 10
+    FBGracePeriod: int = 11
+    GTGracePeriod: int = 12
+    FTGracePeriod: int = 13
+    ShaderProblem: int = 14
+    UnsupportedGPUBackend: int = 15
 
 
 @dataclass(frozen=True)
@@ -580,3 +581,8 @@ _gt_loader_instance = None
 _gt_loader_func = _init_gt_loader
 _ft_loader_instance = None
 _ft_loader_func = _init_ft_loader
+
+
+def license_checker_module() -> Any:
+    from .common import license_checker
+    return license_checker

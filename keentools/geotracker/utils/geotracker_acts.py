@@ -389,7 +389,7 @@ def track_to(forward: bool, *, product: int) -> ActionStatus:
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_to:\n{str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -442,7 +442,7 @@ def track_next_frame_action(forward: bool=True, *,
 
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_action: {str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -509,7 +509,7 @@ def refine_async_action(*, product: int) -> ActionStatus:
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException refine_async_action:\n{str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -563,7 +563,7 @@ def refine_all_async_action(*, product: int) -> ActionStatus:
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException refine_all_async_action: {str(err)}')
-        show_unlicensed_warning()
+        show_unlicensed_warning(product)
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
@@ -747,7 +747,8 @@ def remove_pins_action(*, product: int) -> ActionStatus:
         selected_pins.sort()
         for i in reversed(selected_pins):
             gt.remove_pin(i)
-            selected_pins.remove(i)
+            pins.remove_pin(i)
+        pins.clear_selected_pins()
         if gt.is_key_at(bpy_current_frame()) and not loader.solve():
             return ActionStatus(False, 'Could not remove selected pins')
         loader.load_pins_into_viewport()
@@ -1556,9 +1557,9 @@ def _get_operator_origin_matrix(origin_point: str, *, product: int) -> Matrix:
     return origin_matrix
 
 
-def scale_scene_tracking_preview_func(
-        operator: Operator, context: Any, *,
-        product: int = ProductType.GEOTRACKER) -> None:
+def scale_scene_tracking_preview_func(operator: Operator, context: Any) -> None:
+    product = operator.product
+
     if not revert_object_states(product=product):
         return
 

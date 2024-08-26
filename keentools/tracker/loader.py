@@ -465,14 +465,19 @@ class Loader:
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().CAMERA_FOCAL_LENGTH)
                 geotracker.focal_length_estimation = False
 
+            _log.output('before solve_for_current_pins')
             gt.solve_for_current_pins(keyframe, geotracker.focal_length_estimation)
+            _log.output('after solve_for_current_pins')
 
         except pkt_module().UnlicensedException as err:
             _log.error(f'solve UnlicensedException: \n{str(err)}')
             cls.out_pinmode()
             show_user_preferences(facebuilder=False, geotracker=False)
             warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            warn('INVOKE_DEFAULT',
+                 msg=ErrorType.NoFaceTrackerLicense
+                 if settings.product_type() == ProductType.FACETRACKER
+                 else ErrorType.NoGeoTrackerLicense)
             return False
         except Exception as err:
             _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')

@@ -28,10 +28,8 @@ from ..addon_config import (Config,
                             ErrorType,
                             ProductType)
 from ..facetracker_config import FTConfig
-from ..utils.coords import update_head_mesh_non_neutral, get_image_space_coord, get_area_region
-from ..utils.focal_length import configure_focal_mode_and_fixes
+from ..utils.coords import get_image_space_coord, get_area_region
 from ..utils.manipulate import force_undo_push
-from ..utils.images import load_rgba
 from ..utils.bpy_common import bpy_view_camera, operator_with_context, bpy_current_frame
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .ui_strings import buttons
@@ -41,6 +39,7 @@ from ..utils.detect_faces import (get_detected_faces,
                                   not_enough_face_features_warning)
 from ..utils.images import np_array_from_background_image
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ..facetracker.callbacks import recalculate_focal
 
 
 _log = KTLogger(__name__)
@@ -89,8 +88,14 @@ def _get_rectangler() -> Any:
 
 
 def _place_ft_face(rectangle_index: int) -> Optional[bool]:
-    _log.yellow(f'_add_pins_to_face start: r={rectangle_index}')
+    _log.yellow(f'_place_ft_face start: r={rectangle_index}')
     faces = get_detected_faces()
+
+    settings = _get_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        _log.error('_place_ft_face: no geotracker')
+        return None
 
     current_frame = bpy_current_frame()
     ft = _get_builder()
@@ -98,13 +103,14 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
     loader = _get_loader()
     loader.safe_keyframe_add(bpy_current_frame(), update=True)
     try:
-        result_flag = ft.detect_face_pose(current_frame, faces[rectangle_index],
-                                          estimate_focal_length=False,
-                                          throw_if_unlicensed=True)
+        result_flag = ft.detect_face_pose(
+            current_frame, faces[rectangle_index],
+            estimate_focal_length=geotracker.focal_length_estimation,
+            throw_if_unlicensed=True)
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException _add_pins_to_face\n{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceTrackerLicense)
         return None
     except Exception as err:
         _log.error(f'UNKNOWN EXCEPTION detect_face_pose '
@@ -112,15 +118,22 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
         return None
 
     if result_flag:
-        ft.add_preset_pins_and_solve(current_frame)
-        create_relative_shape_keyframe(current_frame)
-        _log.output(f'auto_pins_added kid: {current_frame}')
-    else:
-        _log.output(f'detect_face_pose failed kid: {current_frame}')
+        _log.magenta('_place_ft_face ft.add_preset_pins_and_solve call')
+        _log.output(f'\ngeotracker.focal_length_estimation: {geotracker.focal_length_estimation}'
+                    f'\ngeotracker.lens_mode: {geotracker.lens_mode}')
 
-    area = loader.get_work_area()
+        ft.add_preset_pins_and_solve(current_frame)
+        recalculate_focal(False)
+
+        _log.output(f'pins\n{[tuple(ft.pin(current_frame, i).img_pos[:]) for i in range(ft.pins_count())]}')
+
+        create_relative_shape_keyframe(current_frame)
+        _log.output(f'_place_ft_face kid: {current_frame}')
+    else:
+        _log.output(f'_place_ft_face failed kid: {current_frame}')
+
     loader.save_geotracker()
-    loader.update_viewport_shaders(area, adaptive_opacity=True,
+    loader.update_viewport_shaders(adaptive_opacity=True,
                                    wireframe_colors=True,
                                    geomobj_matrix=True,
                                    wireframe=True,
@@ -131,7 +144,7 @@ def _place_ft_face(rectangle_index: int) -> Optional[bool]:
 
     history_name = 'Add face auto-pins' if result_flag else 'No auto-pins'
     force_undo_push(history_name)
-    _log.output('_add_pins_to_face end >>>')
+    _log.output('_place_ft_face end >>>')
     return result_flag
 
 

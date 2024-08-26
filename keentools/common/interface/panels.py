@@ -163,6 +163,9 @@ class COMMON_FB_PT_ViewsPanel:
     def _back_to_button_title(self) -> str:
         return 'Back to 3D'
 
+    def _draw_fb_trial_info(self, layout) -> None:
+        pass
+
     def _draw_camera_list(self, headnum, layout):
         settings = fb_settings()
         if settings is None:
@@ -212,6 +215,9 @@ class COMMON_FB_PT_ViewsPanel:
                           text='Add Images' if icon != 'ADD' else '', icon=icon)
         op.headnum = headnum
 
+    def call_escaper(self, context) -> None:
+        pass
+
     def draw(self, context):
         settings = fb_settings()
         if settings is None:
@@ -221,6 +227,8 @@ class COMMON_FB_PT_ViewsPanel:
         state, headnum = what_is_state()
         if headnum < 0:
             return
+
+        self._draw_fb_trial_info(layout)
 
         head = settings.get_head(headnum)
         if not head.blenshapes_are_relevant():
@@ -234,6 +242,8 @@ class COMMON_FB_PT_ViewsPanel:
 
         if head.headobj and head.headobj.users == 1:
             _start_geomobj_delete_handler()
+
+        self.call_escaper(context)
 
 
 def _draw_camera_info(layout):
@@ -321,7 +331,10 @@ class COMMON_FB_PT_Model:
             FBConfig.fb_help_model_idname,
             text='', icon='QUESTION', emboss=False)
 
-    def _draw_topology_is_needed(self) -> bool:
+    def _draw_topology_enabled(self) -> bool:
+        return True
+
+    def _draw_resulting_expression_enabled(self) -> bool:
         return True
 
     def draw(self, context):
@@ -338,7 +351,7 @@ class COMMON_FB_PT_Model:
         if not head:
             return
 
-        if self._draw_topology_is_needed():
+        if self._draw_topology_enabled():
             row = layout.split(factor=0.35)
             row.label(text='Topology')
             row.prop(head, 'model_type', text='')
@@ -348,7 +361,7 @@ class COMMON_FB_PT_Model:
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(layout)
 
-        if head.should_use_emotions():
+        if self._draw_resulting_expression_enabled() and head.should_use_emotions():
             col = layout.column(align=True)
             col.label(text='Resulting expression in 3D:')
             col.prop(head, 'expression_view', text='')

@@ -167,12 +167,24 @@ error_messages: Dict = {
         ' ',
         'You should never see this error message. Let us now if it happened.'
     ]),
-    ErrorType.NoLicense: ErrorMessage(_default_width, [
-        'License is not found',
+    ErrorType.NoFaceBuilderLicense: ErrorMessage(_default_width, [
+        'FaceBuilder license is not found',
         ' ',
         'You have 0 days of trial left and there is no license installed',
         'or something wrong has happened with the installed license.',
         'Please check the license settings.'
+    ]),
+    ErrorType.NoGeoTrackerLicense: ErrorMessage(_default_width, [
+        'GeoTracker license is not found',
+        ' ',
+        'You have 0 days of trial left and there is no license installed',
+        'or something wrong has happened with the installed license.',
+        'Please check the license settings.'
+    ]),
+    ErrorType.NoFaceTrackerLicense: ErrorMessage(_default_width, [
+        'FaceTracker',
+        ' ',
+        'Current Beta expired. Check Update!'
     ]),
     ErrorType.SceneDamaged: ErrorMessage(_default_width, [
         'Scene was damaged',

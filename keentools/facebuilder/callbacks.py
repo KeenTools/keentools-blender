@@ -61,7 +61,7 @@ def mesh_update_accepted(headnum: int) -> None:
         except pkt_module().UnlicensedException:
             _log.error('UnlicensedException restore_facs_blendshapes')
             warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
         except Exception:
             _log.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
 

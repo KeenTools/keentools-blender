@@ -66,7 +66,7 @@ def create_blendshapes(operator):
     except pkt_module().UnlicensedException:
         _log.error('UnlicensedException generate_facs_blendshapes')
         warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
         return {'CANCELLED'}
     except Exception:
         _log.error('UNKNOWN EXCEPTION generate_facs_blendshapes')
@@ -205,7 +205,7 @@ def update_blendshapes(operator):
         except pkt_module().UnlicensedException:
             _log.error('UnlicensedException update_blendshapes')
             warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
             return {'CANCELLED'}
         except Exception:
             _log.error('UNKNOWN EXCEPTION update_blendshapes')

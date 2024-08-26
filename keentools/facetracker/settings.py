@@ -78,8 +78,8 @@ class FaceTrackerItem(TrackerItem):
     serial_str: StringProperty(name='GeoTracker Serialization string')
     geomobj: PointerProperty(
         name='Head',
-        description='Select target FaceBuilder Head from the list '
-                    'of objects in your Scene',
+        description='Select head with FaceBuilder topology '
+                    'from the list of objects in your scene',
         type=Object,
         poll=poll_is_facebuilder_mesh,
         update=update_geomobj)

@@ -22,7 +22,7 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ProductType
+from ..addon_config import ProductType, ft_settings
 from ..geotracker_config import GTConfig
 from ..geotracker.viewport import GTViewport
 from ..utils.screen_text import KTScreenText
@@ -65,6 +65,9 @@ class FTViewport(GTViewport):
 
     def product_type(self) -> int:
         return ProductType.FACETRACKER
+
+    def get_settings(self) -> Any:
+        return ft_settings()
 
     def surface_points_from_mesh(self, gt: Any, obj: Object,
                                  keyframe: int) -> Any:
