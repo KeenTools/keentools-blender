@@ -1280,6 +1280,12 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
+        if not bpy_start_frame() <= bpy_current_frame() <= bpy_end_frame():
+            msg = 'Selected frame should be in Scene range'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
         img = bpy_new_image(name, width=w, height=h, alpha=True,
                             float_buffer=False)
         img.use_view_as_render = True
