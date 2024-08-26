@@ -61,31 +61,6 @@ from ..utils.ui_redraw import force_ui_redraw
 _log = KTLogger(__name__)
 
 
-def _get_camera_2d_point(area: Area, geomobj: Object,
-                         point3d: Vector) -> Optional[Tuple]:
-    shift_x, shift_y = get_scene_camera_shift()
-    x1, y1, x2, y2 = get_camera_border(area)
-    rx, ry = bpy_render_frame()
-    camobj = bpy_scene_camera()
-    projection = camera_projection(camobj)
-    p3d = geomobj.matrix_world @ point3d
-    try:
-        transform = projection @ camobj.matrix_world.inverted()
-        vv = transform @ p3d.to_4d()
-        denom = vv[3]
-        if denom == 0:
-            return None
-
-        x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
-                                    rx, ry, shift_x, shift_y)
-        point = image_space_to_region(x, y, x1, y1, x2, y2,
-                                      shift_x, shift_y)
-    except Exception as err:
-        _log.error(f'stabilize exception:\n{str(err)}')
-        return None
-    return point
-
-
 class GTViewport(KTViewport):
     def __init__(self):
         super().__init__()
@@ -153,11 +128,24 @@ class GTViewport(KTViewport):
                 point = None
 
         if point is None:
-            point3d = geomobj.matrix_world @ bound_box_center(geomobj)
-            point = _get_camera_2d_point(area, geomobj, point3d)
+            rx, ry = bpy_render_frame()
+            camobj = bpy_scene_camera()
+            projection = camera_projection(camobj)
+            p3d = geomobj.matrix_world @ bound_box_center(geomobj)
+            try:
+                transform = projection @ camobj.matrix_world.inverted()
+                vv = transform @ p3d.to_4d()
+                denom = vv[3]
+                if denom == 0:
+                    return False
 
-        if point is None:
-            return False
+                x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
+                                            rx, ry, shift_x, shift_y)
+                point = image_space_to_region(x, y, x1, y1, x2, y2,
+                                              shift_x, shift_y)
+            except Exception as err:
+                _log.error(f'stabilize exception:\n{str(err)}')
+                return False
 
         _log.output(_log.color('red', f'point: {point}'))
         if self.stabilization_region_point is None:

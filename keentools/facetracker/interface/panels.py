@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Any
-from functools import partial
 import re
 
 import bpy
@@ -35,8 +34,6 @@ from ...facetracker_config import FTConfig
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import KTUpdater
-from ...utils.localview import check_context_localview, exit_area_localview
-from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
 from ...utils.bpy_common import bpy_timer_register, bpy_object_is_in_scene
@@ -46,18 +43,13 @@ from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
                                         COMMON_FB_PT_Model,
                                         COMMON_FB_PT_OptionsPanel)
 from ...common.license_checker import ft_license_timer, draw_upgrade_license_box
+from ...common.escapers import (fb_pinmode_escaper_check,
+                                ft_pinmode_escaper_check,
+                                start_ft_pinmode_escaper)
 
 
 _log = KTLogger(__name__)
 _ft_grace_timer = KTGraceTimer(ProductType.FACETRACKER)
-
-
-def _pinmode_escaper(area: Area) -> None:
-    _log.error('_pinmode_escaper call')
-    FTLoader.out_pinmode()
-    exit_area_localview(area)
-    force_show_ui_overlays(area)
-    return None
 
 
 def _exit_from_localview_button(layout, context):
@@ -77,12 +69,6 @@ def _start_calculating_escaper() -> None:
     mode = settings.calculating_mode
     if mode == 'TRACKING' or mode == 'REFINE':
         bpy_timer_register(_calculating_escaper, first_interval=0.01)
-
-
-def _start_pinmode_escaper(context: Any) -> None:
-    if context.area:
-        bpy_timer_register(partial(_pinmode_escaper, context.area),
-                           first_interval=0.01)
 
 
 def _calculating_escaper() -> None:
@@ -275,6 +261,10 @@ class FTFB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
 
     def _draw_fb_trial_info(self, layout) -> None:
         draw_upgrade_license_box(layout, ProductType.FACEBUILDER)
+
+    def call_escaper(self, context) -> None:
+        if fb_pinmode_escaper_check():
+            start_ft_pinmode_escaper(context)
 
 
 class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
@@ -580,13 +570,16 @@ class FT_PT_TrackingPanel(AllVisible):
             row.operator(FTConfig.ft_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not FTLoader.viewport().viewport_is_working():
-                _start_pinmode_escaper(context)
+            if ft_pinmode_escaper_check():
+                start_ft_pinmode_escaper(context)
         else:
             op = row.operator(FTConfig.ft_pinmode_idname,
                               text='Start Pinmode', icon='HIDE_OFF',
                               depress=settings.pinmode)
             op.geotracker_num = -1
+
+        if fb_pinmode_escaper_check():
+            start_ft_pinmode_escaper(context)
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)

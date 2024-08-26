@@ -50,6 +50,11 @@ class KTLicenseStatus:
         self.license_type: str = 'undefined'
         self.show_message: bool = False
 
+    def reset_status(self) -> None:
+        _log.yellow(f'reset_status {product_name(self.product)}')
+        self.checked = False
+        self.show_message = False
+
     def parse_response(self) -> bool:
         _log.yellow('parse_response start')
         self.attempts += 1
@@ -201,9 +206,24 @@ def check_license(
 
 def check_all_licenses() -> None:
     _log.yellow('check_all_licenses start')
-    check_license(ProductType.FACEBUILDER)
-    check_license(ProductType.GEOTRACKER)
-    check_license(ProductType.FACETRACKER)
+    fb_license_status.reset_status()
+    gt_license_status.reset_status()
+    ft_license_status.reset_status()
+    if check_license(ProductType.FACEBUILDER) is not None:
+        _log.error('Could not retrieve FaceBuilder license info')
+        fb_license_timer.stop_timer()
+        fb_license_timer.enable_timer()
+        fb_license_timer.start_timer()
+    if check_license(ProductType.GEOTRACKER) is not None:
+        _log.error('Could not retrieve GeoTracker license info')
+        gt_license_timer.stop_timer()
+        gt_license_timer.enable_timer()
+        gt_license_timer.start_timer()
+    if check_license(ProductType.FACETRACKER) is not None:
+        _log.error('Could not retrieve FaceTracker license info')
+        ft_license_timer.stop_timer()
+        ft_license_timer.enable_timer()
+        ft_license_timer.start_timer()
     _log.output('check_all_licenses end >>>')
 
 
