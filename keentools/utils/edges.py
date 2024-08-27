@@ -77,6 +77,7 @@ class KTEdgeShaderBase(KTShaderBase):
         self.adaptive_opacity: float = 1.0
         self.line_color: Tuple[float, float, float, float] = (1., 1., 1., 1.)
         self.line_width: float = 1.0
+        self.line_ui_scale: float = 1.0
 
         self.wireframe_offset: float = 0.0
         self.wide_edge_vertices: Any = np.empty((0, 3), dtype=np.float32)
@@ -117,6 +118,12 @@ class KTEdgeShaderBase(KTShaderBase):
 
     def set_line_width(self, width: float) -> None:
         self.line_width = width
+
+    def set_line_ui_scale(self, scale: float) -> None:
+        self.line_ui_scale = scale
+
+    def get_line_width(self) -> float:
+        return self.line_width * self.line_ui_scale
 
     def clear_all(self) -> None:
         self.vertices = np.empty((0, 3), dtype=np.float32)
@@ -169,7 +176,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
     def draw_main(self) -> None:
         set_blend_alpha()
         set_smooth_line()
-        set_line_width(self.line_width)
+        set_line_width(self.get_line_width())
         self.line_shader.bind()
         if self.line_batch:
             self.line_batch.draw(self.line_shader)
@@ -277,7 +284,7 @@ class KTRectangleShader2D(KTEdgeShader2D):
     def draw_main(self) -> None:
         set_blend_alpha()
         set_smooth_line()
-        set_line_width(self.line_width)
+        set_line_width(self.get_line_width())
         self.line_shader.bind()
         if self.line_batch:
             self.line_batch.draw(self.line_shader)
@@ -327,7 +334,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
 
     def draw_main(self) -> None:
         set_blend_alpha()
-        set_line_width(self.line_width)
+        set_line_width(self.get_line_width())
         self.line_shader.bind()
         if self.line_batch:
             self.line_batch.draw(self.line_shader)
@@ -482,7 +489,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
 
         set_blend_alpha()
         set_smooth_line()
-        set_line_width(self.line_width)
+        set_line_width(self.get_line_width())
 
         self.line_shader.bind()
         if self.line_batch:
@@ -679,7 +686,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
                              self.lit_light_matrix @ self.lit_camera_pos)
 
         shader.uniform_float('viewportSize', self.viewport_size)
-        shader.uniform_float('lineWidth', self.line_width)
+        shader.uniform_float('lineWidth', self.get_line_width())
         if self.lit_batch:
             self.lit_batch.draw(shader)
 

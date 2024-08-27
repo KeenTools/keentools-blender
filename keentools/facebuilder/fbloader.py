@@ -682,6 +682,7 @@ class FBLoader:
                                    adaptive_opacity: bool = False,
                                    camera_pos: bool = False,
                                    batch_wireframe: bool = False,
+                                   ui_scale: bool = False,
                                    tag_redraw: bool = False,
                                    load_pins: bool = False,
                                    pins_and_residuals: bool = False) -> None:
@@ -716,6 +717,9 @@ class FBLoader:
                                   cam.camobj.matrix_world)
         if wireframe:
             cls._update_wireframe(head.headobj, kid)
+        if ui_scale:
+            vp = cls.viewport()
+            vp.update_ui_scale()
         if load_pins:
             cls.load_pins_into_viewport(hnum, cnum)
         if pins_and_residuals:

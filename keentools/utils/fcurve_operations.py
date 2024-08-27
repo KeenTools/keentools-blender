@@ -21,6 +21,8 @@ from typing import Optional, List
 from bpy.types import Action, FCurve
 from mathutils import Vector, Matrix
 
+from ..utils.version import BVersion
+
 
 def get_action_fcurve(action: Action, data_path: str, index: int = 0) -> Optional[FCurve]:
     return action.fcurves.find(data_path, index=index)
@@ -39,8 +41,17 @@ def get_fcurve_data(fcurve: Optional[FCurve]) -> List[Vector]:
     return [p.co for p in fcurve.keyframe_points]
 
 
-def clear_fcurve(fcurve: FCurve) -> None:
+def clear_fcurve_new(fcurve: FCurve) -> None:
     fcurve.keyframe_points.clear()
+
+
+def clear_fcurve_old(fcurve: FCurve) -> None:
+    for i in reversed(range(0, len(fcurve.keyframe_points))):
+        fcurve.keyframe_points.remove(fcurve.keyframe_points[i], fast=True)
+    fcurve.update()
+
+
+clear_fcurve = clear_fcurve_new if BVersion.fcurve_has_clear else clear_fcurve_old
 
 
 def put_anim_data_in_fcurve(fcurve: Optional[FCurve],

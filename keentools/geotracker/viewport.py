@@ -225,12 +225,20 @@ class GTViewport(KTViewport):
     def update_pin_sensitivity(self) -> None:
         settings = self.get_settings()
         self._point_sensitivity = settings.pin_sensitivity
+        self.update_ui_scale()
 
     def update_pin_size(self) -> None:
         settings = self.get_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)
+        self.update_ui_scale()
+
+    def update_ui_scale(self) -> None:
+        scale = self.calc_viewport_ui_scale()
+        self.points2d().set_point_ui_scale(scale)
+        self.points3d().set_point_ui_scale(scale)
+        self.wireframer().set_line_ui_scale(scale)
 
     def surface_points_from_mesh(self, gt: Any, geomobj: Object,
                                  keyframe: int) -> Any:

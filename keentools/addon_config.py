@@ -146,6 +146,9 @@ class Config:
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
 
+    default_window_width: int = 1920
+    use_ui_scale: bool = True
+
     focal_length_tolerance: float = 0.01
 
     license_minimum_days_for_warning: int = 7

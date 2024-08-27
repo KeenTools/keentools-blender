@@ -281,6 +281,7 @@ class PinMode(Operator):
                                        wireframe_data=True,
                                        edge_indices=True,
                                        geomobj_matrix=True, wireframe=True,
+                                       ui_scale=True,
                                        pins_and_residuals=True, timeline=True)
 
         # TODO: Make this part more common for FaceTracker and GeoTracker
@@ -584,6 +585,7 @@ class PinMode(Operator):
                 or vp.check_area_state_changed(loader.get_work_area()):
             _log.output('VIEWPORT ZOOM/OFFSET')
 
+            vp.update_ui_scale()
             self._calc_adaptive_opacity(context.area)
             vp.create_batch_2d(context.area)
             vp.update_residuals(loader.kt_geotracker(), context.area,
