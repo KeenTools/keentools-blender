@@ -199,13 +199,6 @@ class Config:
         'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
     }
 
-    # Mock settings
-    mock_update_for_testing_flag: bool = False
-    mock_update_version: Tuple[int, int, int] = (int(addon_version.partition('.')[0]), 6, 3)
-    mock_update_addon_path: str = 'http://localhost/addon.zip'
-    mock_update_core_path: str = 'http://localhost/core.zip'
-    mock_product: Optional[str] = None
-
     supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
     wireframe_offset_constant: float = 0.004
@@ -237,20 +230,6 @@ class Config:
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
     face_selection_frame_width = 3.0
-
-    @classmethod
-    def mock_update_for_testing(cls, value: bool=True, *,
-                                ver: Optional[Tuple]=None,
-                                addon_path: Optional[str]=None,
-                                core_path: Optional[str]=None,
-                                product: Optional[str]=None) -> None:
-        if ver is not None:
-            cls.mock_update_version = ver
-
-        cls.mock_update_addon_path = addon_path
-        cls.mock_update_core_path = core_path
-        cls.mock_product = product
-        cls.mock_update_for_testing_flag = value
 
 
 def is_blender_supported() -> bool:

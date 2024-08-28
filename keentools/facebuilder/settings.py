@@ -67,7 +67,6 @@ from ..preferences.user_preferences import (UserPreferences,
 from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
 from ..utils.viewport_state import ViewportStateItem
-from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_scene,
                                 bpy_remove_object,
@@ -1043,27 +1042,3 @@ class FBSceneSettings(PropertyGroup):
 
     def preferences(self) -> Any:
         return get_addon_preferences()
-
-    def mock_update_for_testing(self, value=True, ver=None,
-                                addon_path=Config.mock_update_addon_path,
-                                core_path=Config.mock_update_core_path,
-                                product=Config.mock_product):
-        """Enable mock for update testing
-
-        :param value: Mock status. True for active, False for inactive
-        :type value: bool
-        :param ver: Tuple for encoding target update version
-        :type ver: tuple of int. For ex. (2022, 6, 3)
-        :param addon_path: updated addon downloading URL.
-            It uses Config.mock_update_addon_path value if None.
-        :type addon_path: str, optional
-        :param core_path: updated core downloading URL.
-            It uses Config.mock_update_core_path value if None.
-        :type core_path: str, optional
-
-        Call example:
-        bpy.context.scene.keentools_fb_settings.mock_update_for_testing(True)
-        """
-        Config.mock_update_for_testing(value, ver=ver, addon_path=addon_path,
-                                       core_path=core_path, product=product)
-        set_mock_update_paths(addon_path=addon_path, core_path=core_path)

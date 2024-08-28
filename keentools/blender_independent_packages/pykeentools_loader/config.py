@@ -27,8 +27,7 @@ __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'ADDON_PARENT_DIRECTORY', 'pkt_installation_dir',
            'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
-           'os_name', 'download_core_path', 'download_addon_path',
-           'set_mock_update_paths']
+           'os_name', 'download_core_path', 'download_addon_path']
 
 
 logger = logging.getLogger(__name__)
@@ -83,21 +82,10 @@ def os_name() -> str:
         return 'macos'
 
 
-_mock_update_addon_path: Optional[str] = None
-_mock_update_core_path: Optional[str] = None
-
-
-def set_mock_update_paths(addon_path: Optional[str] = None,
-                          core_path: Optional[str] = None) -> None:
-    global _mock_update_addon_path, _mock_update_core_path
-    _mock_update_addon_path = addon_path
-    _mock_update_core_path = core_path
-
-
 def download_core_path(version: Optional[Tuple] = None) -> str:
-    global _mock_update_core_path
-    if _mock_update_core_path is not None:
-        return _mock_update_core_path
+    name = 'KEENTOOLS_BLENDER_UPDATER_CORE_TEST_URL'
+    if name in os.environ:
+        return os.environ[name]
 
     if version is None:
         return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
@@ -107,9 +95,9 @@ def download_core_path(version: Optional[Tuple] = None) -> str:
 
 
 def download_addon_path(version: Optional[Tuple] = None) -> str:
-    global _mock_update_addon_path
-    if _mock_update_addon_path is not None:
-        return _mock_update_addon_path
+    name = 'KEENTOOLS_BLENDER_UPDATER_ADDON_TEST_URL'
+    if name in os.environ:
+        return os.environ[name]
 
     if version is None:
         return 'https://downloads.keentools.io/latest-keentools-for-blender'

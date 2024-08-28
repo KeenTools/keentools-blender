@@ -47,27 +47,6 @@ from ..ui_strings import buttons
 _log = KTLogger(__name__)
 
 
-def _mock_response(*, product: str='FaceBuilder', ver: Tuple) -> Any:
-    response = lambda: None
-    response.description_url = 'https://keentools.io/downloads'
-    response.download_url = 'https://keentools.io/downloads'
-    response.message = "<h3>What's New in KeenTools {} {}</h3>\n" \
-                       "<ul>\n  " \
-                       "<li>fixed performance issues in Nuke 12;</li>\n  " \
-                       "<li>pintooling performance improvements;</li>\n  " \
-                       "<li>fixed large frame numbers bug;</li>\n  " \
-                       "<li>fixed invisible model in macOS Catalina;</li>\n " \
-                       "<li>minor fixes and improvements</li>\n" \
-                       "</ul>\n<br />\n".format(product,
-                                                '.'.join([str(x) for x in ver]))
-    response.plugin_name = 'FaceBuilder'
-    try:
-        response.version = pkt_module().Version(*ver)
-    except Exception:
-        response.version = None
-    return response
-
-
 def _version_to_tuple(version: Optional[Any]) -> Tuple:
     if version is None:
         return tuple([0, 0, 0])
@@ -378,10 +357,6 @@ class KTUpdater:
             return
         uc = cls.get_update_checker()
         res = uc.check_for_updates(product)
-        if Config.mock_update_for_testing_flag and not cls.product_is_checked(product):
-            if Config.mock_product is None or Config.mock_product == product:
-                res = _mock_response(product=product,
-                                     ver=Config.mock_update_version)
         if res is not None:
             _log.blue(f'{res}')
             cls.set_response(product, res)
