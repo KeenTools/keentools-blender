@@ -154,6 +154,8 @@ class Config:
     license_minimum_days_for_warning: int = 7
     kt_license_recheck_timeout: float = 360.0
 
+    use_explicit_version_check_in_updater: bool = False
+
     # FaceBuilder Default Colors
     fb_midline_color = (0.96, 0.008, 0.615686)
     ft_midline_color = (0.05, 1.0, 0.0)

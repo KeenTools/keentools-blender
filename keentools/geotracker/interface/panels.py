@@ -232,7 +232,10 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         self._output_geotrackers_list(col)
         self._geotracker_creation_button(col)
         _exit_from_localview_button(layout, context)
-        KTUpdater.call_updater(ProductType.GEOTRACKER)
+
+        KTUpdater.call_updater(ProductType.GEOTRACKER
+                               if len(gt_settings().trackers()) > 0
+                               else ProductType.ADDON)
         _gt_grace_timer.start()
         gt_license_timer.start_timer()
 
@@ -245,7 +248,7 @@ class GT_PT_UpdatePanel(COMMON_PT_UpdatePanel):
     def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
-        return KTUpdater.is_active()
+        return KTUpdater.updates_available_state()
 
 
 class GT_PT_DownloadNotification(COMMON_PT_DownloadNotification):

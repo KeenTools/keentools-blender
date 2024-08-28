@@ -339,7 +339,7 @@ class FB_PT_UpdatePanel(COMMON_PT_UpdatePanel):
     def poll(cls, context):
         if not facebuilder_enabled():
             return False
-        return KTUpdater.is_active()
+        return KTUpdater.updates_available_state()
 
 
 class FB_PT_DownloadNotification(COMMON_PT_DownloadNotification):

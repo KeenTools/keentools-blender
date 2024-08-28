@@ -145,50 +145,6 @@ class UpdateState(IntEnum):
     INSTALL = 5
 
 
-class CurrentStateExecutor:
-    _panel_updater_state: UpdateState = UpdateState.INITIAL
-    _mutable: bool = True
-
-    @classmethod
-    def get_update_state(cls) -> UpdateState:
-        return cls._panel_updater_state
-
-    @classmethod
-    def make_immutable(cls):
-        cls._mutable = False
-
-    @classmethod
-    def set_current_panel_updater_state(cls, state: UpdateState,
-            set_preferences_updater_state: bool=True) -> None:
-        if cls._mutable:
-            cls._panel_updater_state = state
-            force_ui_redraw('VIEW_3D')
-            if set_preferences_updater_state:
-                prefs = get_addon_preferences()
-                if not prefs:
-                    return
-                prefs.updater_state = state
-                force_ui_redraw('PREFERENCES')
-
-    @classmethod
-    def compute_current_panel_updater_state(cls) -> UpdateState:
-        downloaded_version = _version_to_tuple(_downloaded_version())
-
-        if cls._panel_updater_state == UpdateState.INITIAL:
-            if KTUpdater.is_available():
-                cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
-            elif downloaded_version > _version_to_tuple(Config.addon_version) and \
-                    downloaded_version != _version_to_tuple(_latest_installation_skip_version()) and \
-                    updates_downloaded() and KTInstallationReminder.is_available():
-                cls.set_current_panel_updater_state(UpdateState.INSTALL)
-
-        elif cls._panel_updater_state == UpdateState.INSTALL:
-            if KTUpdater.is_available():
-                cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
-
-        return cls._panel_updater_state
-
-
 class KTUpdateTimer(KTTimer):
     def __init__(self, product: int = ProductType.ADDON,
                  interval: float = 5.0, attempts: int = 3):
@@ -250,21 +206,89 @@ class KTUpdater:
                      ProductType.GEOTRACKER: KTUpdateTimer(ProductType.GEOTRACKER),
                      ProductType.FACETRACKER: KTUpdateTimer(ProductType.FACETRACKER)}
 
+    _panel_updater_state: UpdateState = UpdateState.INITIAL
+    _mutable: bool = True
+
     @classmethod
-    def is_available(cls) -> bool:
+    def get_update_state(cls) -> UpdateState:
+        return cls._panel_updater_state
+
+    @classmethod
+    def make_immutable(cls):
+        cls._mutable = False
+
+    @classmethod
+    def set_current_panel_updater_state(cls, state: UpdateState,
+            set_preferences_updater_state: bool=True) -> None:
+        if not cls._mutable:
+            return
+
+        cls._panel_updater_state = state
+        force_ui_redraw('VIEW_3D')
+        if set_preferences_updater_state:
+            prefs = get_addon_preferences()
+            if not prefs:
+                return
+            prefs.updater_state = state
+            force_ui_redraw('PREFERENCES')
+
+    @classmethod
+    def compute_current_panel_updater_state(cls) -> None:
+        downloaded_version = _version_to_tuple(_downloaded_version())
+
+        if cls._panel_updater_state == UpdateState.INITIAL:
+            if cls.updates_are_available():
+                cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
+                return
+
+            if (Config.use_explicit_version_check_in_updater
+                    and downloaded_version <= _version_to_tuple(Config.addon_version)):
+                return
+
+            if downloaded_version != _version_to_tuple(_latest_installation_skip_version()) and \
+                    updates_downloaded() and KTInstallationReminder.is_available():
+                cls.set_current_panel_updater_state(UpdateState.INSTALL)
+                return
+
+        elif cls._panel_updater_state == UpdateState.INSTALL:
+            if cls.updates_are_available():
+                cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
+
+    @classmethod
+    def updates_are_available(cls) -> bool:
         prefs = get_addon_preferences()
         if not prefs:
             return False
         if not _operator_available_time(prefs.latest_show_datetime_update_reminder) or not cls.has_response():
             return False
         ver_tuple = _version_to_tuple(cls.version())
-        return _version_to_tuple(Config.addon_version) < ver_tuple and \
-               _version_to_tuple(_downloaded_version()) < ver_tuple and \
+
+        if (Config.use_explicit_version_check_in_updater
+                and ver_tuple <= _version_to_tuple(Config.addon_version)):
+            return False
+
+        return _version_to_tuple(_downloaded_version()) < ver_tuple and \
                _version_to_tuple(prefs.latest_update_skip_version) != ver_tuple
 
     @classmethod
-    def is_active(cls) -> bool:
-        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
+    def updates_initial_state(cls) -> bool:
+        return cls.get_update_state() == UpdateState.INITIAL
+
+    @classmethod
+    def updates_available_state(cls) -> bool:
+        return cls.get_update_state() == UpdateState.UPDATES_AVAILABLE
+
+    @classmethod
+    def updates_downloading_state(cls) -> bool:
+        return cls.get_update_state() == UpdateState.DOWNLOADING
+
+    @classmethod
+    def updates_downloading_problem_state(cls) -> bool:
+        return cls.get_update_state() == UpdateState.DOWNLOADING_PROBLEM
+
+    @classmethod
+    def updates_install_state(cls) -> bool:
+        return cls.get_update_state() == UpdateState.INSTALL
 
     @classmethod
     def has_response(cls) -> bool:
@@ -341,7 +365,6 @@ class KTUpdater:
 
     @classmethod
     def call_updater(cls, product: int) -> None:
-        _log.red(f'{cls.__name__} call_updater_new ***')
         if product not in cls._timers:
             _log.error(f'call_updater error {product}')
             return
@@ -349,7 +372,7 @@ class KTUpdater:
 
     @classmethod
     def check_for_update(cls, product: str) -> None:
-        _log.magenta(f'{cls.__name__} check_for_update ***')
+        _log.magenta(f'{cls.__name__} check_for_update')
 
         if cls.has_response_message(product) or not pkt_is_installed():
             return
@@ -364,6 +387,7 @@ class KTUpdater:
             cls.set_response(product, res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
             cls.set_parsed(product, parsed)
+            cls.compute_current_panel_updater_state()
 
 
 def _set_installing() -> None:
@@ -371,7 +395,7 @@ def _set_installing() -> None:
     if not prefs:
         return
     prefs.downloaded_version = str(KTUpdater.version())
-    CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
+    KTUpdater.set_current_panel_updater_state(UpdateState.INSTALL)
     KTDownloadNotification.init_progress(None)
     KTUpdateProgressTimer.stop()
 
@@ -434,7 +458,7 @@ class KT_OT_DownloadTheUpdate(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
+        KTUpdater.set_current_panel_updater_state(UpdateState.DOWNLOADING)
         KTUpdateProgressTimer.start(redraw_view3d=True)
         KTDownloadNotification.init_progress(_download_update())
         return {'FINISHED'}
@@ -447,8 +471,8 @@ class KT_OT_RemindLater(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
-                                                             set_preferences_updater_state=False)
+        KTUpdater.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                  set_preferences_updater_state=False)
         _log.output('REMIND LATER')
         KTUpdater.remind_later()
         return {'FINISHED'}
@@ -461,8 +485,8 @@ class KT_OT_SkipVersion(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
-                                                             set_preferences_updater_state=False)
+        KTUpdater.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                  set_preferences_updater_state=False)
         _log.output('SKIP THIS VERSION')
         prefs = get_addon_preferences()
         if not prefs:
@@ -472,7 +496,7 @@ class KT_OT_SkipVersion(Operator):
 
 
 def on_downloading_problem(error):
-    CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING_PROBLEM)
+    KTUpdater.set_current_panel_updater_state(UpdateState.DOWNLOADING_PROBLEM)
     KTDownloadNotification.init_progress(None)
     KTUpdateProgressTimer.stop()
 
@@ -489,27 +513,20 @@ class KTDownloadNotification:
         return cls._download_update_progress.get_current_progress()
 
     @classmethod
-    def is_active(cls):
-        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
-
-    @classmethod
     def render_message(cls) -> List[str]:
-        if cls.is_active():
+        if KTUpdater.updates_downloading_state():
             return ["Downloading the update: {:.0f}%".format(100 * KTDownloadNotification.get_current_progress())]
         return []
 
 
 class KTDownloadingProblem:
     @classmethod
-    def is_active(cls):
-        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING_PROBLEM
-
-    @classmethod
     def render_message(cls, limit: int=32) -> List[str]:
-        if cls.is_active():
+        if KTUpdater.updates_downloading_problem_state():
             _message_text: str = 'Sorry, an unexpected network error happened. Please check your network connection.'
             return render_main(parse_html(_message_text), limit)
         return []
+
 
 class KT_OT_RetryDownloadUpdate(Operator):
     bl_idname = Config.kt_retry_download_the_update_idname
@@ -518,7 +535,7 @@ class KT_OT_RetryDownloadUpdate(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
+        KTUpdater.set_current_panel_updater_state(UpdateState.DOWNLOADING)
         KTUpdateProgressTimer.start(redraw_view3d=True)
         KTDownloadNotification.init_progress(_download_update())
         return {'FINISHED'}
@@ -532,15 +549,11 @@ class KT_OT_ComeBackToUpdate(Operator):
 
     def execute(self, context):
         _clear_updater_info()
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
+        KTUpdater.set_current_panel_updater_state(UpdateState.INITIAL)
         return {'FINISHED'}
 
 
 class KTInstallationReminder:
-    @classmethod
-    def is_active(cls) -> bool:
-        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.INSTALL
-
     @classmethod
     def is_available(cls) -> bool:
         prefs = get_addon_preferences()
@@ -617,10 +630,10 @@ class KT_OT_InstallUpdates(Operator):
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 _clear_updater_info()
-                CurrentStateExecutor.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
-                CurrentStateExecutor.compute_current_panel_updater_state()
+                KTUpdater.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
+                KTUpdater.compute_current_panel_updater_state()
                 return {'CANCELLED'}
-            CurrentStateExecutor.make_immutable()
+            KTUpdater.make_immutable()
             import sys
             import atexit
             atexit.register(_start_new_blender, sys.argv[0])
@@ -640,8 +653,8 @@ class KT_OT_RemindInstallLater(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
-                                                             set_preferences_updater_state=False)
+        KTUpdater.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                  set_preferences_updater_state=False)
         KTInstallationReminder.remind_later()
         return {'FINISHED'}
 
@@ -653,8 +666,8 @@ class KT_OT_SkipInstallation(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
-                                                             set_preferences_updater_state=False)
+        KTUpdater.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                  set_preferences_updater_state=False)
         prefs = get_addon_preferences()
         if not prefs:
             return {'CANCELLED'}

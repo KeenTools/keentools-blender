@@ -56,8 +56,7 @@ from ..preferences.user_preferences import (UserPreferences,
 from ..updater.utils import (preferences_current_active_updater_operators_info,
                              UpdateState,
                              render_active_message,
-                             KTUpdater,
-                             CurrentStateExecutor)
+                             KTUpdater)
 from .operators import get_product_license_manager
 from .hotkeys import (geotracker_keymaps_register,
                       all_keymaps_unregister,
@@ -856,7 +855,7 @@ class KTAddonPreferences(AddonPreferences):
 
     def _draw_updater_info(self, layout: Any) -> None:
         KTUpdater.call_updater(ProductType.ADDON)
-        CurrentStateExecutor.compute_current_panel_updater_state()
+        KTUpdater.compute_current_panel_updater_state()
         settings = fb_settings()
         if settings is None:
             return
