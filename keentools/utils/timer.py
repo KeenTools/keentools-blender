@@ -36,6 +36,7 @@ class KTTimer:
     def __init__(self):
         self._active: bool = False
         self._enabled: bool = True
+        self._attempts: int = -1
 
     def check_stop_all_timers(self) -> bool:
         if _stop_all_timers:
@@ -65,11 +66,11 @@ class KTTimer:
         self._stop(callback)
         self.set_active()
         bpy_timer_register(callback, persistent=persistent)
-        _log.output('REGISTER TIMER')
+        _log.output(f'REGISTER TIMER {self.__class__.__name__}')
 
     def _stop(self, callback: Callable) -> None:
         if bpy_timer_unregister(callback):
-            _log.output('UNREGISTER TIMER')
+            _log.output(f'UNREGISTER TIMER {self.__class__.__name__}')
         self.set_inactive()
 
 

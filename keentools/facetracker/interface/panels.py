@@ -217,7 +217,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         self._facetracker_creation_button(col)
 
         _exit_from_localview_button(layout, context)
-        KTUpdater.call_updater('FaceTracker')
+        KTUpdater.call_updater(ProductType.FACETRACKER)
         _ft_grace_timer.start()
         ft_license_timer.start_timer()
 

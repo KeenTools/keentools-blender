@@ -22,10 +22,10 @@ from typing import Optional
 from bpy.types import Panel, Area, Window, Screen
 
 from ...utils.kt_logging import KTLogger
-from ...updater.panels import (KT_PT_UpdatePanel,
-                               KT_PT_DownloadNotification,
-                               KT_PT_DownloadingProblemPanel,
-                               KT_PT_UpdatesInstallationPanel)
+from ...updater.panels import (COMMON_PT_UpdatePanel,
+                               COMMON_PT_DownloadNotification,
+                               COMMON_PT_DownloadingProblemPanel,
+                               COMMON_PT_UpdatesInstallationPanel)
 from ...updater.utils import KTUpdater
 from ...addon_config import (Config,
                              fb_settings,
@@ -315,7 +315,7 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
-            KTUpdater.call_updater('FaceBuilder')
+            KTUpdater.call_updater(ProductType.ADDON)
             _fb_grace_timer.start()
             fb_license_timer.start_timer()
             _exit_from_localview_button(layout, context)
@@ -326,12 +326,12 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
             self._draw_many_heads(col)
             self._create_head_button(col)
             _exit_from_localview_button(layout, context)
-            KTUpdater.call_updater('FaceBuilder')
+            KTUpdater.call_updater(ProductType.FACEBUILDER)
             _fb_grace_timer.start()
             fb_license_timer.start_timer()
 
 
-class FB_PT_UpdatePanel(KT_PT_UpdatePanel):
+class FB_PT_UpdatePanel(COMMON_PT_UpdatePanel):
     bl_idname = FBConfig.fb_update_panel_idname
     bl_category = Config.fb_tab_category
 
@@ -342,17 +342,17 @@ class FB_PT_UpdatePanel(KT_PT_UpdatePanel):
         return KTUpdater.is_active()
 
 
-class FB_PT_DownloadNotification(KT_PT_DownloadNotification):
+class FB_PT_DownloadNotification(COMMON_PT_DownloadNotification):
     bl_idname = FBConfig.fb_download_notification_panel_idname
     bl_category = Config.fb_tab_category
 
 
-class FB_PT_DownloadingProblemPanel(KT_PT_DownloadingProblemPanel):
+class FB_PT_DownloadingProblemPanel(COMMON_PT_DownloadingProblemPanel):
     bl_idname = FBConfig.fb_downloading_problem_panel_idname
     bl_category = Config.fb_tab_category
 
 
-class FB_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
+class FB_PT_UpdatesInstallationPanel(COMMON_PT_UpdatesInstallationPanel):
     bl_idname = FBConfig.fb_updates_installation_panel_idname
     bl_category = Config.fb_tab_category
 

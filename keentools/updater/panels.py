@@ -18,11 +18,15 @@
 
 from bpy.types import Panel
 
-from ..addon_config import Config, facebuilder_enabled, geotracker_enabled
+from ..addon_config import Config, facebuilder_enabled, geotracker_enabled, facetracker_enabled
+from ..utils.kt_logging import KTLogger
 from .utils import (KTUpdater, KTDownloadNotification, KTDownloadingProblem, KTInstallationReminder)
 
 
-class Common:
+_log = KTLogger(__name__)
+
+
+class _CommonPanel:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = 'objectmode'
@@ -34,10 +38,12 @@ class Common:
             return facebuilder_enabled()
         elif cls.bl_category == Config.gt_tab_category:
             return geotracker_enabled()
+        elif cls.bl_category == Config.ft_tab_category:
+            return facetracker_enabled()
         return False
 
 
-class KT_PT_UpdatePanel(Common, Panel):
+class COMMON_PT_UpdatePanel(_CommonPanel, Panel):
     bl_idname = Config.kt_update_panel_idname
     bl_label = 'Update available'
 
@@ -70,7 +76,7 @@ class KT_PT_UpdatePanel(Common, Panel):
         self._draw_response(layout)
 
 
-class KT_PT_DownloadNotification(Common, Panel):
+class COMMON_PT_DownloadNotification(_CommonPanel, Panel):
     bl_idname = Config.kt_download_notification_panel_idname
     bl_label = 'Update available'
 
@@ -89,7 +95,7 @@ class KT_PT_DownloadNotification(Common, Panel):
         self._draw_response(layout)
 
 
-class KT_PT_DownloadingProblemPanel(Common, Panel):
+class COMMON_PT_DownloadingProblemPanel(_CommonPanel, Panel):
     bl_idname = Config.kt_downloading_problem_panel_idname
     bl_label = 'Downloading problem'
 
@@ -116,7 +122,7 @@ class KT_PT_DownloadingProblemPanel(Common, Panel):
         self._draw_response(layout)
 
 
-class KT_PT_UpdatesInstallationPanel(Common, Panel):
+class COMMON_PT_UpdatesInstallationPanel(_CommonPanel, Panel):
     bl_idname = Config.kt_updates_installation_panel_idname
     bl_label = 'Update available'
 

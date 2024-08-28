@@ -27,13 +27,19 @@ from bpy.types import Operator
 from bpy.props import BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, get_addon_preferences, ErrorType
+from ..addon_config import (Config,
+                            get_operator,
+                            get_addon_preferences,
+                            ErrorType,
+                            ProductType,
+                            product_name)
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded, download_core_zip_async, download_addon_zip_async,
     install_downloaded_zips)
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 from ..utils.ui_redraw import force_ui_redraw
+from ..utils.timer import KTTimer
 from ..preferences.progress import KTUpdateProgressTimer
 from ..ui_strings import buttons
 
@@ -140,8 +146,12 @@ class UpdateState(IntEnum):
 
 
 class CurrentStateExecutor:
-    _panel_updater_state = UpdateState.INITIAL
-    _mutable = True
+    _panel_updater_state: UpdateState = UpdateState.INITIAL
+    _mutable: bool = True
+
+    @classmethod
+    def get_update_state(cls) -> UpdateState:
+        return cls._panel_updater_state
 
     @classmethod
     def make_immutable(cls):
@@ -163,6 +173,7 @@ class CurrentStateExecutor:
     @classmethod
     def compute_current_panel_updater_state(cls) -> UpdateState:
         downloaded_version = _version_to_tuple(_downloaded_version())
+
         if cls._panel_updater_state == UpdateState.INITIAL:
             if KTUpdater.is_available():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
@@ -170,22 +181,74 @@ class CurrentStateExecutor:
                     downloaded_version != _version_to_tuple(_latest_installation_skip_version()) and \
                     updates_downloaded() and KTInstallationReminder.is_available():
                 cls.set_current_panel_updater_state(UpdateState.INSTALL)
+
         elif cls._panel_updater_state == UpdateState.INSTALL:
             if KTUpdater.is_available():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
+
         return cls._panel_updater_state
+
+
+class KTUpdateTimer(KTTimer):
+    def __init__(self, product: int = ProductType.ADDON,
+                 interval: float = 5.0, attempts: int = 3):
+        super().__init__()
+        self._interval: float = interval
+        self._product: int = product
+        self._product_name: str = product_name(product)
+        self._attempts = attempts
+        self._default_attempts = attempts
+
+    def _callback(self) -> Optional[float]:
+        if self.check_stop_all_timers():
+            return None
+
+        _log.output(f'CHECK UPDATE FOR {self._product_name} '
+                    f'attempt={self._attempts}')
+        if not pkt_is_installed():
+            _log.error('PYKEENTOOLS WAS DEACTIVATED')
+            self.stop_timer()
+            return None
+
+        KTUpdater.check_for_update(self._product_name)
+
+        if self._attempts == -1:
+            _log.output(f'INFINITE CHECKING FOR {self._product_name} '
+                        f'IS DELAYED FOR {self._interval:.1f} sec.')
+            return self._interval
+
+        self._attempts -= 1
+        if self._attempts <= 0:
+            self._attempts = -1
+            self.stop_timer()
+            return None
+
+        _log.output(f'UPDATE CHECKING FOR {self._product_name} '
+                    f'IS DELAYED FOR {self._interval:.1f} sec.')
+        return self._interval
+
+    def start_timer(self) -> None:
+        if not self.is_active() and self.is_enabled() and pkt_is_installed():
+            self._attempts = self._default_attempts
+            _log.red(f'start_timer {self._product_name}')
+            self._start(self._callback, persistent=True)
+
+    def stop_timer(self) -> None:
+        _log.red(f'stop_timer {self._product_name}')
+        self._stop(self._callback)
 
 
 class KTUpdater:
     _response: Dict = {'FaceBuilder': None, 'GeoTracker': None,
                        'FaceTracker': None, 'KeenTools': None}
+
     _parsed_response_content: Dict = {'FaceBuilder': None, 'GeoTracker': None,
                                       'FaceTracker': None, 'KeenTools': None}
-    _max_log_counter: int = 25
-    _log_counter: Dict = {'FaceBuilder': _max_log_counter,
-                          'GeoTracker': _max_log_counter,
-                          'FaceTracker': _max_log_counter,
-                          'KeenTools': _max_log_counter}
+
+    _timers: Dict = {ProductType.ADDON: KTUpdateTimer(ProductType.ADDON),
+                     ProductType.FACEBUILDER: KTUpdateTimer(ProductType.FACEBUILDER),
+                     ProductType.GEOTRACKER: KTUpdateTimer(ProductType.GEOTRACKER),
+                     ProductType.FACETRACKER: KTUpdateTimer(ProductType.FACETRACKER)}
 
     @classmethod
     def is_available(cls) -> bool:
@@ -277,14 +340,16 @@ class KTUpdater:
         return ''
 
     @classmethod
-    def call_updater(cls, product: str) -> None:
-        if product not in cls._log_counter.keys():
-            _log.error(f'call_updater: {product}')
+    def call_updater(cls, product: int) -> None:
+        _log.red(f'{cls.__name__} call_updater_new ***')
+        if product not in cls._timers:
+            _log.error(f'call_updater error {product}')
             return
-        cls._log_counter[product] += 1
-        if cls._log_counter[product] >= cls._max_log_counter:
-            cls._log_counter[product] = 0
-            _log.cyan(f'call_updater [{product}] x{cls._max_log_counter}')
+        cls._timers[product].start_timer()
+
+    @classmethod
+    def check_for_update(cls, product: str) -> None:
+        _log.magenta(f'{cls.__name__} check_for_update ***')
 
         if cls.has_response_message(product) or not pkt_is_installed():
             return
@@ -295,6 +360,7 @@ class KTUpdater:
                 res = _mock_response(product=product,
                                      ver=Config.mock_update_version)
         if res is not None:
+            _log.blue(f'{res}')
             cls.set_response(product, res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
             cls.set_parsed(product, parsed)

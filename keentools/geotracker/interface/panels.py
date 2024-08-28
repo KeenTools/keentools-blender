@@ -33,10 +33,10 @@ from ...addon_config import (Config,
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
-                               KT_PT_UpdatePanel,
-                               KT_PT_DownloadNotification,
-                               KT_PT_DownloadingProblemPanel,
-                               KT_PT_UpdatesInstallationPanel)
+                               COMMON_PT_UpdatePanel,
+                               COMMON_PT_DownloadNotification,
+                               COMMON_PT_DownloadingProblemPanel,
+                               COMMON_PT_UpdatesInstallationPanel)
 from ..gtloader import GTLoader
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.viewport_state import force_show_ui_overlays
@@ -232,12 +232,12 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         self._output_geotrackers_list(col)
         self._geotracker_creation_button(col)
         _exit_from_localview_button(layout, context)
-        KTUpdater.call_updater('GeoTracker')
+        KTUpdater.call_updater(ProductType.GEOTRACKER)
         _gt_grace_timer.start()
         gt_license_timer.start_timer()
 
 
-class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
+class GT_PT_UpdatePanel(COMMON_PT_UpdatePanel):
     bl_idname = GTConfig.gt_update_panel_idname
     bl_category = Config.gt_tab_category
 
@@ -248,17 +248,17 @@ class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
         return KTUpdater.is_active()
 
 
-class GT_PT_DownloadNotification(KT_PT_DownloadNotification):
+class GT_PT_DownloadNotification(COMMON_PT_DownloadNotification):
     bl_idname = GTConfig.gt_download_notification_panel_idname
     bl_category = Config.gt_tab_category
 
 
-class GT_PT_DownloadingProblemPanel(KT_PT_DownloadingProblemPanel):
+class GT_PT_DownloadingProblemPanel(COMMON_PT_DownloadingProblemPanel):
     bl_idname = GTConfig.gt_downloading_problem_panel_idname
     bl_category = Config.gt_tab_category
 
 
-class GT_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
+class GT_PT_UpdatesInstallationPanel(COMMON_PT_UpdatesInstallationPanel):
     bl_idname = GTConfig.gt_updates_installation_panel_idname
     bl_category = Config.gt_tab_category
 
