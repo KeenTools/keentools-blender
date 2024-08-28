@@ -65,10 +65,17 @@ def bpy_winman() -> Any:
     return bpy.data.window_managers['WinMan']
 
 
+def bpy_pixel_size() -> float:
+    return bpy.context.preferences.system.pixel_size
+
+
 def bpy_window_width() -> int:
     try:
         window = bpy_winman().windows[0]
-        width = window.width
+        ps = bpy_pixel_size()
+        if ps < 1.0:
+            ps = 1.0
+        width = window.width * ps
     except Exception as err:
         _log.error(f'bpy_window_width:\n{str(err)}')
         width = -1
