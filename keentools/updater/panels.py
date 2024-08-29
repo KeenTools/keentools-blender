@@ -18,7 +18,11 @@
 
 from bpy.types import Panel
 
-from ..addon_config import Config, facebuilder_enabled, geotracker_enabled, facetracker_enabled
+from ..addon_config import (Config,
+                            facebuilder_enabled,
+                            geotracker_enabled,
+                            facetracker_enabled,
+                            product_type_by_name)
 from ..utils.kt_logging import KTLogger
 from .utils import (KTUpdater, KTDownloadNotification, KTDownloadingProblem, KTInstallationReminder)
 
@@ -55,11 +59,11 @@ class COMMON_PT_UpdatePanel(_CommonPanel, Panel):
         col = layout.column()
         col.scale_y = Config.text_scale_y
 
-        product = self.bl_category
+        product = product_type_by_name(self.bl_category)
 
         render_message = KTUpdater.render_message(product=product, limit=32)
         if len(render_message) == 0:
-            render_message = KTUpdater.render_message(product=None, limit=32)
+            render_message = KTUpdater.render_message(limit=32)
         for txt in render_message:
             col.label(text=txt)
 

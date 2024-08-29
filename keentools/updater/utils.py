@@ -49,13 +49,13 @@ _log = KTLogger(__name__)
 
 def _version_to_tuple(version: Optional[Any]) -> Tuple:
     if version is None:
-        return tuple([0, 0, 0])
+        return (0, 0, 0)
     if type(version).__name__ == 'str':
         if version == "":
-            return tuple([0, 0, 0])
+            return (0, 0, 0)
         return tuple(map(int, version.split('.')))
     if type(version).__name__ == 'Version':
-        return tuple([version.major, version.minor, version.patch])
+        return (version.major, version.minor, version.patch)
     assert False
 
 
@@ -90,7 +90,7 @@ def render_active_message(limit: int=64) -> List[str]:
     updater_state = prefs.updater_state
 
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        return KTUpdater.render_message(product=None, limit=limit)
+        return KTUpdater.render_message(limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
         return KTDownloadNotification.render_message()
     elif updater_state == UpdateState.DOWNLOADING_PROBLEM:
@@ -145,7 +145,7 @@ class KTUpdateTimer(KTTimer):
             self.stop_timer()
             return None
 
-        KTUpdater.check_for_update(self._product_name)
+        KTUpdater.check_for_update(self._product)
 
         if self._attempts == -1:
             _log.output(f'INFINITE CHECKING FOR {self._product_name} '
@@ -174,11 +174,15 @@ class KTUpdateTimer(KTTimer):
 
 
 class KTUpdater:
-    _response: Dict = {'FaceBuilder': None, 'GeoTracker': None,
-                       'FaceTracker': None, 'KeenTools': None}
+    _response: Dict = {ProductType.ADDON: None,
+                       ProductType.FACEBUILDER: None,
+                       ProductType.GEOTRACKER: None,
+                       ProductType.FACETRACKER: None}
 
-    _parsed_response_content: Dict = {'FaceBuilder': None, 'GeoTracker': None,
-                                      'FaceTracker': None, 'KeenTools': None}
+    _parsed_response_content: Dict = {ProductType.ADDON: None,
+                                      ProductType.FACEBUILDER: None,
+                                      ProductType.GEOTRACKER: None,
+                                      ProductType.FACETRACKER: None}
 
     _timers: Dict = {ProductType.ADDON: KTUpdateTimer(ProductType.ADDON),
                      ProductType.FACEBUILDER: KTUpdateTimer(ProductType.FACEBUILDER),
@@ -274,21 +278,21 @@ class KTUpdater:
         return any([cls._response[key] is not None for key in cls._response])
 
     @classmethod
-    def product_is_checked(cls, product: str) -> bool:
+    def product_is_checked(cls, product: int) -> bool:
         return cls._parsed_response_content[product] is not None
 
     @classmethod
-    def has_response_message(cls, product: str) -> bool:
+    def has_response_message(cls, product: int) -> bool:
         return cls._parsed_response_content[product] is not None
 
     @classmethod
-    def set_response(cls, product: str, val: Optional[Any]) -> None:
+    def set_response(cls, product: int, val: Optional[Any]) -> None:
         _log.green(f'set_response:\n{product}\n{val}')
         cls._response[product] = val
         _log.yellow(f'response:\n{cls._response}')
 
     @classmethod
-    def get_response(cls, *, product: Optional[str]=None) -> Optional[Any]:
+    def get_response(cls, product: Optional[int] = None) -> Optional[Any]:
         if product is not None:
             return cls._response[product]
         for key in cls._response:
@@ -298,7 +302,7 @@ class KTUpdater:
         return None
 
     @classmethod
-    def get_parsed(cls, *, product: Optional[str]=None) -> Optional[Any]:
+    def get_parsed(cls, product: Optional[int] = None) -> Optional[Any]:
         if product is not None:
             return cls._parsed_response_content[product]
         for key in cls._parsed_response_content:
@@ -308,13 +312,14 @@ class KTUpdater:
         return None
 
     @classmethod
-    def set_parsed(cls, product: str, val: Optional[Any]) -> None:
-        _log.green(f'set_parsed:\n{product}\n{val}')
+    def set_parsed(cls, product: int, val: Optional[Any]) -> None:
+        _log.green(f'set_parsed:\n{product_name(product)}\n{val}')
         cls._parsed_response_content[product] = val
 
     @classmethod
-    def render_message(cls, *, product: Optional[str]=None, limit: int=32) -> List[str]:
-        parsed = cls.get_parsed(product=product)
+    def render_message(cls, *, product: Optional[int] = None,
+                       limit: int=32) -> List[str]:
+        parsed = cls.get_parsed(product)
         if parsed is not None:
             return render_main(parsed, limit)
         return []
@@ -350,13 +355,13 @@ class KTUpdater:
         cls._timers[product].start_timer()
 
     @classmethod
-    def check_for_update(cls, product: str) -> None:
+    def check_for_update(cls, product: int) -> None:
         _log.magenta(f'{cls.__name__} check_for_update')
 
         if cls.has_response_message(product) or not pkt_is_installed():
             return
         uc = cls.get_update_checker()
-        res = uc.check_for_updates(product)
+        res = uc.check_for_updates(product_name(product))
         if res is not None:
             _log.blue(f'{res}')
             cls.set_response(product, res)

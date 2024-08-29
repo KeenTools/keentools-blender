@@ -417,6 +417,18 @@ def product_name(product: int) -> str:
     assert False, f'product_name: Improper product {product}'
 
 
+def product_type_by_name(product_str: str) -> int:
+    if product_str == 'FaceBuilder':
+        return ProductType.FACEBUILDER
+    if product_str == 'GeoTracker':
+        return ProductType.GEOTRACKER
+    if product_str == 'FaceTracker':
+        return ProductType.FACETRACKER
+    if product_str == 'KeenTools':
+        return ProductType.ADDON
+    return ProductType.UNDEFINED
+
+
 def output_import_statistics() -> None:
     names = "\n".join(_log.module_names())
     _log.output('import sequence:\n' + _log.color('green', f'{names}'))
