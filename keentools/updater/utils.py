@@ -367,7 +367,8 @@ class KTUpdater:
             cls.set_response(product, res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
             cls.set_parsed(product, parsed)
-            cls.compute_current_panel_updater_state()
+
+        cls.compute_current_panel_updater_state()
 
 
 def _set_installing() -> None:
