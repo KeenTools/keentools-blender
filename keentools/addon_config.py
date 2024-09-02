@@ -147,6 +147,7 @@ class Config:
     default_tex_uv_expand_percents: float = 0.1
 
     default_window_width: int = 1920
+    default_window_height: int = 1080
     use_ui_scale: bool = True
 
     focal_length_tolerance: float = 0.01

@@ -29,7 +29,7 @@ from .coords import get_pixel_relative_size, check_area_is_wrong
 from ..utils.bpy_common import (bpy_window,
                                 bpy_window_manager,
                                 bpy_background_mode,
-                                bpy_window_width)
+                                bpy_window_size)
 
 
 _log = KTLogger(__name__)
@@ -180,9 +180,12 @@ class KTViewport:
         if not Config.use_ui_scale:
             self.set_viewport_ui_scale(1.0)
             return 1.0
-        width = bpy_window_width()
-        scale = width / Config.default_window_width \
-            if width >= Config.default_window_width else 1.0
+        w, h = bpy_window_size(check_retina=True)
+        scale_x = w / Config.default_window_width \
+            if h >= Config.default_window_width else 1.0
+        scale_y = h / Config.default_window_height \
+            if h >= Config.default_window_height else 1.0
+        scale = min(scale_x, scale_y)
         self.set_viewport_ui_scale(scale)
         return scale
 

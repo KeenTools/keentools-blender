@@ -65,21 +65,22 @@ def bpy_winman() -> Any:
     return bpy.data.window_managers['WinMan']
 
 
-def bpy_pixel_size() -> float:
+def bpy_system_pixel_size() -> float:
     return bpy.context.preferences.system.pixel_size
 
 
-def bpy_window_width() -> int:
+def bpy_window_size(check_retina: bool = False) -> Tuple[float, float]:
     try:
         window = bpy_winman().windows[0]
-        ps = bpy_pixel_size()
-        if ps < 1.0:
-            ps = 1.0
-        width = window.width * ps
+        width, height = window.width, window.height
+        if check_retina:
+            retina_scale = max(1.0, bpy_system_pixel_size())
+            return width * retina_scale, height * retina_scale
     except Exception as err:
         _log.error(f'bpy_window_width:\n{str(err)}')
         width = -1
-    return width
+        height = -1
+    return width, height
 
 
 def bpy_screen() -> Any:

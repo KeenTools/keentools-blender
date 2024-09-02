@@ -28,7 +28,7 @@ from ..addon_config import (Config,
                             ErrorType,
                             ProductType)
 from ..facebuilder_config import FBConfig
-from ..utils.bpy_common import bpy_render_frame, bpy_window_width
+from ..utils.bpy_common import bpy_render_frame, bpy_window_size
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             pin_to_xyz_from_mesh,
                             pin_to_xyz_from_geo_mesh,
