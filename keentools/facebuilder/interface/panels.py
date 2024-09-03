@@ -82,16 +82,16 @@ def _draw_update_blendshapes_panel(layout: Any) -> None:
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
-def _autoloader_handler(headnum: int) -> None:
-    _log.output(f'Head autoloader started: {headnum}')
+def fb_autoloader(headnum: int) -> None:
+    _log.output(f'FaceBuilder autoloader started: {headnum}')
     settings = fb_settings()
     if not settings.loader().load_model(headnum):
         _log.error(f'Head autoloader failed: {headnum}')
     return None
 
 
-def _start_autoloader_handler(headnum: int) -> None:
-    bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
+def start_fb_autoloader(headnum: int) -> None:
+    bpy_timer_register(partial(fb_autoloader, headnum), first_interval=0.01)
 
 
 def poll_fb_common() -> bool:
@@ -211,7 +211,7 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
         loader = settings.loader()
 
         if headnum >= 0 and loader.is_not_loaded():
-            _start_autoloader_handler(headnum)
+            start_fb_autoloader(headnum)
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
