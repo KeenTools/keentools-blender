@@ -49,37 +49,14 @@ from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
 from ...common.license_checker import ft_license_timer, draw_upgrade_license_box
 from ...common.escapers import (fb_pinmode_escaper_check,
                                 ft_pinmode_escaper_check,
-                                start_ft_pinmode_escaper)
+                                start_ft_pinmode_escaper,
+                                ft_calculating_escaper_check,
+                                start_ft_calculating_escaper,
+                                exit_from_localview_button)
 
 
 _log = KTLogger(__name__)
 _ft_grace_timer = KTGraceTimer(ProductType.FACETRACKER)
-
-
-def _exit_from_localview_button(layout, context):
-    if not common_loader().check_localview_without_pinmode(context.area):
-        return
-    settings = ft_settings()
-    if settings.is_calculating():
-        return
-    col = layout.column()
-    col.alert = True
-    col.scale_y = 2.0
-    col.operator(Config.kt_exit_localview_idname)
-
-
-def _start_calculating_escaper() -> None:
-    settings = ft_settings()
-    mode = settings.calculating_mode
-    if mode == 'TRACKING' or mode == 'REFINE':
-        bpy_timer_register(_calculating_escaper, first_interval=0.01)
-
-
-def _calculating_escaper() -> None:
-    _log.error('_calculating_escaper call')
-    settings = ft_settings()
-    settings.stop_calculating()
-    settings.user_interrupts = True
 
 
 def _geomobj_delete_handler() -> None:
@@ -220,7 +197,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         self._output_geotrackers_list(col)
         self._facetracker_creation_button(col)
 
-        _exit_from_localview_button(layout, context)
+        exit_from_localview_button(layout, context, ProductType.FACETRACKER)
         KTUpdater.call_updater(ProductType.FACETRACKER
                                if len(ft_settings().trackers()) > 0
                                else ProductType.ADDON)
@@ -722,9 +699,6 @@ class FT_PT_TrackingPanel(AllVisible):
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
-        else:
-            if settings.is_calculating():
-                _start_calculating_escaper()
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)
@@ -732,6 +706,9 @@ class FT_PT_TrackingPanel(AllVisible):
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
+
+        if ft_calculating_escaper_check():
+            start_ft_calculating_escaper()
 
 
 class FT_PT_OptionsPanel(View3DPanel):
