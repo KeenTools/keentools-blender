@@ -28,7 +28,7 @@ from ..facebuilder_config import FBConfig
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             focal_by_projection_matrix_mm,
                             calc_model_mat,
-                            check_area_is_wrong)
+                            image_space_to_frame)
 from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)
 from ..utils.attrs import mark_keentools_object, get_obj_collection
@@ -733,6 +733,24 @@ class FBLoader:
         _log.output('update_fb_viewport_shaders end >>>')
 
     @classmethod
+    def move_pin(cls, keyframe: int, pin_index: int, pos: Tuple[float, float],
+                 shift_x: float = 0.0, shift_y: float = 0.0) -> None:
+        fb = cls.get_builder()
+        if pin_index < fb.pins_count(keyframe):
+            fb.move_pin(keyframe, pin_index,
+                        image_space_to_frame(*pos, shift_x, shift_y))
+
+    @classmethod
+    def delta_move_pin(cls, keyframe: int, indices: List[int],
+                       offset: Tuple[float, float]) -> None:
+        fb = cls.get_builder()
+        pins_count = fb.pins_count(keyframe)
+        for i in indices:
+            if i < pins_count:
+                x, y = fb.pin(keyframe, i).img_pos
+                fb.move_pin(keyframe, i, (x + offset[0], y + offset[1]))
+
+    @classmethod
     def load_pins_into_viewport(cls, headnum: int, camnum: int) -> None:
         _log.yellow('load_pins_into_viewport')
         settings = fb_settings()
@@ -740,7 +758,6 @@ class FBLoader:
         fb = cls.get_builder()
         vp = cls.viewport()
         pins = vp.pins()
-        pins.reset_current_pin()
         pins.set_pins(vp.img_points(fb, kid))
 
     @classmethod

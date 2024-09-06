@@ -28,7 +28,7 @@ from ..addon_config import (Config,
                             ErrorType,
                             ProductType)
 from ..facebuilder_config import FBConfig
-from ..utils.bpy_common import bpy_render_frame, bpy_window_size
+from ..utils.bpy_common import bpy_render_frame, get_scene_camera_shift
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             pin_to_xyz_from_mesh,
                             pin_to_xyz_from_geo_mesh,
@@ -39,7 +39,9 @@ from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             get_area_region_3d,
                             to_homogeneous)
 from ..utils.viewport import KTViewport
-from ..utils.edges import KTEdgeShader2D, KTRectangleShader2D
+from ..utils.edges import (KTEdgeShader2D,
+                           KTRectangleShader2D,
+                           KTScreenDashedRectangleShader2D)
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
 from .utils.edges import FBRasterEdgeShader3D
@@ -57,6 +59,7 @@ class FBViewport(KTViewport):
         self._texter: Any = KTScreenText(SpaceView3D, 'FaceBuilder')
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
         self._rectangler: Any = KTRectangleShader2D(SpaceView3D)
+        self._selector: Any = KTScreenDashedRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
 
     def product_type(self) -> int:
@@ -68,7 +71,8 @@ class FBViewport(KTViewport):
                 self._residuals,
                 self._points2d,
                 self._wireframer,
-                self._rectangler]
+                self._rectangler,
+                self._selector]
 
     def viewport_is_working(self) -> bool:
         if not super().viewport_is_working():
@@ -170,16 +174,26 @@ class FBViewport(KTViewport):
     def create_batch_2d(self, area: Area) -> None:
         x1, y1, x2, y2 = get_camera_border(area)
 
-        points = self.pins().arr().copy()
-        for i, p in enumerate(points):
-            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
-
-        vertex_colors = np.full((len(points), 4), FBConfig.pin_color,
-                                dtype=np.float32)
-
         pins = self.pins()
-        if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
-            vertex_colors[pins.current_pin_num()] = FBConfig.current_pin_color
+
+        shift_x, shift_y = get_scene_camera_shift()
+        points = [image_space_to_region(p[0], p[1], x1, y1, x2, y2,
+                                        shift_x, shift_y) for p in pins.arr()]
+        points_count = len(points)
+
+        vertex_colors = [FBConfig.pin_color] * points_count
+
+        color = (*FBConfig.disabled_pin_color[:3], 0.0) \
+            if pins.move_pin_mode() else FBConfig.disabled_pin_color
+        for i in [x for x in pins.get_disabled_pins() if x < points_count]:
+            vertex_colors[i] = color
+
+        for i in [x for x in pins.get_selected_pins() if x < points_count]:
+            vertex_colors[i] = FBConfig.selected_pin_color
+
+        pin_num = pins.current_pin_num()
+        if pins.current_pin() and pin_num < points_count:
+            vertex_colors[pin_num] = FBConfig.current_pin_color
 
         self.points2d().set_vertices_and_colors(points, vertex_colors)
         self.points2d().create_batch()

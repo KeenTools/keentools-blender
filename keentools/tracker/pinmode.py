@@ -549,7 +549,6 @@ class PinMode(Operator):
         if event.type == 'ESC' and event.value == 'PRESS':
             if settings.selection_mode:
                 settings.cancel_selection()
-                settings.set_add_selection_mode(False)
                 vp.tag_redraw()
                 _log.red(f'{self.__class__.__name__} selection ESC -- finished >>>')
                 return {'RUNNING_MODAL'}
