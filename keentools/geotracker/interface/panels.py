@@ -18,18 +18,14 @@
 
 import re
 from typing import Tuple, Optional, Any
-from functools import partial
 
-import bpy
 from bpy.types import Area, Panel, UIList
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              gt_settings,
                              geotracker_enabled,
-                             addon_pinmode,
-                             ProductType,
-                             common_loader)
+                             ProductType)
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
@@ -37,13 +33,15 @@ from ...updater.panels import (KTUpdater,
                                COMMON_PT_DownloadNotification,
                                COMMON_PT_DownloadingProblemPanel,
                                COMMON_PT_UpdatesInstallationPanel)
-from ..gtloader import GTLoader
-from ...utils.localview import exit_area_localview, check_context_localview
-from ...utils.viewport_state import force_show_ui_overlays
-from ...utils.bpy_common import bpy_timer_register
+from ...utils.bpy_common import bpy_timer_register, bpy_scene, bpy_data
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 from ...common.license_checker import gt_license_timer, draw_upgrade_license_box
+from ...common.escapers import (gt_pinmode_escaper_check,
+                                start_gt_pinmode_escaper,
+                                gt_calculating_escaper_check,
+                                start_gt_calculating_escaper,
+                                exit_from_localview_button)
 from ...utils.icons import KTIcons
 
 
@@ -51,56 +49,16 @@ _log = KTLogger(__name__)
 _gt_grace_timer = KTGraceTimer(ProductType.GEOTRACKER)
 
 
-def _pinmode_escaper(area: Area) -> None:
-    _log.error('_pinmode_escaper call')
-    GTLoader.out_pinmode()
-    exit_area_localview(area)
-    force_show_ui_overlays(area)
-    return None
-
-
-def _start_pinmode_escaper(context: Any) -> None:
-    if context.area:
-        bpy_timer_register(partial(_pinmode_escaper, context.area),
-                           first_interval=0.01)
-
-
-def _calculating_escaper() -> None:
-    _log.error('_calculating_escaper call')
-    settings = gt_settings()
-    settings.stop_calculating()
-    settings.user_interrupts = True
-
-
-def _start_calculating_escaper() -> None:
-    settings = gt_settings()
-    mode = settings.calculating_mode
-    if mode == 'TRACKING' or mode == 'REFINE':
-        bpy_timer_register(_calculating_escaper, first_interval=0.01)
-
-
 def _geomobj_delete_handler() -> None:
     settings = gt_settings()
     if settings.pinmode:
-        GTLoader.out_pinmode()
+        settings.loader().out_pinmode()
     settings.fix_geotrackers()
     return None
 
 
 def _start_geomobj_delete_handler() -> None:
     bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
-
-
-def _exit_from_localview_button(layout, context):
-    if not common_loader().check_localview_without_pinmode(context.area):
-        return
-    settings = gt_settings()
-    if settings.is_calculating():
-        return
-    col = layout.column()
-    col.alert = True
-    col.scale_y = 2.0
-    col.operator(Config.kt_exit_localview_idname)
 
 
 class View3DPanel(Panel):
@@ -231,7 +189,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         col = layout.column(align=True)
         self._output_geotrackers_list(col)
         self._geotracker_creation_button(col)
-        _exit_from_localview_button(layout, context)
+        exit_from_localview_button(layout, context, ProductType.GEOTRACKER)
 
         KTUpdater.call_updater(ProductType.GEOTRACKER
                                if len(gt_settings().trackers()) > 0
@@ -414,7 +372,7 @@ class GT_PT_MasksPanel(AllVisible):
                        show_threshold: bool = False) -> None:
         row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
-                        bpy.data, 'movieclips', text='')
+                        bpy_data(), 'movieclips', text='')
         op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                           text='', icon='FILEBROWSER')
         op.product = ProductType.GEOTRACKER
@@ -445,7 +403,7 @@ class GT_PT_MasksPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop_search(geotracker, 'compositing_mask',
-                        bpy.data, 'masks', text='')
+                        bpy_data(), 'masks', text='')
         row.prop(geotracker, 'compositing_mask_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
@@ -593,8 +551,6 @@ class GT_PT_TrackingPanel(AllVisible):
             row.operator(GTConfig.gt_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not GTLoader.viewport().viewport_is_working():
-                _start_pinmode_escaper(context)
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,
                               text='Start Pinmode', icon='HIDE_OFF',
@@ -717,9 +673,6 @@ class GT_PT_TrackingPanel(AllVisible):
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
-        else:
-            if settings.is_calculating():
-                _start_calculating_escaper()
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)
@@ -727,6 +680,12 @@ class GT_PT_TrackingPanel(AllVisible):
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
+
+        if gt_pinmode_escaper_check():
+            start_gt_pinmode_escaper(context)
+
+        if gt_calculating_escaper_check():
+            start_gt_calculating_escaper()
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):
@@ -1053,9 +1012,9 @@ class GT_PT_RenderingPanel(AllVisible):
 
         box = layout.box()
         col = box.column(align=True)
-        col.prop(bpy.context.scene.render, 'film_transparent',
+        col.prop(bpy_scene().render, 'film_transparent',
                  text='Transparent background')
-        col.prop(bpy.context.scene, 'use_nodes',
+        col.prop(bpy_scene(), 'use_nodes',
                  text='Use compositing nodes')
 
 
