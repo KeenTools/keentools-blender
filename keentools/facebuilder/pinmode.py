@@ -166,7 +166,7 @@ class FB_OT_PinMode(Operator):
             vp.message_to_screen(default_txt)
 
     def _delete_pins(self, pin_index_list: List[int]) -> Set:
-        _log.yellow('_delete_pins start')
+        _log.green('_delete_pins start')
         if len(pin_index_list) == 0:
             _log.red('_delete_pins: no pins to remove >>>')
             return {'RUNNING_MODAL'}
