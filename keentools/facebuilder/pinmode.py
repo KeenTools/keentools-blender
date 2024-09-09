@@ -675,7 +675,10 @@ class FB_OT_PinMode(Operator):
                 context.area, event.mouse_region_x, event.mouse_region_y)
 
         if event.value == 'PRESS' and event.type in {'BACK_SPACE', 'DEL'}:
-            return self._delete_pins(vp.pins().get_selected_pins())
+            selected_pins = vp.pins().get_selected_pins()
+            if len(selected_pins) == 0:
+                return {'PASS_THROUGH'}
+            return self._delete_pins(selected_pins)
 
         head = settings.get_head(settings.current_headnum)
         if head.need_update:
