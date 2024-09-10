@@ -333,7 +333,8 @@ class FB_OT_PickModeStarter(Operator):
         img = _init_fb_detected_faces(fb, self.headnum, self.camnum)
         if img is None:
             message = 'Face detection failed because of a corrupted image'
-            self.report({'ERROR'}, message)
+            self.report({'INFO'} if self.auto_detect_single else {'ERROR'},
+                        message)
             _log.error(message)
             _log.output(f'{self.__class__.__name__} _action 2 cancelled >>>')
             return {'CANCELLED'}

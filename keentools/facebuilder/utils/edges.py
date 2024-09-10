@@ -164,7 +164,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         return True
 
     def _draw_simple_line(self):
-        set_line_width(self.line_width)
+        set_line_width(self.get_line_width())
         set_blend_alpha()
         shader = self.simple_line_shader
         shader.bind()
@@ -175,7 +175,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
         shader.uniform_float('viewportSize', self.viewport_size)
-        shader.uniform_float('lineWidth', self.line_width)
+        shader.uniform_float('lineWidth', self.get_line_width())
         if self.simple_line_shader:
             self.simple_line_batch.draw(shader)
 
@@ -200,7 +200,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                 shader.uniform_from_name('modelMatrix'),
                 self.object_world_matrix.ravel(), 16)
             shader.uniform_float('viewportSize', self.viewport_size)
-            shader.uniform_float('lineWidth', self.line_width)
+            shader.uniform_float('lineWidth', self.get_line_width())
             shader.uniform_int('ignoreBackface', 1 if self.backface_culling else 0)
             shader.uniform_float('cameraPos', self.camera_pos)
             if self.line_batch:

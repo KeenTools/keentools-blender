@@ -193,17 +193,21 @@ class KTShaderPoints(KTShaderBase):
         self.vertices: Any = np.empty((0, 3), dtype=np.float32)
         self.vertex_colors: Any = np.empty((0, 4), dtype=np.float32)
 
-        self._point_size: float = UserPreferences.get_value_safe(
+        self.point_size: float = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
+        self.point_ui_scale: float = 1.0
 
     def get_vertices(self) -> Any:
         return self.vertices
 
     def set_point_size(self, ps: float) -> None:
-        self._point_size = ps
+        self.point_size = ps
 
     def get_point_size(self) -> float:
-        return self._point_size
+        return self.point_size * self.point_ui_scale
+
+    def set_point_ui_scale(self, ps: float) -> None:
+        self.point_ui_scale = ps
 
     def set_vertices_and_colors(self, verts: Any, colors: Any) -> None:
         self.vertices = verts

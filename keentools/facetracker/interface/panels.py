@@ -33,7 +33,11 @@ from ...facebuilder_config import FBConfig
 from ...facetracker_config import FTConfig
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
-from ...updater.panels import KTUpdater
+from ...updater.panels import (KTUpdater,
+                               COMMON_PT_UpdatePanel,
+                               COMMON_PT_DownloadNotification,
+                               COMMON_PT_DownloadingProblemPanel,
+                               COMMON_PT_UpdatesInstallationPanel)
 from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
 from ...utils.bpy_common import bpy_timer_register, bpy_object_is_in_scene
@@ -217,9 +221,37 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         self._facetracker_creation_button(col)
 
         _exit_from_localview_button(layout, context)
-        KTUpdater.call_updater('FaceTracker')
+        KTUpdater.call_updater(ProductType.FACETRACKER
+                               if len(ft_settings().trackers()) > 0
+                               else ProductType.ADDON)
         _ft_grace_timer.start()
         ft_license_timer.start_timer()
+
+
+class FT_PT_UpdatePanel(COMMON_PT_UpdatePanel):
+    bl_idname = FTConfig.ft_update_panel_idname
+    bl_category = Config.ft_tab_category
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        return KTUpdater.updates_available_state()
+
+
+class FT_PT_DownloadNotification(COMMON_PT_DownloadNotification):
+    bl_idname = FTConfig.ft_download_notification_panel_idname
+    bl_category = Config.ft_tab_category
+
+
+class FT_PT_DownloadingProblemPanel(COMMON_PT_DownloadingProblemPanel):
+    bl_idname = FTConfig.ft_downloading_problem_panel_idname
+    bl_category = Config.ft_tab_category
+
+
+class FT_PT_UpdatesInstallationPanel(COMMON_PT_UpdatesInstallationPanel):
+    bl_idname = FTConfig.ft_updates_installation_panel_idname
+    bl_category = Config.ft_tab_category
 
 
 def _fb_view_panel_active() -> bool:

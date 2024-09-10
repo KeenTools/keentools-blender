@@ -30,7 +30,11 @@ from ..addon_config import (Config,
 from ..facetracker_config import FTConfig
 from ..utils.coords import get_image_space_coord, get_area_region
 from ..utils.manipulate import force_undo_push
-from ..utils.bpy_common import bpy_view_camera, operator_with_context, bpy_current_frame
+from ..utils.bpy_common import (bpy_view_camera,
+                                operator_with_context,
+                                bpy_current_frame,
+                                bpy_start_frame,
+                                bpy_end_frame)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .ui_strings import buttons
 from ..utils.detect_faces import (get_detected_faces,
@@ -336,12 +340,19 @@ class FT_OT_PickModeStarter(Operator):
             _log.output(f'{self.__class__.__name__} _action 1 cancelled >>>')
             return {'CANCELLED'}
 
+        if not bpy_start_frame() <= bpy_current_frame() <= bpy_end_frame():
+            msg = 'Align face does not work outside Scene playback range'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            _log.output(f'{self.__class__.__name__} _action 2 cancelled >>>')
+            return {'CANCELLED'}
+
         img = _init_ft_detected_faces(ft)
         if img is None:
             message = 'Face detection failed because of a corrupted image'
             self.report({'ERROR'}, message)
             _log.error(message)
-            _log.output(f'{self.__class__.__name__} _action 2 cancelled >>>')
+            _log.output(f'{self.__class__.__name__} _action 3 cancelled >>>')
             return {'CANCELLED'}
 
         h, w, _ = img.shape
@@ -353,7 +364,7 @@ class FT_OT_PickModeStarter(Operator):
         if len(rects) == 1:
             result = _place_ft_face(rectangle_index=0)
             if result is None:
-                _log.output(f'{self.__class__.__name__} _action 3 cancelled >>>')
+                _log.output(f'{self.__class__.__name__} _action 4 cancelled >>>')
                 return {'CANCELLED'}
             if not result:
                 message = 'A face was detected but not pinned'
@@ -369,7 +380,7 @@ class FT_OT_PickModeStarter(Operator):
             return {'FINISHED'}
 
         if self.auto_detect_single:
-            _log.output(f'{self.__class__.__name__} _action 4 cancelled >>>')
+            _log.output(f'{self.__class__.__name__} _action 5 cancelled >>>')
             return {'CANCELLED'}
 
         if len(rects) > 1:

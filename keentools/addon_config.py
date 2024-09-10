@@ -35,7 +35,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2024.2.0'  # (5/7)
+    addon_version = '2024.2.1'  # (5/7)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -146,10 +146,16 @@ class Config:
     default_tex_face_angles_affection: float = 10.0
     default_tex_uv_expand_percents: float = 0.1
 
+    default_window_width: int = 1920
+    default_window_height: int = 1080
+    use_ui_scale: bool = True
+
     focal_length_tolerance: float = 0.01
 
     license_minimum_days_for_warning: int = 7
     kt_license_recheck_timeout: float = 360.0
+
+    use_explicit_version_check_in_updater: bool = False
 
     # FaceBuilder Default Colors
     fb_midline_color = (0.96, 0.008, 0.615686)
@@ -161,10 +167,10 @@ class Config:
         'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
         'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
         'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
-        'black': ((0.04, 0.04, 0.04), (0.0, 0.0, 0.85)),
+        'black': ((0.03, 0.03, 0.03), (0.0, 0.0, 0.85)),
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
         'facetracker': ((0.02, 0.02, 0.04), (0.0, 0.4, 0.03)),
-        'default': ((0.04, 0.04, 0.04), (0.0, 0.0, 0.85))
+        'default': ((0.03, 0.03, 0.03), (0.0, 0.0, 0.85))
     }
 
     # Default UserPreferences
@@ -193,13 +199,6 @@ class Config:
         'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
         'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
     }
-
-    # Mock settings
-    mock_update_for_testing_flag: bool = False
-    mock_update_version: Tuple[int, int, int] = (int(addon_version.partition('.')[0]), 6, 3)
-    mock_update_addon_path: str = 'http://localhost/addon.zip'
-    mock_update_core_path: str = 'http://localhost/core.zip'
-    mock_product: Optional[str] = None
 
     supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
@@ -232,20 +231,6 @@ class Config:
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
     face_selection_frame_width = 3.0
-
-    @classmethod
-    def mock_update_for_testing(cls, value: bool=True, *,
-                                ver: Optional[Tuple]=None,
-                                addon_path: Optional[str]=None,
-                                core_path: Optional[str]=None,
-                                product: Optional[str]=None) -> None:
-        if ver is not None:
-            cls.mock_update_version = ver
-
-        cls.mock_update_addon_path = addon_path
-        cls.mock_update_core_path = core_path
-        cls.mock_product = product
-        cls.mock_update_for_testing_flag = value
 
 
 def is_blender_supported() -> bool:
@@ -431,6 +416,18 @@ def product_name(product: int) -> str:
     if product == ProductType.ADDON:
         return 'KeenTools'
     assert False, f'product_name: Improper product {product}'
+
+
+def product_type_by_name(product_str: str) -> int:
+    if product_str == 'FaceBuilder':
+        return ProductType.FACEBUILDER
+    if product_str == 'GeoTracker':
+        return ProductType.GEOTRACKER
+    if product_str == 'FaceTracker':
+        return ProductType.FACETRACKER
+    if product_str == 'KeenTools':
+        return ProductType.ADDON
+    return ProductType.UNDEFINED
 
 
 def output_import_statistics() -> None:

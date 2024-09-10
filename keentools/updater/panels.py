@@ -18,11 +18,19 @@
 
 from bpy.types import Panel
 
-from ..addon_config import Config, facebuilder_enabled, geotracker_enabled
+from ..addon_config import (Config,
+                            facebuilder_enabled,
+                            geotracker_enabled,
+                            facetracker_enabled,
+                            product_type_by_name)
+from ..utils.kt_logging import KTLogger
 from .utils import (KTUpdater, KTDownloadNotification, KTDownloadingProblem, KTInstallationReminder)
 
 
-class Common:
+_log = KTLogger(__name__)
+
+
+class _CommonPanel:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = 'objectmode'
@@ -34,10 +42,12 @@ class Common:
             return facebuilder_enabled()
         elif cls.bl_category == Config.gt_tab_category:
             return geotracker_enabled()
+        elif cls.bl_category == Config.ft_tab_category:
+            return facetracker_enabled()
         return False
 
 
-class KT_PT_UpdatePanel(Common, Panel):
+class COMMON_PT_UpdatePanel(_CommonPanel, Panel):
     bl_idname = Config.kt_update_panel_idname
     bl_label = 'Update available'
 
@@ -49,28 +59,32 @@ class KT_PT_UpdatePanel(Common, Panel):
         col = layout.column()
         col.scale_y = Config.text_scale_y
 
-        product = self.bl_category
+        product = product_type_by_name(self.bl_category)
 
-        for txt in KTUpdater.render_message(product=product, limit=32):
+        render_message = KTUpdater.render_message(product=product, limit=32)
+        if len(render_message) == 0:
+            render_message = KTUpdater.render_message(limit=32)
+        for txt in render_message:
             col.label(text=txt)
 
-        layout.operator(Config.kt_download_the_update_idname,
-                        text='Download the update', icon='IMPORT')
+        col = layout.column(align=True)
+        col.operator(Config.kt_download_the_update_idname,
+                     text='Download the update', icon='IMPORT')
 
-        res = KTUpdater.get_response(product=product)
-        if res is None:
+        if len(render_message) == 0:
             return
-        layout.operator(Config.kt_remind_later_idname,
-                        text='Remind tomorrow', icon='RECOVER_LAST')
-        layout.operator(Config.kt_skip_version_idname,
-                        text='Skip this version', icon='X')
+
+        col.operator(Config.kt_remind_later_idname,
+                     text='Remind tomorrow', icon='RECOVER_LAST')
+        col.operator(Config.kt_skip_version_idname,
+                     text='Skip this version', icon='X')
 
     def draw(self, context):
         layout = self.layout
         self._draw_response(layout)
 
 
-class KT_PT_DownloadNotification(Common, Panel):
+class COMMON_PT_DownloadNotification(_CommonPanel, Panel):
     bl_idname = Config.kt_download_notification_panel_idname
     bl_label = 'Update available'
 
@@ -78,7 +92,7 @@ class KT_PT_DownloadNotification(Common, Panel):
     def poll(cls, context):
         if not cls.check_tool_enabled():
             return False
-        return KTDownloadNotification.is_active()
+        return KTUpdater.updates_downloading_state()
 
     def _draw_response(self, layout):
         for txt in KTDownloadNotification.render_message():
@@ -89,7 +103,7 @@ class KT_PT_DownloadNotification(Common, Panel):
         self._draw_response(layout)
 
 
-class KT_PT_DownloadingProblemPanel(Common, Panel):
+class COMMON_PT_DownloadingProblemPanel(_CommonPanel, Panel):
     bl_idname = Config.kt_downloading_problem_panel_idname
     bl_label = 'Downloading problem'
 
@@ -97,7 +111,7 @@ class KT_PT_DownloadingProblemPanel(Common, Panel):
     def poll(cls, context):
         if not cls.check_tool_enabled():
             return False
-        return KTDownloadingProblem.is_active()
+        return KTUpdater.updates_downloading_problem_state()
 
     def _draw_response(self, layout):
         col = layout.column()
@@ -116,7 +130,7 @@ class KT_PT_DownloadingProblemPanel(Common, Panel):
         self._draw_response(layout)
 
 
-class KT_PT_UpdatesInstallationPanel(Common, Panel):
+class COMMON_PT_UpdatesInstallationPanel(_CommonPanel, Panel):
     bl_idname = Config.kt_updates_installation_panel_idname
     bl_label = 'Update available'
 
@@ -124,7 +138,7 @@ class KT_PT_UpdatesInstallationPanel(Common, Panel):
     def poll(cls, context):
         if not cls.check_tool_enabled():
             return False
-        return KTInstallationReminder.is_active()
+        return KTUpdater.updates_install_state()
 
     def _draw_response(self, layout):
         col = layout.column()

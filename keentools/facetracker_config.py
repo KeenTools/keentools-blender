@@ -176,5 +176,11 @@ class FTConfig:
     ft_help_rendering_idname = operators + '.help_rendering'
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
+    # Updater panels
+    ft_update_panel_idname = _PT + 'update_panel'
+    ft_download_notification_panel_idname = _PT + 'download_notification'
+    ft_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    ft_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
     ft_action_name = 'ftAction'
     ft_wireframe_offset_constant: float = 0.001

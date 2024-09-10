@@ -28,7 +28,7 @@ from ..addon_config import (Config,
                             ErrorType,
                             ProductType)
 from ..facebuilder_config import FBConfig
-from ..utils.bpy_common import bpy_render_frame, bpy_background_mode
+from ..utils.bpy_common import bpy_render_frame, bpy_window_size
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             pin_to_xyz_from_mesh,
                             pin_to_xyz_from_geo_mesh,
@@ -123,12 +123,20 @@ class FBViewport(KTViewport):
     def update_pin_sensitivity(self) -> None:
         settings = fb_settings()
         self._point_sensitivity = settings.pin_sensitivity
+        self.update_ui_scale()
 
     def update_pin_size(self) -> None:
         settings = fb_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * FBConfig.surf_pin_size_scale)
+        self.update_ui_scale()
+
+    def update_ui_scale(self) -> None:
+        scale = self.calc_viewport_ui_scale()
+        self.points2d().set_point_ui_scale(scale)
+        self.points3d().set_point_ui_scale(scale)
+        self.wireframer().set_line_ui_scale(scale)
 
     def surface_points_from_mesh(self, fb: Any, headobj: Object,
                                  keyframe: int = -1) -> Any:
