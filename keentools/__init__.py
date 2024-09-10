@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools: FaceBuilder, FaceTracker, GeoTracker 2024.2.0",  # (1/7)
-    "version": (2024, 2, 0),  # 2024.2.0 (2/7)
+    "name": "KeenTools: FaceBuilder, FaceTracker, GeoTracker 2024.2.1",  # (1/7)
+    "version": (2024, 2, 1),  # 2024.2.1 (2/7)
     "author": "KeenTools",
     "description": "FaceBuilder: Create Heads. FaceTracker: Track Heads. GeoTracker: Track Objects",
     "blender": (2, 80, 0),
@@ -77,7 +77,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2024.2.0'  # (3/7)
+    return Config.addon_version == '2024.2.1'  # (3/7)
 
 
 def _is_blender_too_old():
