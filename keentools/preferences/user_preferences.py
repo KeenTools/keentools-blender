@@ -36,6 +36,7 @@ class UserPreferences:
 
     _cached_dict: Optional[Dict] = None
     _cache_enabled: bool = True
+    _loaded_from_disk: bool = False
 
     type_float: str = 'float'
     type_string: str = 'string'
@@ -50,10 +51,13 @@ class UserPreferences:
     @classmethod
     def get_dict(cls) -> Dict:
         if cls._cache_enabled and cls._cached_dict is not None:
-            return cls._cached_dict
+            if cls._loaded_from_disk or not pkt_is_installed():
+                return cls._cached_dict
 
         if pkt_is_installed():
+            _log.magenta(f'{cls.__name__} load dict: {cls._DICT_NAME}')
             _dict = pkt_module().utils.load_settings(cls._DICT_NAME)
+            cls._loaded_from_disk = True
         else:
             _dict = deepcopy(cls._str_defaults)
 
