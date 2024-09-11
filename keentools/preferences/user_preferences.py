@@ -64,7 +64,7 @@ class UserPreferences:
     @classmethod
     def print_dict(cls) -> None:
         d = pkt_module().utils.load_settings(cls._DICT_NAME)
-        _log.output(f'UserPreferences:\n{d}')
+        _log.output(f'{cls.__name__}:\n{d}')
 
     @classmethod
     def _get_value(cls, name: str, type_: str) -> Any:
@@ -85,7 +85,7 @@ class UserPreferences:
             row = cls._defaults[name]
             cls.set_value(name, row['value'])
             return row['value']
-        _log.error(f'UserPreferences problem: {name} {type_}')
+        _log.error(f'{cls.__name__} problem: {name} {type_}')
         return None
 
     @classmethod
@@ -93,7 +93,7 @@ class UserPreferences:
         try:
             return cls._get_value(name, type_)
         except Exception as err:
-            _log.error(f'UserPreferences Exception info:\n{str(err)}')
+            _log.error(f'{cls.__name__} Exception info:\n{str(err)}')
             cls.clear_cache()
             if name in cls._defaults.keys():
                 row = cls._defaults[name]
@@ -144,6 +144,7 @@ class UpdaterPreferences(UserPreferences):
     _defaults = Config.default_updater_preferences
     _str_defaults = {k: str(Config.default_updater_preferences[k]['value'])
                      for k in Config.default_updater_preferences.keys()}
+    _cached_dict: Optional[Dict] = None
 
 
 def universal_direct_getter(name: str, type_: str) -> Callable:
@@ -163,7 +164,9 @@ def universal_cached_getter(name: str, type_: str) -> Callable:
         if name in self.keys():
             return self[name]
         else:
-            return UserPreferences.get_value_safe(name, type_)
+            value = UserPreferences.get_value_safe(name, type_)
+            self[name] = value
+            return value
     return _getter
 
 
