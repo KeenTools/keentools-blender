@@ -182,7 +182,7 @@ class KTViewport:
             return 1.0
         w, h = bpy_window_size(check_retina=True)
         scale_x = w / Config.default_window_width \
-            if h >= Config.default_window_width else 1.0
+            if w >= Config.default_window_width else 1.0
         scale_y = h / Config.default_window_height \
             if h >= Config.default_window_height else 1.0
         scale = min(scale_x, scale_y)
