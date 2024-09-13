@@ -554,17 +554,29 @@ class PinMode(Operator):
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
+            pins = vp.pins()
             if settings.selection_mode:
                 settings.cancel_selection()
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
                 vp.tag_redraw()
-                _log.red(f'{self.__class__.__name__} selection ESC -- finished >>>')
+                _log.red(f'{self.__class__.__name__} selection ESC >>>')
                 return {'RUNNING_MODAL'}
             if not bpy_background_mode() and bpy_is_animation_playing():
                 _log.output('STOP ANIMATION PLAYBACK')
                 return {'PASS_THROUGH'}
-            _log.output('Exit pinmode by ESC')
-            loader.out_pinmode()
+            if len(pins.get_selected_pins()) != 0:
+                pins.clear_selected_pins()
+                settings.cancel_selection()
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
+                loader.update_viewport_shaders(pins_and_residuals=True,
+                                               tag_redraw=True)
+                _log.red(f'{self.__class__.__name__} deselect by ESC >>>')
+                return {'RUNNING_MODAL'}
 
+            _log.red('Exit pinmode by ESC')
+            loader.out_pinmode()
             self.on_finish()
             _log.red(f'{self.__class__.__name__} Exit by ESC -- finished >>>')
             return {'FINISHED'}

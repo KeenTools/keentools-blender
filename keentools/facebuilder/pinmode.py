@@ -567,11 +567,24 @@ class FB_OT_PinMode(Operator):
                 loader.out_pinmode_without_save()
                 return True
 
+        vp = loader.viewport()
+        pins = vp.pins()
         if event.type == 'ESC' and event.value == 'RELEASE':
             if settings.selection_mode:
                 settings.cancel_selection()
-                loader.viewport().tag_redraw()
-                _log.red(f'{self.__class__.__name__} selection ESC -- finished >>>')
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
+                vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} selection ESC >>>')
+                return False
+
+            if len(pins.get_selected_pins()) != 0:
+                pins.clear_selected_pins()
+                settings.cancel_selection()
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
+                vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} deselect by ESC >>')
                 return False
 
             loader.out_pinmode_without_save()
