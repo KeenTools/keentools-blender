@@ -190,8 +190,8 @@ class MovePin(bpy.types.Operator):
         loader.update_viewport_shaders(area, wireframe=True,
                                        geomobj_matrix=True,
                                        pins_and_residuals=True,
-                                       timeline=True)
-        loader.viewport_area_redraw()
+                                       timeline=True,
+                                       tag_redraw=True)
 
         _push_action_in_undo_history()
         _log.output('on_left_mouse_release end >>>')
@@ -219,7 +219,8 @@ class MovePin(bpy.types.Operator):
 
     def _pin_drag(self, kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int,
-                                selected_pins: List[int]) -> None:
+                                selected_pins: List[int],
+                                x: float, y: float) -> None:
             settings = self.get_settings()
             loader = settings.loader()
             gt = loader.kt_geotracker()
@@ -244,7 +245,7 @@ class MovePin(bpy.types.Operator):
             loader.move_pin(kid, pin_index, (x, y), shift_x, shift_y)
             return loader.solve()
 
-        _drag_multiple_pins(kid, pin_index, selected_pins)
+        _drag_multiple_pins(kid, pin_index, selected_pins, x, y)
         return loader.solve()
 
     def on_mouse_move(self, area: Area, mouse_x: float, mouse_y: float) -> Set:
