@@ -19,8 +19,9 @@
 from typing import Any
 import re
 
-import bpy
-from bpy.types import Area, Panel, UIList
+from bpy.types import Area, Panel, UIList, Menu, Operator
+from bl_operators.presets import AddPresetBase
+from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
@@ -40,12 +41,13 @@ from ...updater.panels import (KTUpdater,
                                COMMON_PT_UpdatesInstallationPanel)
 from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
-from ...utils.bpy_common import bpy_timer_register, bpy_object_is_in_scene
+from ...utils.bpy_common import bpy_timer_register, bpy_object_is_in_scene, bpy_data
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
-                                        COMMON_FB_PT_Model,
-                                        COMMON_FB_PT_OptionsPanel)
+                                        COMMON_FB_PT_OptionsPanel,
+                                        COMMON_FB_PT_ModelPanel,
+                                        COMMON_FB_PT_AppearancePanel)
 from ...common.license_checker import ft_license_timer, draw_upgrade_license_box
 from ...common.escapers import (fb_pinmode_escaper_check,
                                 ft_pinmode_escaper_check,
@@ -292,7 +294,7 @@ class FTFB_PT_OptionsPanel(COMMON_FB_PT_OptionsPanel, Panel):
         return True
 
 
-class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
+class FTFB_PT_ModelPanel(COMMON_FB_PT_ModelPanel, Panel):
     bl_idname = FTConfig.ft_fb_model_panel_idname
     bl_label = 'Model'
     bl_options = {'DEFAULT_CLOSED'}
@@ -307,6 +309,17 @@ class FTFB_PT_Model(COMMON_FB_PT_Model, Panel):
 
     def _draw_resulting_expression_enabled(self) -> bool:
         return False
+
+
+class FTFB_PT_AppearancePanel(COMMON_FB_PT_AppearancePanel, Panel):
+    bl_idname = FTConfig.ft_fb_appearance_panel_idname
+    bl_label = 'Appearance'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FTConfig.ft_fb_views_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        return True
 
 
 class FTFB_PT_ChooseSnapshotFramePanel(View3DPanel):
@@ -783,7 +796,7 @@ class FT_PT_MasksPanel(AllVisible):
                        show_threshold: bool = False) -> None:
         row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
-                        bpy.data, 'movieclips', text='')
+                        bpy_data(), 'movieclips', text='')
         op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                           text='', icon='FILEBROWSER')
         op.product = ProductType.FACETRACKER
@@ -814,7 +827,7 @@ class FT_PT_MasksPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop_search(geotracker, 'compositing_mask',
-                        bpy.data, 'masks', text='')
+                        bpy_data(), 'masks', text='')
         row.prop(geotracker, 'compositing_mask_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
@@ -864,6 +877,32 @@ class FT_PT_MasksPanel(AllVisible):
             self._mask_compositing_block(layout, geotracker)
 
 
+class FT_PT_AppearancePresetPanel(PresetPanel, Panel):
+    bl_idname = FTConfig.ft_appearance_preset_panel_idname
+    bl_label = 'Display Appearance Presets'
+    preset_subdir = 'keentools/facetracker/colors'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = FTConfig.ft_appearance_preset_add_idname
+    draw = Menu.draw_preset
+
+
+class FT_OT_AppearanceAddPreset(AddPresetBase, Operator):
+    bl_idname = FTConfig.ft_appearance_preset_add_idname
+    bl_label = 'Add Appearance Preset'
+    preset_menu = FTConfig.ft_appearance_preset_panel_idname
+
+    preset_defines = [
+        f'settings = bpy.context.scene.{Config.ft_global_var_name}'
+    ]
+    preset_values = [
+        'settings.wireframe_color',
+        'settings.wireframe_midline_color',
+        'settings.wireframe_special_color',
+        'settings.wireframe_opacity',
+    ]
+    preset_subdir = 'keentools/facetracker/colors'
+
+
 class FT_PT_AppearancePanel(AllVisible):
     bl_idname = FTConfig.ft_appearance_panel_idname
     bl_label = 'Appearance'
@@ -873,9 +912,6 @@ class FT_PT_AppearancePanel(AllVisible):
         layout = self.layout
         row = layout.row(align=True)
         row.active = False
-        row.operator(
-            FTConfig.ft_addon_setup_defaults_idname,
-            text='', icon='PREFERENCES', emboss=False)
         row.operator(
             FTConfig.ft_help_appearance_idname,
             text='', icon='QUESTION', emboss=False)
@@ -897,6 +933,9 @@ class FT_PT_AppearancePanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
+        row.emboss = 'NONE'
+        row.popover(text='', icon='PRESET',
+                    panel=FTConfig.ft_appearance_preset_panel_idname)
         col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
@@ -936,6 +975,34 @@ class FT_PT_AppearancePanel(AllVisible):
         col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
 
+    def _appearance_image_adjustment(self, settings: Any, layout: Any) -> None:
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Background')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        op = btn.operator(GTConfig.gt_reset_tone_mapping_idname,
+                          text='', icon='LOOP_BACK',
+                          emboss=False, depress=False)
+        op.product = ProductType.FACETRACKER
+        col2 = col.column(align=True)
+        row = col2.row(align=True)
+        row.prop(geotracker, 'tone_exposure', slider=True)
+        op = row.operator(GTConfig.gt_reset_tone_exposure_idname,
+                          text='', icon='LOOP_BACK')
+        op.product = ProductType.FACETRACKER
+        row = col.row(align=True)
+        row.prop(geotracker, 'tone_gamma', slider=True)
+        op = row.operator(GTConfig.gt_reset_tone_gamma_idname,
+                     text='', icon='LOOP_BACK')
+        op.product = ProductType.FACETRACKER
+
     def draw(self, context):
         layout = self.layout
         settings = ft_settings()
@@ -944,6 +1011,7 @@ class FT_PT_AppearancePanel(AllVisible):
 
         self._appearance_wireframe_settings(settings, layout)
         self._appearance_pin_settings(settings, layout)
+        self._appearance_image_adjustment(settings, layout)
 
 
 class FT_PT_SmoothingPanel(AllVisible):

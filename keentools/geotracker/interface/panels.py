@@ -19,7 +19,9 @@
 import re
 from typing import Tuple, Optional, Any
 
-from bpy.types import Area, Panel, UIList
+from bpy.types import Area, Panel, UIList, Menu, Operator
+from bl_operators.presets import AddPresetBase
+from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
@@ -688,7 +690,31 @@ class GT_PT_TrackingPanel(AllVisible):
             start_gt_calculating_escaper()
 
 
-class GT_PT_AppearanceSettingsPanel(AllVisible):
+class GT_PT_AppearancePresetPanel(PresetPanel, Panel):
+    bl_idname = GTConfig.gt_appearance_preset_panel_idname
+    bl_label = 'Display Appearance Presets'
+    preset_subdir = 'keentools/geotracker/colors'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = GTConfig.gt_appearance_preset_add_idname
+    draw = Menu.draw_preset
+
+
+class GT_OT_AppearanceAddPreset(AddPresetBase, Operator):
+    bl_idname = GTConfig.gt_appearance_preset_add_idname
+    bl_label = 'Add Appearance Preset'
+    preset_menu = GTConfig.gt_appearance_preset_panel_idname
+
+    preset_defines = [
+        f'settings = bpy.context.scene.{Config.gt_global_var_name}'
+    ]
+    preset_values = [
+        'settings.wireframe_color',
+        'settings.wireframe_opacity',
+    ]
+    preset_subdir = 'keentools/geotracker/colors'
+
+
+class GT_PT_AppearancePanel(AllVisible):
     bl_idname = GTConfig.gt_appearance_panel_idname
     bl_label = 'Appearance'
     bl_options = {'DEFAULT_CLOSED'}
@@ -697,6 +723,10 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
+        row.emboss = 'NONE'
+        row.popover(text='', icon='PRESET',
+                    panel=GTConfig.gt_appearance_preset_panel_idname)
+
         col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
@@ -738,24 +768,53 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         btn = row.column(align=True)
         btn.active = False
         btn.scale_y = 0.75
-        btn.operator(GTConfig.gt_reset_tone_mapping_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+        op = btn.operator(GTConfig.gt_reset_tone_mapping_idname,
+                          text='', icon='LOOP_BACK',
+                          emboss=False, depress=False)
+        op.product = ProductType.GEOTRACKER
         col2 = col.column(align=True)
         row = col2.row(align=True)
         row.prop(geotracker, 'tone_exposure', slider=True)
-        row.operator(GTConfig.gt_reset_tone_exposure_idname,
-                     text='', icon='LOOP_BACK')
+        op = row.operator(GTConfig.gt_reset_tone_exposure_idname,
+                          text='', icon='LOOP_BACK')
+        op.product = ProductType.GEOTRACKER
         row = col.row(align=True)
         row.prop(geotracker, 'tone_gamma', slider=True)
-        row.operator(GTConfig.gt_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
+        op = row.operator(GTConfig.gt_reset_tone_gamma_idname,
+                          text='', icon='LOOP_BACK')
+        op.product = ProductType.GEOTRACKER
+
+    def _mask_colors(self, settings: Any, layout: Any) -> None:
+        prefs = settings.preferences()
+        factor1 = 0.3
+        factor2 = 0.22
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Mask color')
+        split = col.split(factor=factor1, align=True)
+        split.label(text='Surface')
+        row = split.row(align=True)
+        split2 = row.split(factor=factor2, align=True)
+        split2.prop(prefs, 'gt_mask_3d_color', text='')
+        split2.prop(prefs, 'gt_mask_3d_opacity', text='', slider=True)
+        op = row.operator(Config.kt_user_preferences_changer,
+                          text='', icon='LOOP_BACK')
+        op.action = 'revert_gt_default_mask_3d_colors'
+
+        split = col.split(factor=factor1, align=True)
+        split.label(text='2D')
+        row = split.row(align=True)
+        split2 = row.split(factor=factor2, align=True)
+        split2.prop(prefs, 'gt_mask_2d_color', text='')
+        split2.prop(prefs, 'gt_mask_2d_opacity', text='', slider=True)
+        op = row.operator(Config.kt_user_preferences_changer,
+                          text='', icon='LOOP_BACK')
+        op.action = 'revert_gt_default_mask_2d_colors'
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row(align=True)
         row.active = False
-        row.operator(GTConfig.gt_addon_setup_defaults_idname,
-                     text='', icon='PREFERENCES', emboss=False)
         row.operator(GTConfig.gt_help_appearance_idname,
                      text='', icon='QUESTION', emboss=False)
 
@@ -765,6 +824,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         self._appearance_wireframe_settings(settings, layout)
         self._appearance_pin_settings(settings, layout)
         self._appearance_image_adjustment(settings, layout)
+        self._mask_colors(settings, layout)
 
 
 class GT_UL_selected_frame_list(UIList):

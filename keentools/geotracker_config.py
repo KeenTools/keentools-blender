@@ -118,6 +118,8 @@ class GTConfig:
     gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
     gt_unbreak_rotation_idname = operators + '.unbreak_rotation'
 
+    gt_appearance_preset_add_idname = operators + '.appearance_preset_add'
+
     # Window ids
     gt_rescale_window_idname = operators + '.rescale_window'
     gt_move_window_idname = operators + '.move_window'
@@ -137,6 +139,7 @@ class GTConfig:
     gt_analyze_panel_idname = _PT + 'analyze_panel'
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
+    gt_appearance_preset_panel_idname = _PT + 'appearance_preset_panel'
     gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_scene_panel_idname = _PT + 'scene_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'

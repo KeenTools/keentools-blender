@@ -750,9 +750,13 @@ class GT_OT_ResetToneGain(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        settings = get_settings(self.product)
+        if not settings:
+            return {'CANCELLED'}
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -766,9 +770,13 @@ class GT_OT_ResetToneGamma(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        settings = get_settings(self.product)
+        if not settings:
+            return {'CANCELLED'}
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -782,9 +790,13 @@ class GT_OT_ResetToneMapping(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        settings = get_settings(self.product)
+        if not settings:
+            return {'CANCELLED'}
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}

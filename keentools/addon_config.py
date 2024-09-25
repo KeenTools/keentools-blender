@@ -159,9 +159,9 @@ class Config:
     use_explicit_version_check_in_updater: bool = False
 
     # FaceBuilder Default Colors
-    fb_midline_color = (0.96, 0.008, 0.615686)
-    ft_midline_color = (0.05, 1.0, 0.0)
-    fb_color_schemes = {
+    fb_midline_color: Tuple = (0.96, 0.008, 0.615686)
+    fb_wireframe_opacity: float = 0.5
+    fb_color_schemes: Dict = {
         'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
         'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
         'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
@@ -170,12 +170,30 @@ class Config:
         'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
         'black': ((0.03, 0.03, 0.03), (0.0, 0.0, 0.85)),
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
-        'facetracker': ((0.02, 0.02, 0.04), (0.0, 0.4, 0.03)),
         'default': ((0.03, 0.03, 0.03), (0.0, 0.0, 0.85))
     }
+    ft_midline_color: Tuple = (0.05, 1.0, 0.0)
+    ft_wireframe_opacity: float = 0.5
+    ft_color_schemes: Dict = {
+        'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
+        'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
+        'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
+        'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
+        'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
+        'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
+        'black': ((0.03, 0.03, 0.03), (0.0, 0.0, 0.85)),
+        'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        'default': ((0.02, 0.02, 0.04), (0.0, 0.4, 0.03))
+    }
+    gt_wireframe_color: Tuple = (0.0, 1.0, 0.0)
+    gt_wireframe_opacity: float = 0.5
+    gt_mask_3d_color: Tuple = (0.0, 0.0, 1.0)
+    gt_mask_3d_opacity: float = 0.4
+    gt_mask_2d_color: Tuple = (0.0, 1.0, 0.0)
+    gt_mask_2d_opacity: float = 0.35
 
     # Default UserPreferences
-    default_updater_preferences = {
+    default_updater_preferences: Dict = {
         'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
         'latest_update_skip_version': {'value': '', 'type': 'string'},
         'updater_state': {'value': 1, 'type': 'int'},
@@ -183,22 +201,27 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
-    user_preferences_dict_name = 'keentools_facebuilder_addon'
-    default_user_preferences = {
+    user_preferences_dict_name: str = 'keentools_facebuilder_addon'
+    default_user_preferences: Dict = {
+        'prevent_view_rotation': {'value': True, 'type': 'bool'},
+        'use_hotkeys': {'value': True, 'type': 'bool'},
+        'auto_unbreak_rotation': {'value': True, 'type': 'bool'},
+
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+
         'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
-        'fb_wireframe_color': {'value': fb_color_schemes['black'][0], 'type': 'color'},
-        'fb_wireframe_special_color': {'value': fb_color_schemes['black'][1], 'type': 'color'},
+        'fb_wireframe_color': {'value': fb_color_schemes['default'][0], 'type': 'color'},
+        'fb_wireframe_special_color': {'value': fb_color_schemes['default'][1], 'type': 'color'},
         'fb_wireframe_midline_color': {'value': fb_midline_color, 'type': 'color'},
-        'fb_wireframe_opacity': {'value': 0.5, 'type': 'float'},
+        'fb_wireframe_opacity': {'value': fb_wireframe_opacity, 'type': 'float'},
         'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
-        'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
-        'gt_wireframe_opacity': {'value': 0.5, 'type': 'float'},
-        'gt_mask_3d_color': {'value': (0.0, 0.0, 1.0), 'type': 'color'},
-        'gt_mask_3d_opacity': {'value': 0.4, 'type': 'float'},
-        'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
-        'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
+        'gt_wireframe_color': {'value': gt_wireframe_color, 'type': 'color'},
+        'gt_wireframe_opacity': {'value': gt_wireframe_opacity, 'type': 'float'},
+        'gt_mask_3d_color': {'value': gt_mask_3d_color, 'type': 'color'},
+        'gt_mask_3d_opacity': {'value': gt_mask_3d_opacity, 'type': 'float'},
+        'gt_mask_2d_color': {'value': gt_mask_2d_color, 'type': 'color'},
+        'gt_mask_2d_opacity': {'value': gt_mask_2d_opacity, 'type': 'float'},
     }
 
     supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
@@ -209,29 +232,29 @@ class Config:
     residual_dashed_line: Dict = {'start': 0.0, 'step': 6.0, 'threshold': 4.0}
     selection_dashed_line: Dict = {'start': 5.0, 'step': 10.0, 'threshold': 5.5}
 
-    keyframe_line_width = 2.0
+    keyframe_line_width: float = 2.0
     keyframe_line_length: float = 1000.0
 
     integration_enabled: bool = True
 
-    kt_convert_video_scene_name: str = 'gt_convert_video'
+    kt_convert_video_scene_name: str = 'kt_convert_video'
 
     show_ft_licensing: bool = False
     show_trial_warnings: bool = True
 
     # Colors
-    pin_color = (1.0, 0.0, 0.0, 1.0)
-    disabled_pin_color = (1.0, 1.0, 0.0, 1.0)
-    selected_pin_color = (0.0, 1.0, 1.0, 1.0)
-    current_pin_color = (0.0, 1.0, 0.0, 1.0)
-    surface_point_color = (0.0, 1.0, 1.0, 0.5)
-    residual_color = (0.0, 1.0, 1.0, 0.5)
-    timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
+    pin_color: Tuple = (1.0, 0.0, 0.0, 1.0)
+    disabled_pin_color: Tuple = (1.0, 1.0, 0.0, 1.0)
+    selected_pin_color: Tuple = (0.0, 1.0, 1.0, 1.0)
+    current_pin_color: Tuple = (0.0, 1.0, 0.0, 1.0)
+    surface_point_color: Tuple = (0.0, 1.0, 1.0, 0.5)
+    residual_color: Tuple = (0.0, 1.0, 1.0, 0.5)
+    timeline_keyframe_color: Tuple = (0.0, 1.0, 0.0, 0.5)
 
-    selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
-    regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
+    selected_rectangle_color: Tuple = (0.871, 0.107, 0.001, 1.0)
+    regular_rectangle_color: Tuple = (0.024, 0.246, 0.905, 1.0)
 
-    face_selection_frame_width = 3.0
+    face_selection_frame_width: float = 3.0
 
 
 def is_blender_supported() -> bool:

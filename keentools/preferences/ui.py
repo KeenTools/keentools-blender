@@ -523,6 +523,26 @@ class KTAddonPreferences(AddonPreferences):
     )
 
     # Common User Preferences
+    prevent_view_rotation: BoolProperty(
+        name='Prevent accidental exit from Pin Mode',
+        get=universal_direct_getter('prevent_view_rotation', 'bool'),
+        set=universal_direct_setter('prevent_view_rotation'),
+        default=True
+    )
+    use_hotkeys: BoolProperty(
+        name='Use Hotkeys',
+        description='Enable Hotkeys: (L) Lock View. '
+                    '(Alt + Left Arrow) Previous keyframe. '
+                    '(Alt + Right Arrow) Next keyframe',
+        default=True
+    )
+    auto_unbreak_rotation: BoolProperty(
+        name='Auto-apply Unbreak Rotation',
+        description='Automatically apply Unbreak Rotation to objects '
+                    'with gaps in animation curves',
+        default=True
+    )
+
     pin_size: FloatProperty(
         description='Set pin size in pixels',
         name='Size', min=1.0, max=100.0,
@@ -1126,6 +1146,12 @@ class KTAddonPreferences(AddonPreferences):
         indent_row.label(text='', icon='BLANK1')
         return indent_row.column()
 
+    def _draw_common_settings(self, layout: Any) -> None:
+        col = layout.column()
+        col.prop(self, 'prevent_view_rotation')
+        col.prop(self, 'use_hotkeys')
+        col.prop(self, 'auto_unbreak_rotation')
+
     def draw(self, context: Any) -> None:
         layout = self.layout
 
@@ -1142,6 +1168,8 @@ class KTAddonPreferences(AddonPreferences):
         if not self._draw_core_info(layout):
             return
         self._draw_updater_info(layout)
+
+        self._draw_common_settings(layout)
 
         row = layout.row(align=True)
         row.prop(self, 'facebuilder_expanded', text='', emboss=False,
