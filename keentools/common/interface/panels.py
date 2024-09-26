@@ -391,8 +391,12 @@ class COMMON_FB_PT_AppearancePanel:
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row(align=True)
-        row.active = False
-        row.operator(
+        row.emboss = 'NONE'
+        row.popover(text='', icon='PRESET',
+                    panel=FBConfig.fb_appearance_preset_panel_idname)
+        col = row.column(align=True)
+        col.active = False
+        col.operator(
             FBConfig.fb_help_appearance_idname,
             text='', icon='QUESTION', emboss=False)
 
@@ -400,12 +404,11 @@ class COMMON_FB_PT_AppearancePanel:
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(FBConfig.fb_default_pin_settings_idname, text='',
                      icon='LOOP_BACK', emboss=False, depress=False)
+        col.separator(factor=0.4)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
 
@@ -413,17 +416,12 @@ class COMMON_FB_PT_AppearancePanel:
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
-        row.emboss = 'NONE'
-        row.popover(text='', icon='PRESET',
-                    panel=FBConfig.fb_appearance_preset_panel_idname)
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(
             FBConfig.fb_default_wireframe_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
-
+        col.separator(factor=0.4)
         split = col.split(factor=0.375, align=True)
         split2 = split.split(factor=0.34, align=True)
         split2.prop(settings, 'wireframe_color', text='')
@@ -464,21 +462,14 @@ class COMMON_FB_PT_AppearancePanel:
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Background')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(FBConfig.fb_reset_tone_mapping_idname,
                      text='', icon='LOOP_BACK', emboss=False, depress=False)
-        col2 = col.column(align=True)
-        row = col2.row(align=True)
-        row.prop(camera, 'tone_exposure', slider=True)
-        row.operator(FBConfig.fb_reset_tone_exposure_idname,
-                     text='', icon='LOOP_BACK')
-        row = col.row(align=True)
-        row.prop(camera, 'tone_gamma', slider=True)
-        row.operator(FBConfig.fb_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
+        col.separator(factor=0.4)
+        col.prop(camera, 'tone_exposure', slider=True)
+        col.prop(camera, 'tone_gamma', slider=True)
+
 
     def draw(self, context):
         layout = self.layout

@@ -37,6 +37,7 @@ from ..blender_independent_packages.pykeentools_loader import (
 from ..addon_config import (Config,
                             fb_settings,
                             gt_settings,
+                            ft_settings,
                             get_addon_preferences,
                             get_operator,
                             is_blender_supported,
@@ -219,6 +220,22 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
         elif self.action == 'revert_gt_default_mask_3d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_3d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
+            _log.output(f'{self.__class__.__name__} end >>>')
+            return {'FINISHED'}
+        elif self.action == 'revert_gt_default_mask_colors':
+            settings = gt_settings()
+            settings.mask_3d_color = Config.gt_mask_3d_color
+            settings.mask_3d_opacity = Config.gt_mask_3d_opacity
+            settings.mask_2d_color = Config.gt_mask_2d_color
+            settings.mask_2d_opacity = Config.gt_mask_2d_opacity
+            _log.output(f'{self.__class__.__name__} end >>>')
+            return {'FINISHED'}
+        elif self.action == 'revert_ft_default_mask_colors':
+            settings = ft_settings()
+            settings.mask_3d_color = Config.gt_mask_3d_color
+            settings.mask_3d_opacity = Config.gt_mask_3d_opacity
+            settings.mask_2d_color = Config.gt_mask_2d_color
+            settings.mask_2d_opacity = Config.gt_mask_2d_opacity
             _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
 

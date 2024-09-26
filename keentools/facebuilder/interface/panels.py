@@ -374,7 +374,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
 class FB_PT_AppearancePresetPanel(PresetPanel, Panel):
     bl_idname = FBConfig.fb_appearance_preset_panel_idname
     bl_label = 'Display Appearance Presets'
-    preset_subdir = 'keentools/facebuilder/colors'
+    preset_subdir = 'keentools/facebuilder/appearance'
     preset_operator = 'script.execute_preset'
     preset_add_operator = FBConfig.fb_appearance_preset_add_idname
     draw = Menu.draw_preset
@@ -393,8 +393,13 @@ class FB_OT_AppearanceAddPreset(AddPresetBase, Operator):
         'settings.wireframe_midline_color',
         'settings.wireframe_special_color',
         'settings.wireframe_opacity',
+        'settings.show_specials',
+        'settings.wireframe_backface_culling',
+        'settings.use_adaptive_opacity',
+        'settings.pin_size',
+        'settings.pin_sensitivity',
     ]
-    preset_subdir = 'keentools/facebuilder/colors'
+    preset_subdir = 'keentools/facebuilder/appearance'
 
 
 class FB_PT_AppearancePanel(COMMON_FB_PT_AppearancePanel, Panel):

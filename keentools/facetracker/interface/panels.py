@@ -880,7 +880,7 @@ class FT_PT_MasksPanel(AllVisible):
 class FT_PT_AppearancePresetPanel(PresetPanel, Panel):
     bl_idname = FTConfig.ft_appearance_preset_panel_idname
     bl_label = 'Display Appearance Presets'
-    preset_subdir = 'keentools/facetracker/colors'
+    preset_subdir = 'keentools/facetracker/appearance'
     preset_operator = 'script.execute_preset'
     preset_add_operator = FTConfig.ft_appearance_preset_add_idname
     draw = Menu.draw_preset
@@ -899,8 +899,17 @@ class FT_OT_AppearanceAddPreset(AddPresetBase, Operator):
         'settings.wireframe_midline_color',
         'settings.wireframe_special_color',
         'settings.wireframe_opacity',
+        'settings.show_specials',
+        'settings.wireframe_backface_culling',
+        'settings.use_adaptive_opacity',
+        'settings.pin_size',
+        'settings.pin_sensitivity',
+        'settings.mask_3d_color',
+        'settings.mask_3d_opacity',
+        'settings.mask_2d_color',
+        'settings.mask_2d_opacity',
     ]
-    preset_subdir = 'keentools/facetracker/colors'
+    preset_subdir = 'keentools/facetracker/appearance'
 
 
 class FT_PT_AppearancePanel(AllVisible):
@@ -911,8 +920,12 @@ class FT_PT_AppearancePanel(AllVisible):
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row(align=True)
-        row.active = False
-        row.operator(
+        row.emboss = 'NONE'
+        row.popover(text='', icon='PRESET',
+                    panel=FTConfig.ft_appearance_preset_panel_idname)
+        col = row.column(align=True)
+        col.active = False
+        col.operator(
             FTConfig.ft_help_appearance_idname,
             text='', icon='QUESTION', emboss=False)
 
@@ -920,12 +933,11 @@ class FT_PT_AppearancePanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(FTConfig.ft_default_pin_settings_idname, text='',
                      icon='LOOP_BACK', emboss=False, depress=False)
+        col.separator(factor=0.4)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
 
@@ -933,17 +945,12 @@ class FT_PT_AppearancePanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
-        row.emboss = 'NONE'
-        row.popover(text='', icon='PRESET',
-                    panel=FTConfig.ft_appearance_preset_panel_idname)
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(
             FTConfig.ft_default_wireframe_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
-
+        col.separator(factor=0.4)
         split = col.split(factor=0.375, align=True)
         split2 = split.split(factor=0.34, align=True)
         split2.prop(settings, 'wireframe_color', text='')
@@ -983,25 +990,42 @@ class FT_PT_AppearancePanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Background')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         op = btn.operator(GTConfig.gt_reset_tone_mapping_idname,
                           text='', icon='LOOP_BACK',
                           emboss=False, depress=False)
         op.product = ProductType.FACETRACKER
-        col2 = col.column(align=True)
-        row = col2.row(align=True)
-        row.prop(geotracker, 'tone_exposure', slider=True)
-        op = row.operator(GTConfig.gt_reset_tone_exposure_idname,
-                          text='', icon='LOOP_BACK')
-        op.product = ProductType.FACETRACKER
+        col.separator(factor=0.4)
+        col.prop(geotracker, 'tone_exposure', slider=True)
+        col.prop(geotracker, 'tone_gamma', slider=True)
+
+    def _mask_colors(self, settings: Any, layout: Any) -> None:
+        factor1 = 0.3
+        factor2 = 0.22
+        col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(geotracker, 'tone_gamma', slider=True)
-        op = row.operator(GTConfig.gt_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
-        op.product = ProductType.FACETRACKER
+        row.label(text='Mask color')
+        btn = row.column(align=True)
+        btn.active = False
+        op = btn.operator(Config.kt_user_preferences_changer,
+                          text='', icon='LOOP_BACK', emboss=False)
+        op.action = 'revert_ft_default_mask_colors'
+        col.separator(factor=0.4)
+
+        split = col.split(factor=factor1, align=True)
+        split.label(text='Surface')
+        row = split.row(align=True)
+        split2 = row.split(factor=factor2, align=True)
+        split2.prop(settings, 'mask_3d_color', text='')
+        split2.prop(settings, 'mask_3d_opacity', text='', slider=True)
+
+        split = col.split(factor=factor1, align=True)
+        split.label(text='2D')
+        row = split.row(align=True)
+        split2 = row.split(factor=factor2, align=True)
+        split2.prop(settings, 'mask_2d_color', text='')
+        split2.prop(settings, 'mask_2d_opacity', text='', slider=True)
 
     def draw(self, context):
         layout = self.layout
@@ -1011,7 +1035,9 @@ class FT_PT_AppearancePanel(AllVisible):
 
         self._appearance_wireframe_settings(settings, layout)
         self._appearance_pin_settings(settings, layout)
-        self._appearance_image_adjustment(settings, layout)
+        self._mask_colors(settings, layout)
+        if settings.pinmode:
+            self._appearance_image_adjustment(settings, layout)
 
 
 class FT_PT_SmoothingPanel(AllVisible):
