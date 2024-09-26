@@ -319,14 +319,14 @@ def _update_gt_wireframe(addon_prefs: Any, context: Any) -> None:
 
 
 def _update_gt_hotkeys(addon_prefs: Any, context: Any) -> None:
-    if addon_prefs.gt_use_hotkeys:
+    if addon_prefs.use_hotkeys:
         geotracker_keymaps_register()
     else:
         all_keymaps_unregister()
 
 
 def _update_ft_hotkeys(addon_prefs: Any, context: Any) -> None:
-    if addon_prefs.ft_use_hotkeys:
+    if addon_prefs.use_hotkeys:
         facetracker_keymaps_register()
     else:
         all_keymaps_unregister()

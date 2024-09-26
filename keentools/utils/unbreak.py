@@ -75,7 +75,7 @@ def unbreak_after(frame_list: List, *,
                   product: int = ProductType.GEOTRACKER) -> None:
     _log.yellow(f'unbreak_after [{product_name(product)} start')
     prefs = get_addon_preferences()
-    if not prefs.gt_auto_unbreak_rotation:
+    if not prefs.auto_unbreak_rotation:
         _log.output('unbreak rotation is switched off')
         return
 

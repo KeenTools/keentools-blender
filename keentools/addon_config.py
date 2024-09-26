@@ -190,7 +190,7 @@ class Config:
     gt_mask_3d_color: Tuple = (0.0, 0.0, 1.0)
     gt_mask_3d_opacity: float = 0.4
     gt_mask_2d_color: Tuple = (0.0, 1.0, 0.0)
-    gt_mask_2d_opacity: float = 0.35
+    gt_mask_2d_opacity: float = 0.4
 
     # Default UserPreferences
     default_updater_preferences: Dict = {

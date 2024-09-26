@@ -83,7 +83,7 @@ class FT_OT_PinMode(PinMode):
 
     def register_hotkeys(self) -> None:
         prefs = get_addon_preferences()
-        if prefs.ft_use_hotkeys:
+        if prefs.use_hotkeys:
             _log.yellow(f'{self.__class__.__name__} register_hotkeys')
             facetracker_keymaps_register()
         else:
