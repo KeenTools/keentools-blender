@@ -1140,14 +1140,10 @@ class KTAddonPreferences(AddonPreferences):
     def _draw_facebuilder_preferences(self, layout: Any) -> None:
         col = self._make_indent_column(layout)
         self._draw_plugin_license_info(col, ProductType.FACEBUILDER)
-        col.separator()
-        self._draw_fb_user_preferences(col)
 
     def _draw_geotracker_preferences(self, layout: Any) -> None:
         col = self._make_indent_column(layout)
         self._draw_plugin_license_info(col, ProductType.GEOTRACKER)
-        col.separator()
-        self._draw_gt_user_preferences(col)
 
     def _draw_facetracker_preferences(self, layout: Any) -> None:
         ft_license_timer.start_timer()
@@ -1158,8 +1154,6 @@ class KTAddonPreferences(AddonPreferences):
                                  button=False, red_icon=False, separator=False)
         if Config.show_ft_licensing:
             self._draw_plugin_license_info(col, ProductType.FACETRACKER)
-        col.separator()
-        self._draw_ft_user_preferences(col)
 
     def _draw_unsupported_gpu_detected(self, layout: Any) -> None:
         box = layout.box()
