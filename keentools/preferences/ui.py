@@ -534,12 +534,16 @@ class KTAddonPreferences(AddonPreferences):
         description='Enable Hotkeys: (L) Lock View. '
                     '(Alt + Left Arrow) Previous keyframe. '
                     '(Alt + Right Arrow) Next keyframe',
+        get=universal_direct_getter('use_hotkeys', 'bool'),
+        set=universal_direct_setter('use_hotkeys'),
         default=True
     )
     auto_unbreak_rotation: BoolProperty(
         name='Auto-apply Unbreak Rotation',
         description='Automatically apply Unbreak Rotation to objects '
                     'with gaps in animation curves',
+        get=universal_direct_getter('auto_unbreak_rotation', 'bool'),
+        set=universal_direct_setter('auto_unbreak_rotation'),
         default=True
     )
 
