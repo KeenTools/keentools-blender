@@ -35,7 +35,7 @@ log_error = logger.error
 log_output = logger.debug
 
 
-MINIMUM_VERSION_REQUIRED: Tuple = (2024, 2, 1)  # 2024.2.1 (4/6)
+MINIMUM_VERSION_REQUIRED: Tuple = (2024, 2, 2)  # 2024.2.2 (4/6)
 _SUPPORTED_PYTHON_VERSIONS: Tuple = ((3, 7), (3, 9), (3, 10), (3, 11))
 
 _this_file_path: str = inspect.getfile(inspect.currentframe())
