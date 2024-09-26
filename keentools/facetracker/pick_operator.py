@@ -304,7 +304,7 @@ class FT_OT_PickMode(Operator):
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             # When camera rotated by user
-            if _get_settings().preferences().prevent_fb_view_rotation:
+            if _get_settings().preferences().prevent_view_rotation:
                 # Return back to the camera view
                 bpy_view_camera()
             else:

@@ -19,7 +19,9 @@
 from functools import partial
 from typing import Optional, Any
 
-from bpy.types import Panel, Area, Window, Screen
+from bpy.types import Panel, Area, Window, Screen, Operator, Menu
+from bl_operators.presets import AddPresetBase
+from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
 from ...updater.panels import (COMMON_PT_UpdatePanel,
@@ -41,8 +43,9 @@ from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
 from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
-                                        COMMON_FB_PT_Model,
-                                        COMMON_FB_PT_OptionsPanel)
+                                        COMMON_FB_PT_OptionsPanel,
+                                        COMMON_FB_PT_ModelPanel,
+                                        COMMON_FB_PT_AppearancePanel)
 from ...common.license_checker import fb_license_timer, draw_upgrade_license_box
 from ...common.escapers import (start_fb_pinmode_escaper,
                                 exit_from_localview_button)
@@ -301,7 +304,7 @@ class FB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         return poll_fb_common()
 
 
-class FB_PT_Model(COMMON_FB_PT_Model, Panel):
+class FB_PT_ModelPanel(COMMON_FB_PT_ModelPanel, Panel):
     bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_model_panel_idname
     bl_label = 'Model'
@@ -368,112 +371,45 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             op.headnum = headnum
 
 
-class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
+class FB_PT_AppearancePresetPanel(PresetPanel, Panel):
+    bl_idname = FBConfig.fb_appearance_preset_panel_idname
+    bl_label = 'Display Appearance Presets'
+    preset_subdir = 'keentools/facebuilder/appearance'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = FBConfig.fb_appearance_preset_add_idname
+    draw = Menu.draw_preset
+
+
+class FB_OT_AppearanceAddPreset(AddPresetBase, Operator):
+    bl_idname = FBConfig.fb_appearance_preset_add_idname
+    bl_label = 'Add Appearance Preset'
+    preset_menu = FBConfig.fb_appearance_preset_panel_idname
+
+    preset_defines = [
+        f'settings = bpy.context.scene.{Config.fb_global_var_name}'
+    ]
+    preset_values = [
+        'settings.wireframe_color',
+        'settings.wireframe_midline_color',
+        'settings.wireframe_special_color',
+        'settings.wireframe_opacity',
+        'settings.show_specials',
+        'settings.wireframe_backface_culling',
+        'settings.use_adaptive_opacity',
+        'settings.pin_size',
+        'settings.pin_sensitivity',
+    ]
+    preset_subdir = 'keentools/facebuilder/appearance'
+
+
+class FB_PT_AppearancePanel(COMMON_FB_PT_AppearancePanel, Panel):
+    bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_appearance_panel_idname
     bl_label = 'Appearance'
 
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row(align=True)
-        row.active = False
-        row.operator(
-            FBConfig.fb_addon_setup_defaults_idname,
-            text='', icon='PREFERENCES', emboss=False)
-        row.operator(
-            FBConfig.fb_help_appearance_idname,
-            text='', icon='QUESTION', emboss=False)
-
-    def _appearance_pin_settings(self, settings, layout) -> None:
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Pins')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(FBConfig.fb_default_pin_settings_idname, text='',
-                     icon='LOOP_BACK', emboss=False, depress=False)
-        col.prop(settings, 'pin_size', slider=True)
-        col.prop(settings, 'pin_sensitivity', slider=True)
-
-    def _appearance_wireframe_settings(self, settings, layout) -> None:
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Wireframe')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(
-            FBConfig.fb_default_wireframe_settings_idname,
-            text='', icon='LOOP_BACK', emboss=False, depress=False)
-
-        split = col.split(factor=0.375, align=True)
-        split2 = split.split(factor=0.34, align=True)
-        split2.prop(settings, 'wireframe_color', text='')
-        split3 = split2.split(factor=0.5, align=True)
-        split3.prop(settings, 'wireframe_special_color', text='')
-        split3.prop(settings, 'wireframe_midline_color', text='')
-        split.prop(settings, 'wireframe_opacity', text='', slider=True)
-
-        row = layout.row(align=True)
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='R')
-        op.action = 'wireframe_red'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='G')
-        op.action = 'wireframe_green'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='B')
-        op.action = 'wireframe_blue'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='C')
-        op.action = 'wireframe_cyan'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='M')
-        op.action = 'wireframe_magenta'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='Y')
-        op.action = 'wireframe_yellow'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='K')
-        op.action = 'wireframe_black'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='W')
-        op.action = 'wireframe_white'
-
-        col = layout.column(align=True)
-        col.prop(settings, 'show_specials')
-        col.prop(settings, 'wireframe_backface_culling')
-        col.prop(settings, 'use_adaptive_opacity')
-
-    def _appearance_image_adjustment(self, settings, layout) -> None:
-        camera = settings.get_camera(settings.current_headnum,
-                                     settings.current_camnum)
-        if not camera:
-            return
-
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Background')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(FBConfig.fb_reset_tone_mapping_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
-        col2 = col.column(align=True)
-        row = col2.row(align=True)
-        row.prop(camera, 'tone_exposure', slider=True)
-        row.operator(FBConfig.fb_reset_tone_exposure_idname,
-                     text='', icon='LOOP_BACK')
-        row = col.row(align=True)
-        row.prop(camera, 'tone_gamma', slider=True)
-        row.operator(FBConfig.fb_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
-
-    def draw(self, context):
-        layout = self.layout
-        settings = fb_settings()
-        if settings is None:
-            return
-
-        self._appearance_wireframe_settings(settings, layout)
-        self._appearance_pin_settings(settings, layout)
-        if settings.pinmode:
-            self._appearance_image_adjustment(settings, layout)
+    @classmethod
+    def poll(cls, context):
+        return poll_fb_common()
 
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
@@ -604,7 +540,9 @@ CLASSES_TO_REGISTER = (FB_PT_HeaderPanel,
                        FB_PT_UpdatesInstallationPanel,
                        FB_PT_ViewsPanel,
                        FB_PT_OptionsPanel,
-                       FB_PT_Model,
+                       FB_PT_ModelPanel,
+                       FB_OT_AppearanceAddPreset,
+                       FB_PT_AppearancePresetPanel,
                        FB_PT_AppearancePanel,
                        FB_PT_TexturePanel,
                        FB_PT_BlendShapesPanel,

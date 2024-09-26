@@ -351,14 +351,14 @@ class FTSceneSettings(TRSceneSetting):
     wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
-        default=Config.fb_color_schemes['facetracker'][0],
+        default=Config.ft_color_schemes['default'][0],
         min=0.0, max=1.0,
         update=update_wireframe_image)
 
     wireframe_special_color: FloatVectorProperty(
         description='Color of special parts in pin-mode',
         name='Wireframe Special Color', subtype='COLOR',
-        default=Config.fb_color_schemes['facetracker'][1],
+        default=Config.ft_color_schemes['default'][1],
         min=0.0, max=1.0,
         update=update_wireframe_image)
 

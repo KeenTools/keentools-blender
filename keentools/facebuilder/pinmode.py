@@ -504,7 +504,7 @@ class FB_OT_PinMode(Operator):
 
         vp.update_surface_points(loader.get_builder(), headobj, kid)
 
-        if settings.preferences().prevent_fb_view_rotation:
+        if settings.preferences().prevent_view_rotation:
             facebuilder_keymaps_register()
 
         if first_start:
@@ -558,7 +558,7 @@ class FB_OT_PinMode(Operator):
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            if settings.preferences().prevent_fb_view_rotation:
+            if settings.preferences().prevent_view_rotation:
                 # Return back to the camera view
                 bpy_view_camera()
             else:

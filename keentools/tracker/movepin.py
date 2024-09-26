@@ -201,7 +201,7 @@ class MovePin(bpy.types.Operator):
         _log.yellow('tracker update_on_left_mouse_release start')
         settings = self.get_settings()
         prefs = settings.preferences()
-        if not prefs.gt_auto_unbreak_rotation:
+        if not prefs.auto_unbreak_rotation:
             _log.red('tracker update_on_left_mouse_release prefs end >>>')
             return
 

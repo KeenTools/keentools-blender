@@ -431,7 +431,7 @@ def track_next_frame_action(forward: bool=True, *,
                 create_relative_shape_keyframe(next_frame)
 
             prefs = get_addon_preferences()
-            if prefs.gt_auto_unbreak_rotation:
+            if prefs.auto_unbreak_rotation:
                 unbreak_status = unbreak_rotation_with_status(
                     obj, [current_frame, next_frame])
                 if not unbreak_status.success:
@@ -880,7 +880,7 @@ def create_animated_empty_action(
         select_object_only(empty)
 
         prefs = get_addon_preferences()
-        if prefs.gt_auto_unbreak_rotation:
+        if prefs.auto_unbreak_rotation:
             unbreak_status = unbreak_object_rotation_act(empty)
             if not unbreak_status.success:
                 return unbreak_status
@@ -979,7 +979,7 @@ def create_hard_empties_from_selected_pins_action(
             create_animation_locrot_keyframe_force(empty)
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         for empty in empties:
             unbreak_status = unbreak_object_rotation_act(empty)
             if not unbreak_status.success:
@@ -1064,7 +1064,7 @@ def create_soft_empties_from_selected_pins_action(
             create_animation_locrot_keyframe_force(empty)
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         for empty in empties:
             unbreak_status = unbreak_object_rotation_act(empty)
             if not unbreak_status.success:
@@ -1293,7 +1293,7 @@ def transfer_tracking_to_camera_action(*, product: int) -> ActionStatus:
     mark_object_keyframes(camobj, product=product)
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
@@ -1349,7 +1349,7 @@ def transfer_tracking_to_geometry_action(*, product: int) -> ActionStatus:
     mark_object_keyframes(geomobj, product=product)
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
@@ -1665,7 +1665,7 @@ def scale_scene_tracking_action(operator: Operator,
     loader.save_geotracker()
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
@@ -1820,7 +1820,7 @@ def move_scene_tracking_action(operator: Operator,
     loader.save_geotracker()
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
@@ -1870,7 +1870,7 @@ def bake_locrot_action(obj: Object, *, product: int) -> ActionStatus:
     _remove_all_constraints(obj)
 
     prefs = get_addon_preferences()
-    if prefs.gt_auto_unbreak_rotation:
+    if prefs.auto_unbreak_rotation:
         unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status

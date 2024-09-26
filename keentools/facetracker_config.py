@@ -132,6 +132,8 @@ class FTConfig:
     ft_cancel_choose_frame_idname = operators + '.cancel_choose_frame'
     ft_add_chosen_frame_idname = operators + '.add_chosen_frame'
 
+    ft_appearance_preset_add_idname = operators + '.appearance_preset_add'
+
     # Window ids
     ft_rescale_window_idname = operators + '.rescale_window'
     ft_move_window_idname = operators + '.move_window'
@@ -149,12 +151,14 @@ class FTConfig:
     ft_fb_views_panel_idname = _PT + 'fb_views_panel'
     ft_fb_options_panel_idname = _PT + 'fb_options_panel'
     ft_fb_model_panel_idname = _PT + 'fb_model_panel'
+    ft_fb_appearance_panel_idname = _PT + 'fb_appearance_panel'
     ft_input_panel_idname = _PT + 'input_panel'
     ft_masks_panel_idname = _PT + 'masks_panel'
     ft_analyze_panel_idname = _PT + 'analyze_panel'
     ft_camera_panel_idname = _PT + 'camera_panel'
     ft_tracking_panel_idname = _PT + 'tracking_panel'
     ft_options_panel_idname = _PT + 'options_panel'
+    ft_appearance_preset_panel_idname = _PT + 'appearance_preset_panel'
     ft_appearance_panel_idname = _PT + 'appearance_panel'
     ft_scene_panel_idname = _PT + 'scene_panel'
     ft_texture_panel_idname = _PT + 'texture_panel'

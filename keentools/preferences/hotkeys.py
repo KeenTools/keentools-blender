@@ -19,7 +19,7 @@
 from typing import Tuple, List, Any, Callable, Optional
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config
+from ..addon_config import Config, get_addon_preferences
 from ..geotracker_config import GTConfig
 from ..facetracker_config import FTConfig
 from ..utils.bpy_common import bpy_window_manager
@@ -52,8 +52,14 @@ def get_keyconfig() -> Any:
 
 def common_keymaps_register(keymap: Optional[Any] = None) -> None:
     _log.yellow('common_keymaps_register start')
-    global _all_keymaps
 
+    prefs = get_addon_preferences()
+    if not prefs or not prefs.use_hotkeys or not prefs.prevent_view_rotation:
+        _log.red('common_keymaps_register: disabled in preferences')
+        _log.output('common_keymaps_register end 1 >>>')
+        return
+
+    global _all_keymaps
     keyconfig = get_keyconfig()
     km = keymap if keymap is not None \
         else keyconfig.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
@@ -109,6 +115,13 @@ def geotracker_keymaps_register() -> None:
     _log.magenta('geotracker_keymaps_register start')
     all_keymaps_unregister()
 
+    prefs = get_addon_preferences()
+    if not prefs or not prefs.use_hotkeys:
+        _log.red('geotracker_keymaps_register: '
+                 'use_hotkeys is disabled in preferences')
+        _log.output('geotracker_keymaps_register end 1 >>>')
+        return
+
     global _all_keymaps
     keyconfig = get_keyconfig()
     km = keyconfig.keymaps.new(name='Window', space_type='EMPTY')
@@ -139,6 +152,13 @@ def geotracker_keymaps_register() -> None:
 def facetracker_keymaps_register() -> None:
     _log.magenta('facetracker_keymaps_register start')
     all_keymaps_unregister()
+
+    prefs = get_addon_preferences()
+    if not prefs or not prefs.use_hotkeys:
+        _log.red('facetracker_keymaps_register: '
+                 'use_hotkeys is disabled in preferences')
+        _log.output('facetracker_keymaps_register end 1 >>>')
+        return
 
     global _all_keymaps
     keyconfig = get_keyconfig()

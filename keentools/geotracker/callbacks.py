@@ -223,7 +223,7 @@ def update_camobj(geotracker, context: Any) -> None:
              msg_content=msg)
 
     prefs = settings.preferences()
-    if prefs.gt_auto_unbreak_rotation and \
+    if prefs.auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.camobj):
         _log.info(f'Applying Unbreak Rotation to object: '
                   f'{bpy_object_name(geotracker.camobj)}')
@@ -263,7 +263,7 @@ def update_geomobj(geotracker, context: Any) -> None:
 
     product = settings.product_type()
     prefs = settings.preferences()
-    if prefs.gt_auto_unbreak_rotation and \
+    if prefs.auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.geomobj):
         _log.info(f'Applying Unbreak Rotation to object: '
                   f'{bpy_object_name(geotracker.geomobj)}')

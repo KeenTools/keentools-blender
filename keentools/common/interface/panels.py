@@ -317,7 +317,7 @@ class COMMON_FB_PT_OptionsPanel:
             row.enabled = not head.lock_neck_movement and head.should_use_emotions()
 
 
-class COMMON_FB_PT_Model:
+class COMMON_FB_PT_ModelPanel:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = 'objectmode'
@@ -380,3 +380,104 @@ class COMMON_FB_PT_Model:
             row.prop(head, 'masks', index=i, text=names[i])
 
         layout.prop(head, 'model_scale')
+
+
+class COMMON_FB_PT_AppearancePanel:
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_context = 'objectmode'
+    bl_label = 'Appearance'
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row(align=True)
+        row.emboss = 'NONE'
+        row.popover(text='', icon='PRESET',
+                    panel=FBConfig.fb_appearance_preset_panel_idname)
+        col = row.column(align=True)
+        col.active = False
+        col.operator(
+            FBConfig.fb_help_appearance_idname,
+            text='', icon='QUESTION', emboss=False)
+
+    def _appearance_pin_settings(self, settings, layout) -> None:
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Pins')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(FBConfig.fb_default_pin_settings_idname, text='',
+                     icon='LOOP_BACK', emboss=False, depress=False)
+        col.separator(factor=0.4)
+        col.prop(settings, 'pin_size', slider=True)
+        col.prop(settings, 'pin_sensitivity', slider=True)
+
+    def _appearance_wireframe_settings(self, settings, layout) -> None:
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Wireframe')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(
+            FBConfig.fb_default_wireframe_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col.separator(factor=0.4)
+        split = col.split(factor=0.375, align=True)
+        split2 = split.split(factor=0.34, align=True)
+        split2.prop(settings, 'wireframe_color', text='')
+        split3 = split2.split(factor=0.5, align=True)
+        split3.prop(settings, 'wireframe_special_color', text='')
+        split3.prop(settings, 'wireframe_midline_color', text='')
+        split.prop(settings, 'wireframe_opacity', text='', slider=True)
+
+        row = layout.row(align=True)
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='R')
+        op.action = 'wireframe_red'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='G')
+        op.action = 'wireframe_green'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='B')
+        op.action = 'wireframe_blue'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='C')
+        op.action = 'wireframe_cyan'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='M')
+        op.action = 'wireframe_magenta'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='Y')
+        op.action = 'wireframe_yellow'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='K')
+        op.action = 'wireframe_black'
+        op = row.operator(FBConfig.fb_wireframe_color_idname, text='W')
+        op.action = 'wireframe_white'
+
+        col = layout.column(align=True)
+        col.prop(settings, 'show_specials')
+        col.prop(settings, 'wireframe_backface_culling')
+        col.prop(settings, 'use_adaptive_opacity')
+
+    def _appearance_image_adjustment(self, settings, layout) -> None:
+        camera = settings.get_camera(settings.current_headnum,
+                                     settings.current_camnum)
+        if not camera:
+            return
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Background')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(FBConfig.fb_reset_tone_mapping_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col.separator(factor=0.4)
+        col.prop(camera, 'tone_exposure', slider=True)
+        col.prop(camera, 'tone_gamma', slider=True)
+
+
+    def draw(self, context):
+        layout = self.layout
+        settings = fb_settings()
+        if settings is None:
+            return
+
+        self._appearance_wireframe_settings(settings, layout)
+        self._appearance_pin_settings(settings, layout)
+        if settings.pinmode:
+            self._appearance_image_adjustment(settings, layout)
