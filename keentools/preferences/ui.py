@@ -389,6 +389,10 @@ class KTAddonPreferences(AddonPreferences):
         name='KeenTools FaceTracker',
         default=False
     )
+    common_expanded: BoolProperty(
+        name='KeenTools Settings',
+        default=False
+    )
 
     latest_show_datetime_update_reminder: StringProperty(
         name='Latest show update reminder', default='',
@@ -1151,7 +1155,7 @@ class KTAddonPreferences(AddonPreferences):
         return indent_row.column()
 
     def _draw_common_settings(self, layout: Any) -> None:
-        col = layout.column()
+        col = self._make_indent_column(layout)
         col.prop(self, 'prevent_view_rotation')
         col.prop(self, 'use_hotkeys')
         col.prop(self, 'auto_unbreak_rotation')
@@ -1172,8 +1176,6 @@ class KTAddonPreferences(AddonPreferences):
         if not self._draw_core_info(layout):
             return
         self._draw_updater_info(layout)
-
-        self._draw_common_settings(layout)
 
         row = layout.row(align=True)
         row.prop(self, 'facebuilder_expanded', text='', emboss=False,
@@ -1201,3 +1203,10 @@ class KTAddonPreferences(AddonPreferences):
 
         if self.facetracker_expanded:
             self._draw_facetracker_preferences(layout)
+
+        row = layout.row(align=True)
+        row.prop(self, 'common_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.common_expanded))
+        row.label(text='Settings')
+        if self.common_expanded:
+            self._draw_common_settings(layout)
