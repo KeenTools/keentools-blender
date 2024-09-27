@@ -147,12 +147,13 @@ class COMMON_PT_UpdatesInstallationPanel(_CommonPanel, Panel):
         for txt in KTInstallationReminder.render_message():
             col.label(text=txt)
 
-        layout.operator(Config.kt_install_updates_idname,
-                        text='Install and restart', icon='FILE_REFRESH')
-        layout.operator(Config.kt_remind_install_later_idname,
-                        icon='RECOVER_LAST')
-        layout.operator(Config.kt_skip_installation_idname,
-                        text='Skip this version', icon='X')
+        col = layout.column(align=True)
+        col.operator(Config.kt_install_updates_idname,
+                     text='Install and restart', icon='FILE_REFRESH')
+        col.operator(Config.kt_remind_install_later_idname,
+                     icon='RECOVER_LAST')
+        col.operator(Config.kt_skip_installation_idname,
+                     text='Skip this version', icon='X')
 
     def draw(self, context):
         layout = self.layout
