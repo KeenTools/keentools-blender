@@ -698,9 +698,8 @@ class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
-        prefs = settings.preferences()
-        settings.pin_size = prefs.pin_size
-        settings.pin_sensitivity = prefs.pin_sensitivity
+        settings.pin_size = Config.pin_size
+        settings.pin_sensitivity = Config.pin_sensitivity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 

@@ -852,9 +852,8 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = gt_settings()
-        prefs = settings.preferences()
-        settings.wireframe_color = prefs.gt_wireframe_color
-        settings.wireframe_opacity = prefs.gt_wireframe_opacity
+        settings.wireframe_color = Config.gt_wireframe_color
+        settings.wireframe_opacity = Config.gt_wireframe_opacity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -867,9 +866,8 @@ class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = gt_settings()
-        prefs = settings.preferences()
-        settings.pin_size = prefs.pin_size
-        settings.pin_sensitivity = prefs.pin_sensitivity
+        settings.pin_size = Config.pin_size
+        settings.pin_sensitivity = Config.pin_sensitivity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
