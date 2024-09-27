@@ -59,9 +59,10 @@ from ..updater.utils import (preferences_current_active_updater_operators_info,
                              render_active_message,
                              KTUpdater)
 from .operators import get_product_license_manager
-from .hotkeys import (geotracker_keymaps_register,
-                      all_keymaps_unregister,
-                      facetracker_keymaps_register)
+from .hotkeys import (facebuilder_keymaps_register,
+                      geotracker_keymaps_register,
+                      facetracker_keymaps_register,
+                      all_keymaps_unregister)
 from ..common.license_checker import ft_license_timer, draw_upgrade_license_box
 
 
@@ -335,6 +336,18 @@ def _update_gt_wireframe(addon_prefs: Any, context: Any) -> None:
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
 
 
+def _update_use_hotkeys(addon_prefs: Any, context: Any) -> None:
+    if addon_prefs.use_hotkeys:
+        if fb_settings().pinmode:
+            facebuilder_keymaps_register()
+        elif gt_settings().pinmode:
+            geotracker_keymaps_register()
+        elif ft_settings().pinmode:
+            facetracker_keymaps_register()
+    else:
+        all_keymaps_unregister()
+
+
 def _update_gt_hotkeys(addon_prefs: Any, context: Any) -> None:
     if addon_prefs.use_hotkeys:
         geotracker_keymaps_register()
@@ -557,7 +570,8 @@ class KTAddonPreferences(AddonPreferences):
                     '(Alt + Right Arrow) Next keyframe',
         get=universal_direct_getter('use_hotkeys', 'bool'),
         set=universal_direct_setter('use_hotkeys'),
-        default=True
+        default=True,
+        update = _update_use_hotkeys
     )
     auto_unbreak_rotation: BoolProperty(
         name='Auto-apply Unbreak Rotation',
