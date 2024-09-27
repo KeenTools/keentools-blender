@@ -308,6 +308,7 @@ class FB_PT_ModelPanel(COMMON_FB_PT_ModelPanel, Panel):
     bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_model_panel_idname
     bl_label = 'Model'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -406,6 +407,7 @@ class FB_PT_AppearancePanel(COMMON_FB_PT_AppearancePanel, Panel):
     bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_appearance_panel_idname
     bl_label = 'Appearance'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
