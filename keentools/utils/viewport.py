@@ -23,7 +23,6 @@ from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ActionStatus, ProductType, get_operator, ErrorType
-from ..preferences.user_preferences import UserPreferences
 from .points import KTScreenPins
 from .coords import get_pixel_relative_size, check_area_is_wrong
 from ..utils.bpy_common import (bpy_window,
@@ -63,8 +62,7 @@ class KTViewport:
         self._selector: Optional[Any] = None
         # Pins
         self._pins: Any = KTScreenPins()
-        self._point_sensitivity: float = UserPreferences.get_value_safe(
-            'pin_sensitivity', UserPreferences.type_float)
+        self._point_sensitivity: float = Config.pin_sensitivity
         self._pixel_size: float = 0.1  # Auto Calculated
         self._work_area: Optional[Area] = None
         self._prev_camera_state: Tuple = ()

@@ -134,6 +134,8 @@ class Config:
     viewport_state_prop_name = 'keentools_viewport_state'
 
     # Constants
+    pin_size: float = 7.0
+    pin_sensitivity: float = 16.0
     surf_pin_size_scale: float = 0.85
     text_scale_y: float = 0.75
     btn_scale_y: float = 1.2

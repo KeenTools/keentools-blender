@@ -63,9 +63,6 @@ from .callbacks import (update_mesh_with_dialog,
                         update_head_focal,
                         update_camera_focal,
                         update_background_tone_mapping)
-from ..preferences.user_preferences import (UserPreferences,
-                                            universal_cached_getter,
-                                            universal_cached_setter)
 from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
 from ..utils.viewport_state import ViewportStateItem
@@ -732,39 +729,27 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description='',
         name='Wireframe opacity',
-        default=UserPreferences.get_value_safe('fb_wireframe_opacity',
-                                               UserPreferences.type_float),
+        default=Config.fb_wireframe_opacity,
         min=0.0, max=1.0,
-        update=update_wireframe_func,
-        get=universal_cached_getter('fb_wireframe_opacity', 'float'),
-        set=universal_cached_setter('fb_wireframe_opacity'))
+        update=update_wireframe_func)
     wireframe_color: FloatVectorProperty(
         description='',
         name='Base mesh colour', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['default'][0],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_color'))
+        update=update_wireframe_image)
     wireframe_special_color: FloatVectorProperty(
         description='',
         name='Facial features colour', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['default'][1],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_special_color'))
+        update=update_wireframe_image)
     wireframe_midline_color: FloatVectorProperty(
         description='',
         name='Midlines colour', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_midline_color,
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_midline_color'))
+        update=update_wireframe_image)
     show_specials: BoolProperty(
         description='',
         name='Highlight facial features', default=True, update=update_wireframe_image)
@@ -775,22 +760,16 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description='Set pin size in pixels',
         name='Size',
-        default=UserPreferences.get_value_safe('pin_size',
-                                               UserPreferences.type_float),
+        default=Config.pin_size,
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_size,
-        get=universal_cached_getter('pin_size', 'float'),
-        set=universal_cached_setter('pin_size'))
+        update=update_pin_size)
     pin_sensitivity: FloatProperty(
         name='Sensitivity', description='Active area in pixels',
-        default=UserPreferences.get_value_safe('pin_sensitivity',
-                                               UserPreferences.type_float),
+        default=Config.pin_sensitivity,
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_sensitivity,
-        get=universal_cached_getter('pin_sensitivity', 'float'),
-        set=universal_cached_setter('pin_sensitivity')
+        update=update_pin_sensitivity
     )
 
     # Other settings

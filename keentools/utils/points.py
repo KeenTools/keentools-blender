@@ -26,7 +26,6 @@ from .kt_logging import KTLogger
 from ..addon_config import Config
 from .gpu_shaders import (circular_dot_2d_shader,
                           circular_dot_3d_shader)
-from ..preferences.user_preferences import UserPreferences
 from .base_shaders import KTShaderBase
 from .gpu_control import set_blend_alpha, set_point_size
 from ..utils.bpy_common import bpy_context
@@ -193,8 +192,7 @@ class KTShaderPoints(KTShaderBase):
         self.vertices: Any = np.empty((0, 3), dtype=np.float32)
         self.vertex_colors: Any = np.empty((0, 4), dtype=np.float32)
 
-        self.point_size: float = UserPreferences.get_value_safe(
-            'pin_size', UserPreferences.type_float)
+        self.point_size: float = Config.pin_size
         self.point_ui_scale: float = 1.0
 
     def get_vertices(self) -> Any:
@@ -295,7 +293,4 @@ class KTPoints3D(KTShaderPoints):
 
     def __init__(self, target_class: Any):
         super().__init__(target_class)
-        self.set_point_size(
-            UserPreferences.get_value_safe(
-                'pin_size',
-                UserPreferences.type_float) * Config.surf_pin_size_scale)
+        self.set_point_size(Config.pin_size * Config.surf_pin_size_scale)
