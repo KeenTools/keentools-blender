@@ -43,17 +43,18 @@ def solve_head(headnum: int) -> None:
         return -1
 
     _log.yellow('solve_head start')
-    fb = FBLoader.get_builder()
+    settings = fb_settings()
+    loader = settings.loader()
+    fb = loader.get_builder()
     keyframe = _find_keyframe_with_more_than_three_pins(fb)
     if keyframe < 0:
         fb.unmorph()
         return
-    settings = fb_settings()
     head = settings.get_head(headnum)
     camnum = _get_camnum_by_keyframe(head, keyframe)
     if camnum < 0:
         return
-    FBLoader.solve(headnum, camnum)
+    loader.solve(headnum, camnum)
     _log.output('solve_head end >>>')
 
 

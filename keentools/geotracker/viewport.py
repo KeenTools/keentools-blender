@@ -54,7 +54,6 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
-from ..preferences.user_preferences import UserPreferences
 from ..utils.ui_redraw import force_ui_redraw
 
 
@@ -68,20 +67,16 @@ class GTViewport(KTViewport):
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
         self._texter = KTScreenText(SpaceView3D, 'GeoTracker')
-        self._wireframer = KTLitEdgeShaderLocal3D(SpaceView3D, mask_color=(
-            *UserPreferences.get_value_safe('gt_mask_3d_color',
-                                            UserPreferences.type_color),
-            UserPreferences.get_value_safe('gt_mask_3d_opacity',
-                                           UserPreferences.type_float)))
+        self._wireframer = KTLitEdgeShaderLocal3D(
+            SpaceView3D, mask_color=(*Config.gt_mask_3d_color,
+                                     Config.gt_mask_3d_opacity))
         self._rectangler: Any = KTRectangleShader2D(SpaceView3D)
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
-        self._mask2d = KTRasterMask(SpaceView3D, mask_color=(
-            *UserPreferences.get_value_safe('gt_mask_2d_color',
-                                            UserPreferences.type_color),
-            UserPreferences.get_value_safe('gt_mask_2d_opacity',
-                                           UserPreferences.type_float)))
+        self._mask2d = KTRasterMask(SpaceView3D,
+                                    mask_color=(*Config.gt_mask_2d_color,
+                                                Config.gt_mask_2d_opacity))
         self._draw_update_timer_handler: Optional[Callable] = None
 
         self.stabilization_region_point: Optional[Tuple[float, float]] = None

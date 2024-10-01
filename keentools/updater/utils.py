@@ -247,7 +247,7 @@ class KTUpdater:
         ver_tuple = _version_to_tuple(cls.version())
 
         if (Config.use_explicit_version_check_in_updater
-                and ver_tuple <= _version_to_tuple(Config.addon_version)):
+                and ver_tuple <= Config.addon_version_tuple):
             return False
 
         return _version_to_tuple(_downloaded_version()) < ver_tuple and \

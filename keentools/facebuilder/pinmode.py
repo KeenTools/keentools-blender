@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Optional, Callable, Tuple, Set
+from typing import Any, Optional, Callable, List, Tuple, Set
 from uuid import uuid4
 import numpy as np
 from copy import deepcopy
@@ -36,7 +36,7 @@ from ..addon_config import (Config,
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (operator_with_context,
                                 bpy_view_camera,
-                                bpy_render_frame)
+                                get_scene_camera_shift)
 from ..utils.coords import (update_head_mesh_non_neutral,
                             get_image_space_coord,
                             nearest_point,
@@ -46,7 +46,6 @@ from ..utils.coords import (update_head_mesh_non_neutral,
                             get_area_region_3d,
                             get_camera_border)
 from .utils.manipulate import push_head_in_undo_history
-from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.html import split_long_string
 from ..utils.localview import (exit_area_localview,
@@ -58,6 +57,7 @@ from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    all_keymaps_unregister)
 from .prechecks import common_fb_checks
 from ..utils.ui_redraw import total_redraw_ui
+from .facebuilder_acts import solve_head
 
 
 _log = KTLogger(__name__)
@@ -151,7 +151,9 @@ class FB_OT_PinMode(Operator):
 
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
-        vp = FBLoader.viewport()
+        settings = fb_settings()
+        loader = settings.loader()
+        vp = loader.viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_shaders_visible(flag)
         vp.texter().set_shader_visible(True)
@@ -163,44 +165,52 @@ class FB_OT_PinMode(Operator):
             default_txt[0]['color'] = (1., 0., 1., 0.85)
             vp.message_to_screen(default_txt)
 
-    def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.yellow('_delete_found_pin start')
+    def _delete_pins(self, pin_index_list: List[int]) -> Set:
+        _log.green('_delete_pins start')
+        if len(pin_index_list) == 0:
+            _log.red('_delete_pins: no pins to remove >>>')
+            return {'RUNNING_MODAL'}
+
         settings = fb_settings()
+        loader = settings.loader()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
-        kid = settings.get_keyframe(headnum, camnum)
+        kid = head.get_keyframe(camnum)
 
-        fb = FBLoader.get_builder()
-        fb.remove_pin(kid, nearest)
-        vp = FBLoader.viewport()
-        vp.pins().remove_pin(nearest)
-        _log.output(f'FB PIN REMOVED {nearest}')
+        vp = loader.viewport()
+        pins = vp.pins()
+        fb = loader.get_builder()
+        pin_index_list.sort()
+        for i in reversed(pin_index_list):
+            fb.remove_pin(kid, i)
+            pins.remove_pin(i)
+            _log.output(f'FB PIN REMOVED {i}')
 
-        if not FBLoader.solve(headnum, camnum):
+        if not loader.solve(headnum, camnum):
             _log.error('FB DELETE PIN PROBLEM')
             unregister_fb_undo_handler()
-
             self.on_finish()
             return {'FINISHED'}
 
+        if fb.pins_count(kid) < 4:
+            _log.output('_delete_pins FB solve_head call')
+            solve_head(headnum)
+
         update_head_mesh_non_neutral(fb, head)
-        FBLoader.update_camera_pins_count(headnum, camnum)
+        loader.update_camera_pins_count(headnum, camnum)
 
-        FBLoader.update_all_camera_positions(headnum)
+        loader.update_all_camera_positions(headnum)
         # Save result
-        FBLoader.save_fb_serial_and_image_pathes(headnum)
-        push_head_in_undo_history(head, 'Pin Remove')
+        loader.save_fb_serial_and_image_pathes(headnum)
+        push_head_in_undo_history(
+            head, 'Remove pin' if len(pin_index_list) == 1 else 'Remove pins')
 
-        FBLoader.load_pins_into_viewport(headnum, camnum)
-        _log.output(f'before FBLoader.update_fb_viewport_shaders '
-                    f'{vp.wireframer().get_statistics()}')
-        FBLoader.update_fb_viewport_shaders(area=area,
-                                            headnum=headnum, camnum=camnum,
-                                            wireframe=True,
-                                            pins_and_residuals=True)
+        loader.update_fb_viewport_shaders(wireframe=True,
+                                          load_pins=True,
+                                          pins_and_residuals=True)
 
-        _log.output('_delete_found_pin end >>>')
+        _log.output('_delete_pins end >>>')
         return {'RUNNING_MODAL'}
 
     def _undo_detected(self, area: Area) -> None:
@@ -220,45 +230,81 @@ class FB_OT_PinMode(Operator):
             return
 
         head.need_update = False
-        FBLoader.load_model(headnum)
-        FBLoader.place_camera(headnum, camnum)
-        FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_fb_viewport_shaders(area=area,
-                                            wireframe=True,
-                                            pins_and_residuals=True,
-                                            camera_pos=True,
-                                            tag_redraw=True)
+        loader = settings.loader()
+        loader.load_model(headnum)
+        loader.place_camera(headnum, camnum)
+        loader.load_pins_into_viewport(headnum, camnum)
+        loader.update_fb_viewport_shaders(area=area,
+                                          wireframe=True,
+                                          pins_and_residuals=True,
+                                          camera_pos=True,
+                                          tag_redraw=True)
         _log.output(f'{self.__class__.__name__} _undo_detected end >>>')
 
     def _on_right_mouse_press(self, area: Area,
                               mouse_x: float, mouse_y: float) -> Set:
-        vp = FBLoader.viewport()
+        settings = fb_settings()
+        loader = settings.loader()
+        vp = loader.viewport()
         vp.update_view_relative_pixel_size(area)
 
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
-        if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
-            return self._delete_found_pin(nearest, area)
+        if nearest >= 0 and dist2 < vp.tolerance_dist2():
+            return self._delete_pins([nearest])
 
-        FBLoader.viewport().create_batch_2d(area)
+        loader.viewport().create_batch_2d(area)
         return {'RUNNING_MODAL'}
 
-    def _on_left_mouse_press(self, area: Area,
-                             mouse_x: float, mouse_y: float) -> Set:
-        FBLoader.viewport().update_view_relative_pixel_size(area)
+    def _on_left_mouse_press(self, area: Area, event: Any) -> Set:
+        mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
+        settings = fb_settings()
+        loader = settings.loader()
+        vp = loader.viewport()
+        vp.update_view_relative_pixel_size(area)
 
-        if not point_is_in_area(area, mouse_x, mouse_y):
+        if not vp.points2d().is_visible():
+            _log.output('OBJECT IS IN EDIT MODE. LEFT CLICK HAS BEEN IGNORED')
             return {'PASS_THROUGH'}
 
-        if not point_is_in_service_region(area, mouse_x, mouse_y):
-            settings = fb_settings()
+        if not point_is_in_area(area, mouse_x, mouse_y,
+                                bottom_limit=Config.area_bottom_limit):
+            _log.output('LEFT CLICK OUTSIDE OF VIEWPORT AREA')
+            return {'PASS_THROUGH'}
+
+        if point_is_in_service_region(area, mouse_x, mouse_y):
+            _log.output('LEFT CLICK IN SERVICE REGION OF AREA')
+            return {'PASS_THROUGH'}
+
+        pins = vp.pins()
+        if not pins.get_add_selection_mode():
             op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                headnum=settings.current_headnum,
                camnum=settings.current_camnum)
             return {'PASS_THROUGH'}
 
+        x, y = get_image_space_coord(mouse_x, mouse_y, area,
+                                     *get_scene_camera_shift())
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
+        if nearest >= 0 and dist2 < vp.tolerance_dist2():
+            _log.output(f'CHANGE SELECTION PIN FOUND: {nearest}')
+            pins.set_current_pin_num(nearest)
+            selected_pins = pins.get_selected_pins()
+
+            if nearest in selected_pins:
+                pins.exclude_selected_pin(nearest)
+            else:
+                pins.add_selected_pins([nearest])
+        else:
+            settings.start_selection(mouse_x, mouse_y)
+        loader.update_fb_viewport_shaders(area=area,
+                                          wireframe=True,
+                                          pins_and_residuals=True,
+                                          camera_pos=True,
+                                          tag_redraw=True)
+        vp.tag_redraw()
         return {'PASS_THROUGH'}
 
     def _check_keyframes(self, fb: Any, head: Any) -> bool:
@@ -269,15 +315,18 @@ class FB_OT_PinMode(Operator):
 
     def execute(self, context: Any) -> Set:  # Testing purpose only
         _log.green('PinMode execute call')
-        FBLoader.update_fb_viewport_shaders(wireframe_colors=True,
-                                            wireframe_image=True,
-                                            camera_pos=True,
-                                            wireframe=True)
+        settings = fb_settings()
+        loader = settings.loader()
+        loader.update_fb_viewport_shaders(wireframe_colors=True,
+                                          wireframe_image=True,
+                                          camera_pos=True,
+                                          wireframe=True)
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.green(f'{self.__class__.__name__} invoke')
         settings = fb_settings()
+        loader = settings.loader()
 
         _log.output(f'current_headnum: {settings.current_headnum} '
                     f'current_camnum: {settings.current_camnum}')
@@ -306,10 +355,12 @@ class FB_OT_PinMode(Operator):
         headobj = head.headobj
         first_start = True
 
-        vp = FBLoader.viewport()
+        vp = loader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
             _log.red(f'{self.__class__.__name__} 3 cancelled >>>')
             return {'CANCELLED'}
+
+        vp.pins().on_start()
 
         # Stopped shaders mean that we need to restart pinmode
         if not vp.viewport_is_working():
@@ -326,14 +377,14 @@ class FB_OT_PinMode(Operator):
             old_camera = old_head.get_camera(settings.current_camnum)
             old_camera.reset_tone_mapping()
 
-            FBLoader.save_pinmode_state(settings.current_headnum)
+            loader.save_pinmode_state(settings.current_headnum)
             _log.output(f'FB PINMODE FORCE FINISH: H{settings.current_headnum} '
                         f'C{settings.current_camnum}')
             first_start = False
         else:
-            FBLoader.update_cameras_from_old_version(self.headnum)
+            loader.update_cameras_from_old_version(self.headnum)
 
-        area = context.area if first_start else FBLoader.get_work_area()
+        area = context.area if first_start else loader.get_work_area()
         if not area:
             _log.error(f'{self.__class__.__name__} area error 4 cancelled >>>')
             return {'CANCELLED'}
@@ -358,14 +409,14 @@ class FB_OT_PinMode(Operator):
                     f'C{settings.current_camnum}')
         # Start working with current model
         try:
-            if not FBLoader.load_model_throw_exception(settings.current_headnum):
+            if not loader.load_model_throw_exception(settings.current_headnum):
                 raise Exception('Cannot load the model data from '
                                 'the serialised string. Perhaps your file '
                                 'or the scene data got corrupted.')
         except Exception as err:
             _log.red('FB MODEL CANNOT BE LOADED IN PINMODE')
 
-            FBLoader.out_pinmode_without_save()
+            loader.out_pinmode_without_save()
             exit_area_localview(area)
 
             _log.error(f'DESERIALIZE load_model_throw_exception: \n{str(err)}')
@@ -378,13 +429,13 @@ class FB_OT_PinMode(Operator):
 
         _log.output('model loaded')
 
-        if not FBLoader.check_mesh(headobj):
-            fb = FBLoader.get_builder()
+        if not loader.check_mesh(headobj):
+            fb = loader.get_builder()
             _log.error(f'FB MESH IS CORRUPTED '
                        f'{len(headobj.data.vertices)} != '
                        f'{len(fb.applied_args_vertices())}')
 
-            FBLoader.out_pinmode_without_save()
+            loader.out_pinmode_without_save()
             exit_area_localview(area)
 
             warn = get_operator(Config.kt_warning_idname)
@@ -392,7 +443,7 @@ class FB_OT_PinMode(Operator):
             _log.red(f'{self.__class__.__name__} check mesh 6 cancelled >>>')
             return {'CANCELLED'}
 
-        fb = FBLoader.get_builder()
+        fb = loader.get_builder()
         fb.set_use_emotions(head.should_use_emotions())
 
         if not self._check_keyframes(fb, head):
@@ -404,8 +455,8 @@ class FB_OT_PinMode(Operator):
                     _log.error(f'\nFB UNKNOWN KEYFRAME: {kid}\n')
                     fb.set_keyframe(kid, np.eye(4))
         try:
-            FBLoader.place_camera(settings.current_headnum,
-                                  settings.current_camnum)
+            loader.place_camera(settings.current_headnum,
+                                settings.current_camnum)
         except Exception:
             _log.output('FB UPDATE KEYFRAME PROBLEM')
             _log.red(f'{self.__class__.__name__} keyframe error 7 cancelled >>>')
@@ -419,13 +470,13 @@ class FB_OT_PinMode(Operator):
         vp.check_camera_state_changed(get_area_region_3d(area))
         vp.check_area_state_changed(area)
 
-        FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
-                                            wireframe_colors=True,
-                                            wireframe_image=True,
-                                            camera_pos=True,
-                                            ui_scale=True,
-                                            load_pins=True,
-                                            wireframe=True)
+        loader.update_fb_viewport_shaders(adaptive_opacity=True,
+                                          wireframe_colors=True,
+                                          wireframe_image=True,
+                                          camera_pos=True,
+                                          ui_scale=True,
+                                          load_pins=True,
+                                          wireframe=True)
         if first_start:
             settings.viewport_state.hide_ui_elements(area)
 
@@ -440,7 +491,7 @@ class FB_OT_PinMode(Operator):
             _log.output('START FB SHADER STOPPER')
             self.pinmode_id = str(uuid4())
             settings.pinmode_id = self.pinmode_id
-            FBLoader.start_shader_timer(self.pinmode_id)
+            loader.start_shader_timer(self.pinmode_id)
             _log.output(f'pinmode_id: {self.pinmode_id}')
         else:
             _log.output('FB SHADER UPDATE ONLY')
@@ -451,9 +502,9 @@ class FB_OT_PinMode(Operator):
             operator_with_context(bpy.ops.view3d.view_center_camera,
                 {'area': area, 'region': get_area_region(area)})
 
-        vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
+        vp.update_surface_points(loader.get_builder(), headobj, kid)
 
-        if settings.preferences().prevent_fb_view_rotation:
+        if settings.preferences().prevent_view_rotation:
             facebuilder_keymaps_register()
 
         if first_start:
@@ -479,22 +530,23 @@ class FB_OT_PinMode(Operator):
 
     def _modal_should_finish(self, context: Any, event: Any) -> bool:
         settings = fb_settings()
+        loader = settings.loader()
 
         # Quit if Screen changed or out from localview
         if context.area is None or not check_context_localview(context):
             _log.output('CONTEXT LOST')
-            FBLoader.out_pinmode_without_save()
+            loader.out_pinmode_without_save()
             return True
 
         if not settings.is_proper_headnum(settings.current_headnum):
             _log.error('HEAD LOST')
-            FBLoader.out_pinmode_without_save()
+            loader.out_pinmode_without_save()
             return True
 
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
             _log.output('FORCE PINMODE OUT')
-            FBLoader.out_pinmode_without_save()
+            loader.out_pinmode_without_save()
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
@@ -506,20 +558,39 @@ class FB_OT_PinMode(Operator):
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            if settings.preferences().prevent_fb_view_rotation:
+            if settings.preferences().prevent_view_rotation:
                 # Return back to the camera view
                 bpy_view_camera()
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 _log.output(context.space_data.region_3d.view_perspective)
-                FBLoader.out_pinmode_without_save()
+                loader.out_pinmode_without_save()
                 return True
 
+        vp = loader.viewport()
+        pins = vp.pins()
         if event.type == 'ESC' and event.value == 'RELEASE':
-            FBLoader.out_pinmode_without_save()
+            if settings.selection_mode:
+                settings.cancel_selection()
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
+                vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} selection ESC >>>')
+                return False
+
+            if len(pins.get_selected_pins()) != 0:
+                pins.clear_selected_pins()
+                settings.cancel_selection()
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
+                vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} deselect by ESC >>')
+                return False
+
+            loader.out_pinmode_without_save()
             # --- PROFILING ---
-            if FBLoader.viewport().profiling:
-                pr = FBLoader.viewport().pr
+            if loader.viewport().profiling:
+                pr = loader.viewport().pr
                 pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
             bpy_view_camera()
@@ -531,6 +602,9 @@ class FB_OT_PinMode(Operator):
         _log.yellow(f'{self.__class__.__name__}.on_finish start')
         all_keymaps_unregister()
         self.release_bus()
+        settings = fb_settings()
+        if settings.selection_mode:
+            settings.cancel_selection()
         _log.output(f'{self.__class__.__name__}.on_finish end >>>')
 
     def cancel(self, context) -> None:
@@ -544,6 +618,8 @@ class FB_OT_PinMode(Operator):
             return {'FINISHED'}
 
         settings = fb_settings()
+        loader = settings.loader()
+        vp = loader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
             _log.error('Extreme pinmode operator stop')
@@ -554,8 +630,13 @@ class FB_OT_PinMode(Operator):
             self.on_finish()
             return {'FINISHED'}
 
-        headnum = settings.current_headnum
-        head = settings.get_head(headnum)
+        if not vp.viewport_is_working():
+            _log.error('VIEWPORT DOES NOT WORK')
+            unregister_fb_undo_handler()
+            loader.out_pinmode_without_save()
+
+            self.on_finish()
+            return {'FINISHED'}
 
         if self._modal_should_finish(context, event):
             unregister_fb_undo_handler()
@@ -564,55 +645,60 @@ class FB_OT_PinMode(Operator):
             self.on_finish()
             return {'FINISHED'}
 
-        vp = FBLoader.viewport()
         region_check = vp.check_camera_state_changed(context.space_data.region_3d)
         area_check = vp.check_area_state_changed(vp.get_work_area())
         if region_check or area_check:
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
-            FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
-                                                ui_scale=True,
-                                                tag_redraw=True)
+            loader.update_fb_viewport_shaders(adaptive_opacity=True,
+                                              ui_scale=True,
+                                              tag_redraw=True)
 
         if event.value == 'PRESS' and event.type == 'TAB':
             self._change_wireframe_visibility()
             context.area.tag_redraw()
             return {'RUNNING_MODAL'}
 
+        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
+                and event.value == 'PRESS':
+            self._set_shift_pressed(True)
+            if not settings.selection_mode:
+                vp.pins().set_add_selection_mode(True)
+
+        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
+                and event.value == 'RELEASE':
+            self._set_shift_pressed(False)
+            if not settings.selection_mode:
+                vp.pins().set_add_selection_mode(False)
+
+        if settings.selection_mode:
+            if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+                settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
+                loader.update_fb_viewport_shaders(pins_and_residuals=True)
+            else:
+                settings.do_selection(event.mouse_region_x, event.mouse_region_y)
+            vp.tag_redraw()
+            _log.red(f'{self.__class__.__name__} mouse selection -- modal >>>')
+            return {'RUNNING_MODAL'}
+
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
-            return self._on_left_mouse_press(
-                context.area, event.mouse_region_x, event.mouse_region_y)
+            return self._on_left_mouse_press(context.area, event)
 
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
             return self._on_right_mouse_press(
                 context.area, event.mouse_region_x, event.mouse_region_y)
 
-        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
-                and event.value == 'PRESS':
-            self._set_shift_pressed(True)
+        if event.value == 'PRESS' and event.type in {'BACK_SPACE', 'DEL'}:
+            selected_pins = vp.pins().get_selected_pins()
+            if len(selected_pins) == 0:
+                return {'PASS_THROUGH'}
+            return self._delete_pins(selected_pins)
 
-        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
-                and event.value == 'RELEASE':
-            self._set_shift_pressed(False)
-
-        camnum = settings.current_camnum
-        kid = settings.get_keyframe(headnum, camnum)
-
+        head = settings.get_head(settings.current_headnum)
         if head.need_update:
             self._undo_detected(context.area)
 
-        vp = FBLoader.viewport()
-        if not vp.viewport_is_working():
-            _log.error('VIEWPORT DOES NOT WORK')
-            unregister_fb_undo_handler()
-            FBLoader.out_pinmode_without_save()
-
-            self.on_finish()
-            return {'FINISHED'}
-
+        kid = head.get_keyframe(settings.current_camnum)
         vp.create_batch_2d(context.area)
-        vp.update_residuals(FBLoader.get_builder(), kid, context.area)
+        vp.update_residuals(loader.get_builder(), kid, context.area)
 
-        if vp.pins().current_pin():
-            return {'RUNNING_MODAL'}
-        else:
-            return {'PASS_THROUGH'}
+        return {'PASS_THROUGH'}

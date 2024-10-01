@@ -17,9 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from functools import partial
-from typing import Optional
+from typing import Optional, Any
 
-from bpy.types import Panel, Area, Window, Screen
+from bpy.types import Panel, Area, Window, Screen, Operator, Menu
+from bl_operators.presets import AddPresetBase
+from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
 from ...updater.panels import (COMMON_PT_UpdatePanel,
@@ -30,41 +32,40 @@ from ...updater.utils import KTUpdater
 from ...addon_config import (Config,
                              fb_settings,
                              facebuilder_enabled,
-                             addon_pinmode,
-                             ProductType,
-                             common_loader)
+                             ProductType)
 from ...facebuilder_config import FBConfig
 from ...utils.version import BVersion
-from ..fbloader import FBLoader
 from ...utils.manipulate import has_no_blendshape, has_blendshapes_action
 from ..utils.manipulate import what_is_state, get_obj_from_context
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
-from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
 from ...utils.icons import KTIcons
 from ...common.interface.panels import (COMMON_FB_PT_ViewsPanel,
-                                        COMMON_FB_PT_Model,
-                                        COMMON_FB_PT_OptionsPanel)
+                                        COMMON_FB_PT_OptionsPanel,
+                                        COMMON_FB_PT_ModelPanel,
+                                        COMMON_FB_PT_AppearancePanel)
 from ...common.license_checker import fb_license_timer, draw_upgrade_license_box
+from ...common.escapers import (start_fb_pinmode_escaper,
+                                exit_from_localview_button)
 
 
 _log = KTLogger(__name__)
 _fb_grace_timer = KTGraceTimer(ProductType.FACEBUILDER)
 
 
-def _state_valid_to_show(state):
+def _state_valid_to_show(state: str) -> bool:
     # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE, FACS_HEAD
     return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
 
-def _show_all_panels():
+def _show_all_panels() -> bool:
     state, _ = what_is_state()
     return _state_valid_to_show(state)
 
 
-def _show_all_panels_no_blendshapes():
+def _show_all_panels_no_blendshapes() -> bool:
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
         return False
@@ -74,7 +75,7 @@ def _show_all_panels_no_blendshapes():
     return settings.get_head(headnum).has_no_blendshapes()
 
 
-def _draw_update_blendshapes_panel(layout):
+def _draw_update_blendshapes_panel(layout: Any) -> None:
     box = layout.box()
     col = box.column()
     col.alert = True
@@ -84,97 +85,16 @@ def _draw_update_blendshapes_panel(layout):
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
-def _pinmode_escaper(area: Area, window: Optional[Window],
-                     screen: Optional[Screen]) -> None:
+def fb_autoloader(headnum: int) -> None:
+    _log.output(f'FaceBuilder autoloader started: {headnum}')
     settings = fb_settings()
-    exit_area_localview(area, window, screen)
-    settings.pinmode = False
-    settings.viewport_state.show_ui_elements(area)
-    return None
-
-
-def _start_pinmode_escaper(context):
-    _log.output(f'_start_pinmode_escaper: area={context.area}')
-    bpy_timer_register(partial(_pinmode_escaper, context.area, context.window,
-                               context.screen), first_interval=0.01)
-
-
-def _exit_from_localview_button(layout, context):
-    if not common_loader().check_localview_without_pinmode(context.area):
-        return
-    col = layout.column()
-    col.alert = True
-    col.scale_y = 2.0
-    col.operator(Config.kt_exit_localview_idname)
-
-
-def _geomobj_delete_handler() -> None:
-    settings = fb_settings()
-    settings.force_out_pinmode = True
-    return None
-
-
-def _start_geomobj_delete_handler() -> None:
-    bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
-
-
-def _autoloader_handler(headnum: int) -> None:
-    _log.output(f'Head autoloader started: {headnum}')
-    if not FBLoader.load_model(headnum):
+    if not settings.loader().load_model(headnum):
         _log.error(f'Head autoloader failed: {headnum}')
     return None
 
 
-def _start_autoloader_handler(headnum: int) -> None:
-    bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
-
-
-def _draw_pins_panel(layout):
-    settings = fb_settings()
-    if settings is None:
-        return
-    headnum, camnum = settings.current_headnum, settings.current_camnum
-    col = layout.column(align=True)
-    col.scale_y = Config.btn_scale_y
-
-    if settings.get_head(headnum).should_use_emotions():
-        op = col.operator(FBConfig.fb_reset_expression_idname)
-        op.headnum = headnum
-        op.camnum = camnum
-
-    op = col.operator(FBConfig.fb_center_geo_idname)
-    op.headnum = headnum
-    op.camnum = camnum
-
-    op = col.operator(FBConfig.fb_remove_pins_idname)
-    op.headnum = headnum
-    op.camnum = camnum
-
-
-def _draw_camera_info(layout):
-    settings = fb_settings()
-    camera = settings.get_camera(settings.current_headnum,
-                                 settings.current_camnum)
-    if camera is None:
-        return
-
-    row = layout.row(align=True)
-    row.prop(camera, 'auto_focal_estimation')
-
-    row = layout.row(align=True)
-    row.active = not camera.auto_focal_estimation
-    row.prop(camera, 'focal')
-    row.operator(FBConfig.fb_image_info_idname, text='', icon='INFO')
-
-
-def _draw_expression_settings(layout, head):
-    if not head.should_use_emotions():
-        return
-    row = layout.row(align=True)
-    row.label(text='', icon='BLANK1')
-    col = row.column(align=True)
-    col.prop(head, 'lock_blinking')
-    col.prop(head, 'lock_neck_movement')
+def start_fb_autoloader(headnum: int) -> None:
+    bpy_timer_register(partial(fb_autoloader, headnum), first_interval=0.01)
 
 
 def poll_fb_common() -> bool:
@@ -290,18 +210,20 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
         draw_upgrade_license_box(layout, ProductType.FACEBUILDER)
 
         state, headnum = what_is_state()
+        settings = fb_settings()
+        loader = settings.loader()
 
-        if headnum >= 0 and FBLoader.is_not_loaded():
-            _start_autoloader_handler(headnum)
+        if headnum >= 0 and loader.is_not_loaded():
+            start_fb_autoloader(headnum)
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
-            if not FBLoader.viewport().viewport_is_working():
+            if not loader.viewport().viewport_is_working():
                 row = layout.row()
                 row.scale_y = 2.0
                 row.alert = True
                 row.operator(FBConfig.fb_unhide_head_idname, icon='HIDE_OFF')
-                _start_pinmode_escaper(context)
+                start_fb_pinmode_escaper(context)
 
             col = layout.column(align=True)
             self._draw_many_heads(col, active=False)
@@ -310,7 +232,7 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
-            _exit_from_localview_button(layout, context)
+            exit_from_localview_button(layout, context, ProductType.FACEBUILDER)
             return
 
         elif state == 'NO_HEADS':
@@ -318,14 +240,14 @@ class FB_PT_HeaderPanel(AllVisible, Panel):
             KTUpdater.call_updater(ProductType.ADDON)
             _fb_grace_timer.start()
             fb_license_timer.start_timer()
-            _exit_from_localview_button(layout, context)
+            exit_from_localview_button(layout, context, ProductType.FACEBUILDER)
             return
 
         else:
             col = layout.column(align=True)
             self._draw_many_heads(col)
             self._create_head_button(col)
-            _exit_from_localview_button(layout, context)
+            exit_from_localview_button(layout, context, ProductType.FACEBUILDER)
             KTUpdater.call_updater(ProductType.FACEBUILDER)
             _fb_grace_timer.start()
             fb_license_timer.start_timer()
@@ -382,10 +304,11 @@ class FB_PT_ViewsPanel(COMMON_FB_PT_ViewsPanel, Panel):
         return poll_fb_common()
 
 
-class FB_PT_Model(COMMON_FB_PT_Model, Panel):
+class FB_PT_ModelPanel(COMMON_FB_PT_ModelPanel, Panel):
     bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_model_panel_idname
     bl_label = 'Model'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -449,112 +372,46 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             op.headnum = headnum
 
 
-class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
+class FB_PT_AppearancePresetPanel(PresetPanel, Panel):
+    bl_idname = FBConfig.fb_appearance_preset_panel_idname
+    bl_label = 'Display Appearance Presets'
+    preset_subdir = 'keentools/facebuilder/appearance'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = FBConfig.fb_appearance_preset_add_idname
+    draw = Menu.draw_preset
+
+
+class FB_OT_AppearanceAddPreset(AddPresetBase, Operator):
+    bl_idname = FBConfig.fb_appearance_preset_add_idname
+    bl_label = 'Add Appearance Preset'
+    preset_menu = FBConfig.fb_appearance_preset_panel_idname
+
+    preset_defines = [
+        f'settings = bpy.context.scene.{Config.fb_global_var_name}'
+    ]
+    preset_values = [
+        'settings.wireframe_color',
+        'settings.wireframe_midline_color',
+        'settings.wireframe_special_color',
+        'settings.wireframe_opacity',
+        'settings.show_specials',
+        'settings.wireframe_backface_culling',
+        'settings.use_adaptive_opacity',
+        'settings.pin_size',
+        'settings.pin_sensitivity',
+    ]
+    preset_subdir = 'keentools/facebuilder/appearance'
+
+
+class FB_PT_AppearancePanel(COMMON_FB_PT_AppearancePanel, Panel):
+    bl_category = Config.fb_tab_category
     bl_idname = FBConfig.fb_appearance_panel_idname
     bl_label = 'Appearance'
+    bl_options = {'DEFAULT_CLOSED'}
 
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row(align=True)
-        row.active = False
-        row.operator(
-            FBConfig.fb_addon_setup_defaults_idname,
-            text='', icon='PREFERENCES', emboss=False)
-        row.operator(
-            FBConfig.fb_help_appearance_idname,
-            text='', icon='QUESTION', emboss=False)
-
-    def _appearance_pin_settings(self, settings, layout) -> None:
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Pins')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(FBConfig.fb_default_pin_settings_idname, text='',
-                     icon='LOOP_BACK', emboss=False, depress=False)
-        col.prop(settings, 'pin_size', slider=True)
-        col.prop(settings, 'pin_sensitivity', slider=True)
-
-    def _appearance_wireframe_settings(self, settings, layout) -> None:
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Wireframe')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(
-            FBConfig.fb_default_wireframe_settings_idname,
-            text='', icon='LOOP_BACK', emboss=False, depress=False)
-
-        split = col.split(factor=0.375, align=True)
-        split2 = split.split(factor=0.34, align=True)
-        split2.prop(settings, 'wireframe_color', text='')
-        split3 = split2.split(factor=0.5, align=True)
-        split3.prop(settings, 'wireframe_special_color', text='')
-        split3.prop(settings, 'wireframe_midline_color', text='')
-        split.prop(settings, 'wireframe_opacity', text='', slider=True)
-
-        row = layout.row(align=True)
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='R')
-        op.action = 'wireframe_red'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='G')
-        op.action = 'wireframe_green'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='B')
-        op.action = 'wireframe_blue'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='C')
-        op.action = 'wireframe_cyan'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='M')
-        op.action = 'wireframe_magenta'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='Y')
-        op.action = 'wireframe_yellow'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='K')
-        op.action = 'wireframe_black'
-        op = row.operator(FBConfig.fb_wireframe_color_idname, text='W')
-        op.action = 'wireframe_white'
-
-        col = layout.column(align=True)
-        col.prop(settings, 'show_specials')
-        col.prop(settings, 'wireframe_backface_culling')
-        col.prop(settings, 'use_adaptive_opacity')
-
-    def _appearance_image_adjustment(self, settings, layout) -> None:
-        camera = settings.get_camera(settings.current_headnum,
-                                     settings.current_camnum)
-        if not camera:
-            return
-
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Background')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(FBConfig.fb_reset_tone_mapping_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
-        col2 = col.column(align=True)
-        row = col2.row(align=True)
-        row.prop(camera, 'tone_exposure', slider=True)
-        row.operator(FBConfig.fb_reset_tone_exposure_idname,
-                     text='', icon='LOOP_BACK')
-        row = col.row(align=True)
-        row.prop(camera, 'tone_gamma', slider=True)
-        row.operator(FBConfig.fb_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
-
-    def draw(self, context):
-        layout = self.layout
-        settings = fb_settings()
-        if settings is None:
-            return
-
-        self._appearance_wireframe_settings(settings, layout)
-        self._appearance_pin_settings(settings, layout)
-        if settings.pinmode:
-            self._appearance_image_adjustment(settings, layout)
+    @classmethod
+    def poll(cls, context):
+        return poll_fb_common()
 
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
@@ -685,7 +542,9 @@ CLASSES_TO_REGISTER = (FB_PT_HeaderPanel,
                        FB_PT_UpdatesInstallationPanel,
                        FB_PT_ViewsPanel,
                        FB_PT_OptionsPanel,
-                       FB_PT_Model,
+                       FB_PT_ModelPanel,
+                       FB_OT_AppearanceAddPreset,
+                       FB_PT_AppearancePresetPanel,
                        FB_PT_AppearancePanel,
                        FB_PT_TexturePanel,
                        FB_PT_BlendShapesPanel,

@@ -22,7 +22,7 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ProductType, ft_settings
+from ..addon_config import Config, ProductType, ft_settings
 from ..geotracker_config import GTConfig
 from ..geotracker.viewport import GTViewport
 from ..utils.screen_text import KTScreenText
@@ -32,7 +32,6 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
-from ..preferences.user_preferences import UserPreferences
 from .edges import FTRasterEdgeShader3D
 from ..utils.coords import (pin_to_xyz_from_geo_mesh,
                             xy_to_xz_rotation_matrix_3x3,
@@ -54,11 +53,9 @@ class FTViewport(GTViewport):
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
-        self._mask2d = KTRasterMask(SpaceView3D, mask_color=(
-            *UserPreferences.get_value_safe('gt_mask_2d_color',
-                                            UserPreferences.type_color),
-            UserPreferences.get_value_safe('gt_mask_2d_opacity',
-                                           UserPreferences.type_float)))
+        self._mask2d = KTRasterMask(SpaceView3D,
+                                    mask_color=(*Config.gt_mask_2d_color,
+                                                Config.gt_mask_2d_opacity))
         self._draw_update_timer_handler: Optional[Callable] = None
 
         self.stabilization_region_point: Optional[Tuple[float, float]] = None

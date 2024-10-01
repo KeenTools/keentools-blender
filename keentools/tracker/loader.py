@@ -327,11 +327,11 @@ class Loader:
         return gt.add_pin(keyframe, pos)
 
     @classmethod
-    def move_pin(cls, keyframe: int, pin_idx: int, pos: Tuple[float, float],
-                 shift_x: float=0.0, shift_y: float=0.0) -> None:
+    def move_pin(cls, keyframe: int, pin_index: int, pos: Tuple[float, float],
+                 shift_x: float = 0.0, shift_y: float = 0.0) -> None:
         gt = cls.kt_geotracker()
-        if pin_idx < gt.pins_count():
-            gt.move_pin(keyframe, pin_idx,
+        if pin_index < gt.pins_count():
+            gt.move_pin(keyframe, pin_index,
                         image_space_to_frame(*pos, shift_x, shift_y))
 
     @classmethod

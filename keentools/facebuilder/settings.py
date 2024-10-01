@@ -41,7 +41,9 @@ from ..addon_config import (Config,
                             ProductType)
 from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
-from ..utils.coords import get_camera_border, projection_matrix
+from ..utils.coords import (get_camera_border,
+                            projection_matrix,
+                            get_image_space_coord)
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_shape_rigidity,
@@ -61,16 +63,14 @@ from .callbacks import (update_mesh_with_dialog,
                         update_head_focal,
                         update_camera_focal,
                         update_background_tone_mapping)
-from ..preferences.user_preferences import (UserPreferences,
-                                            universal_cached_getter,
-                                            universal_cached_setter)
 from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
 from ..utils.viewport_state import ViewportStateItem
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_scene,
                                 bpy_remove_object,
-                                bpy_abspath)
+                                bpy_abspath,
+                                get_scene_camera_shift)
 
 _log = KTLogger(__name__)
 
@@ -729,39 +729,27 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description='',
         name='Wireframe opacity',
-        default=UserPreferences.get_value_safe('fb_wireframe_opacity',
-                                               UserPreferences.type_float),
+        default=Config.fb_wireframe_opacity,
         min=0.0, max=1.0,
-        update=update_wireframe_func,
-        get=universal_cached_getter('fb_wireframe_opacity', 'float'),
-        set=universal_cached_setter('fb_wireframe_opacity'))
+        update=update_wireframe_func)
     wireframe_color: FloatVectorProperty(
         description='',
         name='Base mesh colour', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['default'][0],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_color'))
+        update=update_wireframe_image)
     wireframe_special_color: FloatVectorProperty(
         description='',
         name='Facial features colour', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_color_schemes['default'][1],
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_special_color'))
+        update=update_wireframe_image)
     wireframe_midline_color: FloatVectorProperty(
         description='',
         name='Midlines colour', subtype='COLOR',
-        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
-                                               UserPreferences.type_color),
+        default=Config.fb_midline_color,
         min=0.0, max=1.0,
-        update=update_wireframe_image,
-        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_cached_setter('fb_wireframe_midline_color'))
+        update=update_wireframe_image)
     show_specials: BoolProperty(
         description='',
         name='Highlight facial features', default=True, update=update_wireframe_image)
@@ -772,22 +760,16 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description='Set pin size in pixels',
         name='Size',
-        default=UserPreferences.get_value_safe('pin_size',
-                                               UserPreferences.type_float),
+        default=Config.pin_size,
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_size,
-        get=universal_cached_getter('pin_size', 'float'),
-        set=universal_cached_setter('pin_size'))
+        update=update_pin_size)
     pin_sensitivity: FloatProperty(
         name='Sensitivity', description='Active area in pixels',
-        default=UserPreferences.get_value_safe('pin_sensitivity',
-                                               UserPreferences.type_float),
+        default=Config.pin_sensitivity,
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_sensitivity,
-        get=universal_cached_getter('pin_sensitivity', 'float'),
-        set=universal_cached_setter('pin_sensitivity')
+        update=update_pin_sensitivity
     )
 
     # Other settings
@@ -827,6 +809,42 @@ class FBSceneSettings(PropertyGroup):
     selection_mode: BoolProperty(name='Selection mode', default=False)
     selection_x: FloatProperty(name='Selection X', default=0.0)
     selection_y: FloatProperty(name='Selection Y', default=0.0)
+
+    def start_selection(self, mouse_x: int, mouse_y: int) -> None:
+        self.selection_x = mouse_x
+        self.selection_y = mouse_y
+        self.selection_mode = True
+        self.do_selection(mouse_x, mouse_y)
+
+    def do_selection(self, mouse_x: int=0, mouse_y: int=0) -> None:
+        _log.output('DO SELECTION: {}'.format(self.selection_mode))
+        vp = self.loader().viewport()
+        selector = vp.selector()
+        if not self.selection_mode:
+            selector.clear_rectangle()
+            selector.create_batch()
+            return
+        selector.add_rectangle(self.selection_x, self.selection_y,
+                               mouse_x, mouse_y)
+        selector.create_batch()
+
+    def cancel_selection(self) -> None:
+        self.selection_mode = False
+        self.do_selection()
+
+    def end_selection(self, area: Area, mouse_x: int, mouse_y: int) -> None:
+        shift_x, shift_y = get_scene_camera_shift()
+        x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area,
+                                       shift_x, shift_y)
+        x2, y2 = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
+        vp = self.loader().viewport()
+        pins = vp.pins()
+        found_pins = pins.pins_inside_rectangle(x1, y1, x2, y2)
+        if pins.get_add_selection_mode():
+            pins.toggle_selected_pins(found_pins)
+        else:
+            pins.set_selected_pins(found_pins)
+        self.cancel_selection()
 
     tex_width: IntProperty(
         description="Width in pixels",

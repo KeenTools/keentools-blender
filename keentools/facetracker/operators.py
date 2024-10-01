@@ -698,9 +698,8 @@ class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
-        prefs = settings.preferences()
-        settings.pin_size = prefs.pin_size
-        settings.pin_sensitivity = prefs.pin_sensitivity
+        settings.pin_size = Config.pin_size
+        settings.pin_sensitivity = Config.pin_sensitivity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -713,11 +712,10 @@ class FT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
-        prefs = settings.preferences()
-        settings.wireframe_color = prefs.fb_wireframe_color
-        settings.wireframe_special_color = prefs.fb_wireframe_special_color
-        settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
-        settings.wireframe_opacity = prefs.fb_wireframe_opacity
+        settings.wireframe_color = Config.ft_color_schemes['default'][0]
+        settings.wireframe_special_color = Config.ft_color_schemes['default'][1]
+        settings.wireframe_midline_color = Config.ft_midline_color
+        settings.wireframe_opacity = Config.ft_wireframe_opacity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -755,8 +753,8 @@ class FT_OT_WireframeColor(Operator):
         _log.green(f'{self.__class__.__name__} execute action={self.action}')
         def _setup_colors_from_scheme(name):
             settings = ft_settings()
-            settings.wireframe_color = Config.fb_color_schemes[name][0]
-            settings.wireframe_special_color = Config.fb_color_schemes[name][1]
+            settings.wireframe_color = Config.ft_color_schemes[name][0]
+            settings.wireframe_special_color = Config.ft_color_schemes[name][1]
 
         if self.action == 'wireframe_red':
             _setup_colors_from_scheme('red')

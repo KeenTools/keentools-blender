@@ -37,6 +37,7 @@ from ..blender_independent_packages.pykeentools_loader import (
 from ..addon_config import (Config,
                             fb_settings,
                             gt_settings,
+                            ft_settings,
                             get_addon_preferences,
                             get_operator,
                             is_blender_supported,
@@ -58,9 +59,10 @@ from ..updater.utils import (preferences_current_active_updater_operators_info,
                              render_active_message,
                              KTUpdater)
 from .operators import get_product_license_manager
-from .hotkeys import (geotracker_keymaps_register,
-                      all_keymaps_unregister,
-                      facetracker_keymaps_register)
+from .hotkeys import (facebuilder_keymaps_register,
+                      geotracker_keymaps_register,
+                      facetracker_keymaps_register,
+                      all_keymaps_unregister)
 from ..common.license_checker import ft_license_timer, draw_upgrade_license_box
 
 
@@ -221,6 +223,22 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
             _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
             _log.output(f'{self.__class__.__name__} end >>>')
             return {'FINISHED'}
+        elif self.action == 'revert_gt_default_mask_colors':
+            settings = gt_settings()
+            settings.mask_3d_color = Config.gt_mask_3d_color
+            settings.mask_3d_opacity = Config.gt_mask_3d_opacity
+            settings.mask_2d_color = Config.gt_mask_2d_color
+            settings.mask_2d_opacity = Config.gt_mask_2d_opacity
+            _log.output(f'{self.__class__.__name__} end >>>')
+            return {'FINISHED'}
+        elif self.action == 'revert_ft_default_mask_colors':
+            settings = ft_settings()
+            settings.mask_3d_color = Config.gt_mask_3d_color
+            settings.mask_3d_opacity = Config.gt_mask_3d_opacity
+            settings.mask_2d_color = Config.gt_mask_2d_color
+            settings.mask_2d_opacity = Config.gt_mask_2d_opacity
+            _log.output(f'{self.__class__.__name__} end >>>')
+            return {'FINISHED'}
 
         _log.output(f'{self.__class__.__name__} cancelled >>>')
         return {'CANCELLED'}
@@ -318,15 +336,27 @@ def _update_gt_wireframe(addon_prefs: Any, context: Any) -> None:
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
 
 
+def _update_use_hotkeys(addon_prefs: Any, context: Any) -> None:
+    if addon_prefs.use_hotkeys:
+        if fb_settings().pinmode:
+            facebuilder_keymaps_register()
+        elif gt_settings().pinmode:
+            geotracker_keymaps_register()
+        elif ft_settings().pinmode:
+            facetracker_keymaps_register()
+    else:
+        all_keymaps_unregister()
+
+
 def _update_gt_hotkeys(addon_prefs: Any, context: Any) -> None:
-    if addon_prefs.gt_use_hotkeys:
+    if addon_prefs.use_hotkeys:
         geotracker_keymaps_register()
     else:
         all_keymaps_unregister()
 
 
 def _update_ft_hotkeys(addon_prefs: Any, context: Any) -> None:
-    if addon_prefs.ft_use_hotkeys:
+    if addon_prefs.use_hotkeys:
         facetracker_keymaps_register()
     else:
         all_keymaps_unregister()
@@ -387,6 +417,10 @@ class KTAddonPreferences(AddonPreferences):
     )
     facetracker_expanded: BoolProperty(
         name='KeenTools FaceTracker',
+        default=False
+    )
+    common_expanded: BoolProperty(
+        name='KeenTools Settings',
         default=False
     )
 
@@ -523,6 +557,31 @@ class KTAddonPreferences(AddonPreferences):
     )
 
     # Common User Preferences
+    prevent_view_rotation: BoolProperty(
+        name='Prevent accidental exit from Pin Mode',
+        get=universal_direct_getter('prevent_view_rotation', 'bool'),
+        set=universal_direct_setter('prevent_view_rotation'),
+        default=True
+    )
+    use_hotkeys: BoolProperty(
+        name='Use Hotkeys',
+        description='Enable Hotkeys: (L) Lock View. '
+                    '(Alt + Left Arrow) Previous keyframe. '
+                    '(Alt + Right Arrow) Next keyframe',
+        get=universal_direct_getter('use_hotkeys', 'bool'),
+        set=universal_direct_setter('use_hotkeys'),
+        default=True,
+        update = _update_use_hotkeys
+    )
+    auto_unbreak_rotation: BoolProperty(
+        name='Auto-apply Unbreak Rotation',
+        description='Automatically apply Unbreak Rotation to objects '
+                    'with gaps in animation curves',
+        get=universal_direct_getter('auto_unbreak_rotation', 'bool'),
+        set=universal_direct_setter('auto_unbreak_rotation'),
+        default=True
+    )
+
     pin_size: FloatProperty(
         description='Set pin size in pixels',
         name='Size', min=1.0, max=100.0,
@@ -1095,14 +1154,10 @@ class KTAddonPreferences(AddonPreferences):
     def _draw_facebuilder_preferences(self, layout: Any) -> None:
         col = self._make_indent_column(layout)
         self._draw_plugin_license_info(col, ProductType.FACEBUILDER)
-        col.separator()
-        self._draw_fb_user_preferences(col)
 
     def _draw_geotracker_preferences(self, layout: Any) -> None:
         col = self._make_indent_column(layout)
         self._draw_plugin_license_info(col, ProductType.GEOTRACKER)
-        col.separator()
-        self._draw_gt_user_preferences(col)
 
     def _draw_facetracker_preferences(self, layout: Any) -> None:
         ft_license_timer.start_timer()
@@ -1113,8 +1168,6 @@ class KTAddonPreferences(AddonPreferences):
                                  button=False, red_icon=False, separator=False)
         if Config.show_ft_licensing:
             self._draw_plugin_license_info(col, ProductType.FACETRACKER)
-        col.separator()
-        self._draw_ft_user_preferences(col)
 
     def _draw_unsupported_gpu_detected(self, layout: Any) -> None:
         box = layout.box()
@@ -1125,6 +1178,12 @@ class KTAddonPreferences(AddonPreferences):
         indent_row = layout.row(align=True)
         indent_row.label(text='', icon='BLANK1')
         return indent_row.column()
+
+    def _draw_common_settings(self, layout: Any) -> None:
+        col = self._make_indent_column(layout)
+        col.prop(self, 'prevent_view_rotation')
+        col.prop(self, 'use_hotkeys')
+        col.prop(self, 'auto_unbreak_rotation')
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -1169,3 +1228,10 @@ class KTAddonPreferences(AddonPreferences):
 
         if self.facetracker_expanded:
             self._draw_facetracker_preferences(layout)
+
+        row = layout.row(align=True)
+        row.prop(self, 'common_expanded', text='', emboss=False,
+                 icon=_expand_icon(self.common_expanded))
+        row.label(text='Settings')
+        if self.common_expanded:
+            self._draw_common_settings(layout)

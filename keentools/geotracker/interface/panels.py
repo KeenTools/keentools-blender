@@ -18,18 +18,16 @@
 
 import re
 from typing import Tuple, Optional, Any
-from functools import partial
 
-import bpy
-from bpy.types import Area, Panel, UIList
+from bpy.types import Area, Panel, UIList, Menu, Operator
+from bl_operators.presets import AddPresetBase
+from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              gt_settings,
                              geotracker_enabled,
-                             addon_pinmode,
-                             ProductType,
-                             common_loader)
+                             ProductType)
 from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
@@ -37,13 +35,15 @@ from ...updater.panels import (KTUpdater,
                                COMMON_PT_DownloadNotification,
                                COMMON_PT_DownloadingProblemPanel,
                                COMMON_PT_UpdatesInstallationPanel)
-from ..gtloader import GTLoader
-from ...utils.localview import exit_area_localview, check_context_localview
-from ...utils.viewport_state import force_show_ui_overlays
-from ...utils.bpy_common import bpy_timer_register
+from ...utils.bpy_common import bpy_timer_register, bpy_scene, bpy_data
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 from ...common.license_checker import gt_license_timer, draw_upgrade_license_box
+from ...common.escapers import (gt_pinmode_escaper_check,
+                                start_gt_pinmode_escaper,
+                                gt_calculating_escaper_check,
+                                start_gt_calculating_escaper,
+                                exit_from_localview_button)
 from ...utils.icons import KTIcons
 
 
@@ -51,56 +51,16 @@ _log = KTLogger(__name__)
 _gt_grace_timer = KTGraceTimer(ProductType.GEOTRACKER)
 
 
-def _pinmode_escaper(area: Area) -> None:
-    _log.error('_pinmode_escaper call')
-    GTLoader.out_pinmode()
-    exit_area_localview(area)
-    force_show_ui_overlays(area)
-    return None
-
-
-def _start_pinmode_escaper(context: Any) -> None:
-    if context.area:
-        bpy_timer_register(partial(_pinmode_escaper, context.area),
-                           first_interval=0.01)
-
-
-def _calculating_escaper() -> None:
-    _log.error('_calculating_escaper call')
-    settings = gt_settings()
-    settings.stop_calculating()
-    settings.user_interrupts = True
-
-
-def _start_calculating_escaper() -> None:
-    settings = gt_settings()
-    mode = settings.calculating_mode
-    if mode == 'TRACKING' or mode == 'REFINE':
-        bpy_timer_register(_calculating_escaper, first_interval=0.01)
-
-
 def _geomobj_delete_handler() -> None:
     settings = gt_settings()
     if settings.pinmode:
-        GTLoader.out_pinmode()
+        settings.loader().out_pinmode()
     settings.fix_geotrackers()
     return None
 
 
 def _start_geomobj_delete_handler() -> None:
     bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
-
-
-def _exit_from_localview_button(layout, context):
-    if not common_loader().check_localview_without_pinmode(context.area):
-        return
-    settings = gt_settings()
-    if settings.is_calculating():
-        return
-    col = layout.column()
-    col.alert = True
-    col.scale_y = 2.0
-    col.operator(Config.kt_exit_localview_idname)
 
 
 class View3DPanel(Panel):
@@ -231,7 +191,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         col = layout.column(align=True)
         self._output_geotrackers_list(col)
         self._geotracker_creation_button(col)
-        _exit_from_localview_button(layout, context)
+        exit_from_localview_button(layout, context, ProductType.GEOTRACKER)
 
         KTUpdater.call_updater(ProductType.GEOTRACKER
                                if len(gt_settings().trackers()) > 0
@@ -414,7 +374,7 @@ class GT_PT_MasksPanel(AllVisible):
                        show_threshold: bool = False) -> None:
         row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
-                        bpy.data, 'movieclips', text='')
+                        bpy_data(), 'movieclips', text='')
         op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                           text='', icon='FILEBROWSER')
         op.product = ProductType.GEOTRACKER
@@ -445,7 +405,7 @@ class GT_PT_MasksPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop_search(geotracker, 'compositing_mask',
-                        bpy.data, 'masks', text='')
+                        bpy_data(), 'masks', text='')
         row.prop(geotracker, 'compositing_mask_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
@@ -593,8 +553,6 @@ class GT_PT_TrackingPanel(AllVisible):
             row.operator(GTConfig.gt_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
-            if not GTLoader.viewport().viewport_is_working():
-                _start_pinmode_escaper(context)
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,
                               text='Start Pinmode', icon='HIDE_OFF',
@@ -717,9 +675,6 @@ class GT_PT_TrackingPanel(AllVisible):
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
-        else:
-            if settings.is_calculating():
-                _start_calculating_escaper()
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)
@@ -728,8 +683,47 @@ class GT_PT_TrackingPanel(AllVisible):
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
 
+        if gt_pinmode_escaper_check():
+            start_gt_pinmode_escaper(context)
 
-class GT_PT_AppearanceSettingsPanel(AllVisible):
+        if gt_calculating_escaper_check():
+            start_gt_calculating_escaper()
+
+
+class GT_PT_AppearancePresetPanel(PresetPanel, Panel):
+    bl_idname = GTConfig.gt_appearance_preset_panel_idname
+    bl_label = 'Display Appearance Presets'
+    preset_subdir = 'keentools/geotracker/appearance'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = GTConfig.gt_appearance_preset_add_idname
+    draw = Menu.draw_preset
+
+
+class GT_OT_AppearanceAddPreset(AddPresetBase, Operator):
+    bl_idname = GTConfig.gt_appearance_preset_add_idname
+    bl_label = 'Add Appearance Preset'
+    preset_menu = GTConfig.gt_appearance_preset_panel_idname
+
+    preset_defines = [
+        f'settings = bpy.context.scene.{Config.gt_global_var_name}'
+    ]
+    preset_values = [
+        'settings.wireframe_color',
+        'settings.wireframe_opacity',
+        'settings.wireframe_backface_culling',
+        'settings.lit_wireframe',
+        'settings.use_adaptive_opacity',
+        'settings.pin_size',
+        'settings.pin_sensitivity',
+        'settings.mask_3d_color',
+        'settings.mask_3d_opacity',
+        'settings.mask_2d_color',
+        'settings.mask_2d_opacity',
+    ]
+    preset_subdir = 'keentools/geotracker/appearance'
+
+
+class GT_PT_AppearancePanel(AllVisible):
     bl_idname = GTConfig.gt_appearance_panel_idname
     bl_label = 'Appearance'
     bl_options = {'DEFAULT_CLOSED'}
@@ -738,14 +732,12 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(
             GTConfig.gt_default_wireframe_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
-
+        col.separator(factor=0.4)
         split = col.split(factor=0.25, align=True)
         split.prop(settings, 'wireframe_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
@@ -757,13 +749,12 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
         btn.operator(
             GTConfig.gt_default_pin_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col.separator(factor=0.4)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
 
@@ -775,29 +766,52 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Background')
-        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(GTConfig.gt_reset_tone_mapping_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
-        col2 = col.column(align=True)
-        row = col2.row(align=True)
-        row.prop(geotracker, 'tone_exposure', slider=True)
-        row.operator(GTConfig.gt_reset_tone_exposure_idname,
-                     text='', icon='LOOP_BACK')
+        op = btn.operator(GTConfig.gt_reset_tone_mapping_idname,
+                          text='', icon='LOOP_BACK',
+                          emboss=False, depress=False)
+        op.product = ProductType.GEOTRACKER
+        col.separator(factor=0.4)
+        col.prop(geotracker, 'tone_exposure', slider=True)
+        col.prop(geotracker, 'tone_gamma', slider=True)
+
+    def _mask_colors(self, settings: Any, layout: Any) -> None:
+        factor1 = 0.3
+        factor2 = 0.22
+        col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(geotracker, 'tone_gamma', slider=True)
-        row.operator(GTConfig.gt_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
+        row.label(text='Mask color')
+        btn = row.column(align=True)
+        btn.active = False
+        op = btn.operator(Config.kt_user_preferences_changer,
+                          text='', icon='LOOP_BACK', emboss=False)
+        op.action = 'revert_gt_default_mask_colors'
+        col.separator(factor=0.4)
+
+        split = col.split(factor=factor1, align=True)
+        split.label(text='Surface')
+        row = split.row(align=True)
+        split2 = row.split(factor=factor2, align=True)
+        split2.prop(settings, 'mask_3d_color', text='')
+        split2.prop(settings, 'mask_3d_opacity', text='', slider=True)
+
+        split = col.split(factor=factor1, align=True)
+        split.label(text='2D')
+        row = split.row(align=True)
+        split2 = row.split(factor=factor2, align=True)
+        split2.prop(settings, 'mask_2d_color', text='')
+        split2.prop(settings, 'mask_2d_opacity', text='', slider=True)
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row(align=True)
-        row.active = False
-        row.operator(GTConfig.gt_addon_setup_defaults_idname,
-                     text='', icon='PREFERENCES', emboss=False)
-        row.operator(GTConfig.gt_help_appearance_idname,
+        row.emboss = 'NONE'
+        row.popover(text='', icon='PRESET',
+                    panel=GTConfig.gt_appearance_preset_panel_idname)
+        col = row.column(align=True)
+        col.active = False
+        col.operator(GTConfig.gt_help_appearance_idname,
                      text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
@@ -805,7 +819,9 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         settings = gt_settings()
         self._appearance_wireframe_settings(settings, layout)
         self._appearance_pin_settings(settings, layout)
-        self._appearance_image_adjustment(settings, layout)
+        self._mask_colors(settings, layout)
+        if settings.pinmode:
+            self._appearance_image_adjustment(settings, layout)
 
 
 class GT_UL_selected_frame_list(UIList):
@@ -1053,9 +1069,9 @@ class GT_PT_RenderingPanel(AllVisible):
 
         box = layout.box()
         col = box.column(align=True)
-        col.prop(bpy.context.scene.render, 'film_transparent',
+        col.prop(bpy_scene().render, 'film_transparent',
                  text='Transparent background')
-        col.prop(bpy.context.scene, 'use_nodes',
+        col.prop(bpy_scene(), 'use_nodes',
                  text='Use compositing nodes')
 
 

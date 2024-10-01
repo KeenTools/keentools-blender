@@ -965,9 +965,8 @@ class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = fb_settings()
-        prefs = settings.preferences()
-        settings.pin_size = prefs.pin_size
-        settings.pin_sensitivity = prefs.pin_sensitivity
+        settings.pin_size = Config.pin_size
+        settings.pin_sensitivity = Config.pin_sensitivity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -980,11 +979,10 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         settings = fb_settings()
-        prefs = settings.preferences()
-        settings.wireframe_color = prefs.fb_wireframe_color
-        settings.wireframe_special_color = prefs.fb_wireframe_special_color
-        settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
-        settings.wireframe_opacity = prefs.fb_wireframe_opacity
+        settings.wireframe_color = Config.fb_color_schemes['default'][0]
+        settings.wireframe_special_color = Config.fb_color_schemes['default'][1]
+        settings.wireframe_midline_color = Config.fb_midline_color
+        settings.wireframe_opacity = Config.fb_wireframe_opacity
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 

@@ -29,9 +29,6 @@ from ..addon_config import Config, ProductType
 from .gtloader import GTLoader
 from ..utils.bpy_common import (bpy_poll_is_mesh,
                                 bpy_poll_is_camera)
-from ..preferences.user_preferences import (UserPreferences,
-                                            universal_cached_getter,
-                                            universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
 from .callbacks import (update_camobj,
                         update_geomobj,
@@ -304,16 +301,14 @@ class GTSceneSettings(TRSceneSetting):
 
     wireframe_opacity: FloatProperty(
         name='GeoTracker wireframe Opacity',
-        default=UserPreferences.get_value_safe('gt_wireframe_opacity',
-                                               UserPreferences.type_float),
+        default=Config.gt_wireframe_opacity,
         min=0.0, max=1.0,
         update=update_wireframe)
 
     wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('gt_wireframe_color',
-                                               UserPreferences.type_color),
+        default=Config.gt_wireframe_color,
         min=0.0, max=1.0,
         update=update_wireframe)
 
@@ -329,23 +324,17 @@ class GTSceneSettings(TRSceneSetting):
 
     pin_size: FloatProperty(
         name='Size', description='Pin size in pixels',
-        default=UserPreferences.get_value_safe('pin_size',
-                                               UserPreferences.type_float),
+        default=Config.pin_size,
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_size,
-        get=universal_cached_getter('pin_size', 'float'),
-        set=universal_cached_setter('pin_size')
+        update=update_pin_size
     )
     pin_sensitivity: FloatProperty(
         name='Sensitivity', description='Active area in pixels',
-        default=UserPreferences.get_value_safe('pin_sensitivity',
-                                               UserPreferences.type_float),
+        default=Config.pin_sensitivity,
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_sensitivity,
-        get=universal_cached_getter('pin_sensitivity', 'float'),
-        set=universal_cached_setter('pin_sensitivity')
+        update=update_pin_sensitivity
     )
 
     anim_start: IntProperty(name='from', default=1)

@@ -125,6 +125,8 @@ class FBConfig:
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
     fb_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
 
+    fb_appearance_preset_add_idname = operators + '.appearance_preset_add'
+
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'
 
@@ -133,6 +135,7 @@ class FBConfig:
     fb_views_panel_idname = _PT + 'views_panel'
     fb_options_panel_idname = _PT + 'options_panel'
     fb_model_panel_idname = _PT + 'model_panel'
+    fb_appearance_preset_panel_idname = _PT + 'appearance_preset_panel'
     fb_appearance_panel_idname = _PT + 'appearance_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
@@ -210,6 +213,8 @@ class FBConfig:
 
     # Colors
     pin_color = (1.0, 0.0, 0.0, 1.0)
-    current_pin_color = (1.0, 0.0, 1.0, 1.0)
+    current_pin_color = (0.0, 1.0, 0.0, 1.0)
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
+    disabled_pin_color = (1.0, 1.0, 0.0, 1.0)
+    selected_pin_color = (0.0, 1.0, 1.0, 1.0)

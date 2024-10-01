@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Set, Optional, Tuple, Callable
+from typing import Any, Set, Optional, Tuple, Callable, List
 from uuid import uuid4
 
 from bpy.types import Area, Operator, Object
@@ -191,7 +191,7 @@ class PinMode(Operator):
 
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
-            return self._delete_found_pin(nearest, area)
+            return self._delete_pins([nearest])
 
         vp.pins().clear_selected_pins()
         vp.create_batch_2d(area)
@@ -199,18 +199,27 @@ class PinMode(Operator):
         _log.output('_on_right_mouse_press end >>>')
         return {'RUNNING_MODAL'}
 
-    def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.green('_delete_found_pin start')
-        settings = self.get_settings()
-        loader = settings.loader()
-        gt = loader.kt_geotracker()
-        gt.remove_pin(nearest)
-        loader.viewport().pins().remove_pin(nearest)
-        _log.output('PIN REMOVED {}'.format(nearest))
+    def _delete_pins(self, pin_index_list: List[int]) -> Set:
+        _log.green('_delete_pins start')
+        if len(pin_index_list) == 0:
+            _log.red('_delete_pins: no pins to remove >>>')
+            return {'RUNNING_MODAL'}
 
+        settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'FINISHED'}
+
+        loader = settings.loader()
+        gt = loader.kt_geotracker()
+        vp = loader.viewport()
+        pins = vp.pins()
+
+        pin_index_list.sort()
+        for i in reversed(pin_index_list):
+            gt.remove_pin(i)
+            pins.remove_pin(i)
+            _log.output(f'GT PIN REMOVED {i}')
 
         kid = bpy_current_frame()
         loader.safe_keyframe_add(kid)
@@ -219,8 +228,6 @@ class PinMode(Operator):
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
         self.recalculate_focal(False)
-
-        vp = loader.viewport()
 
         if loader.product_type() == ProductType.FACETRACKER:
             wf = vp.wireframer()
@@ -240,13 +247,13 @@ class PinMode(Operator):
             wf.init_geom_data_from_mesh(geotracker.geomobj)
             wf.create_batches()
 
-        vp.create_batch_2d(area)
-        vp.update_residuals(gt, area, kid)
-        vp.tag_redraw()
-
+        loader.update_viewport_shaders(wireframe=True,
+                                       pins_and_residuals=True,
+                                       tag_redraw=True)
         loader.save_geotracker()
-        force_undo_push('Delete GeoTracker pin')
-        _log.output('_delete_found_pin end >>>')
+        force_undo_push(
+            'Remove pin' if len(pin_index_list) == 1 else 'Remove pins')
+        _log.output('_delete_pins end >>>')
         return {'RUNNING_MODAL'}
 
     def _new_pinmode_id(self) -> None:
@@ -511,7 +518,7 @@ class PinMode(Operator):
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            if settings.preferences().prevent_gt_view_rotation:
+            if settings.preferences().prevent_view_rotation:
                 # Return back to the camera view
                 bpy_view_camera()
             else:
@@ -547,18 +554,29 @@ class PinMode(Operator):
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
+            pins = vp.pins()
             if settings.selection_mode:
                 settings.cancel_selection()
-                settings.set_add_selection_mode(False)
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
                 vp.tag_redraw()
-                _log.red(f'{self.__class__.__name__} selection ESC -- finished >>>')
+                _log.red(f'{self.__class__.__name__} selection ESC >>>')
                 return {'RUNNING_MODAL'}
             if not bpy_background_mode() and bpy_is_animation_playing():
                 _log.output('STOP ANIMATION PLAYBACK')
                 return {'PASS_THROUGH'}
-            _log.output('Exit pinmode by ESC')
-            loader.out_pinmode()
+            if len(pins.get_selected_pins()) != 0:
+                pins.clear_selected_pins()
+                settings.cancel_selection()
+                self._set_shift_pressed(False)
+                pins.set_add_selection_mode(False)
+                loader.update_viewport_shaders(pins_and_residuals=True,
+                                               tag_redraw=True)
+                _log.red(f'{self.__class__.__name__} deselect by ESC >>>')
+                return {'RUNNING_MODAL'}
 
+            _log.red('Exit pinmode by ESC')
+            loader.out_pinmode()
             self.on_finish()
             _log.red(f'{self.__class__.__name__} Exit by ESC -- finished >>>')
             return {'FINISHED'}
@@ -617,5 +635,11 @@ class PinMode(Operator):
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE' \
                 and not settings.is_calculating():
             return self._on_right_mouse_press(context.area, event)
+
+        if event.value == 'PRESS' and event.type in {'BACK_SPACE', 'DEL'}:
+            selected_pins = vp.pins().get_selected_pins()
+            if len(selected_pins) == 0:
+                return {'PASS_THROUGH'}
+            return self._delete_pins(selected_pins)
 
         return {'PASS_THROUGH'}
