@@ -716,6 +716,9 @@ class FT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_special_color = Config.ft_color_schemes['default'][1]
         settings.wireframe_midline_color = Config.ft_midline_color
         settings.wireframe_opacity = Config.ft_wireframe_opacity
+        settings.show_specials = True
+        settings.wireframe_backface_culling = True
+        settings.use_adaptive_opacity = True
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
