@@ -525,6 +525,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
 
+    def set_selection_fill_color(self, color: Tuple) -> None:
+        self.selection_fill_color = color
+
     def set_viewport_size(self, region: Any):
         if not region or not region.width or not region.height:
             return

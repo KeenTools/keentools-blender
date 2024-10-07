@@ -367,7 +367,8 @@ def update_mask_3d_color(settings, context: Any) -> None:
     loader = settings.loader()
     vp = loader.viewport()
     wf = vp.wireframer()
-    wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
+    wf.set_selection_fill_color((*settings.mask_3d_color,
+                                 settings.mask_3d_opacity))
     if settings.pinmode:
         loader.update_viewport_shaders(wireframe=True, wireframe_colors=True)
     _log.output('ft update_mask_3d_color end >>>')

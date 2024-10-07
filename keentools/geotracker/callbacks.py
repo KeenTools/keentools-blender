@@ -346,7 +346,8 @@ def update_mask_3d_color(settings, context: Any) -> None:
     _log.green('update_mask_3d_color')
     vp = GTLoader.viewport()
     wf = vp.wireframer()
-    wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
+    wf.set_selection_fill_color((*settings.mask_3d_color,
+                                 settings.mask_3d_opacity))
     if settings.pinmode:
         GTLoader.update_viewport_shaders(wireframe_colors=True, wireframe=True)
     _log.output('update_mask_3d_color end >>>')

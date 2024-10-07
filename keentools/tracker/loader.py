@@ -688,6 +688,8 @@ class Loader:
                                             geotracker.mask_3d_inverted)
             wf.set_backface_culling(settings.wireframe_backface_culling)
             wf.set_lit_wireframe(settings.lit_wireframe)
+            wf.set_selection_fill_color((*settings.mask_3d_color,
+                                         settings.mask_3d_opacity))
         if geomobj_matrix:
             geotracker = settings.get_current_geotracker_item()
             if geotracker:
