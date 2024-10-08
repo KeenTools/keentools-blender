@@ -18,7 +18,6 @@
 
 from typing import Any, Callable, Optional, Tuple, Set, Dict, List
 from dataclasses import dataclass
-import os
 
 import bpy
 from bpy.types import Scene
@@ -609,3 +608,16 @@ _ft_loader_func = _init_ft_loader
 def license_checker_module() -> Any:
     from .common import license_checker
     return license_checker
+
+
+def show_unlicensed_warning(product: int = ProductType.UNDEFINED) -> None:
+    _log.output(f'show_unlicensed_warning call {product_name(product)}')
+    warn = get_operator(Config.kt_warning_idname)
+    if product == ProductType.FACEBUILDER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
+    elif product == ProductType.GEOTRACKER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoGeoTrackerLicense)
+    elif product == ProductType.FACETRACKER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceTrackerLicense)
+    else:
+        assert False, f'Unknown product in show_unlicensed_warning [{product}]'

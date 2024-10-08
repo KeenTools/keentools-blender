@@ -27,7 +27,8 @@ from ...addon_config import (Config,
                              get_operator,
                              ActionStatus,
                              get_settings,
-                             common_loader)
+                             common_loader,
+                             show_unlicensed_warning)
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
                              get_background_image_object,
@@ -42,7 +43,7 @@ from ...tracker.class_loader import KTClassLoader
 from ...utils.timer import RepeatTimer
 from .prechecks import common_checks, prepare_camera
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from .prechecks import show_warning_dialog, show_unlicensed_warning
+from .prechecks import show_warning_dialog
 from ..interface.screen_mesages import analysing_screen_message
 from ...tracker.calc_timer import CalcTimer
 from ...preferences.operators import get_product_license_manager

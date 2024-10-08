@@ -222,9 +222,7 @@ class FB_OT_MovePin(Operator):
         headobj = head.headobj
         kid = head.get_keyframe(camnum)
 
-        self._pin_drag(kid, area, mouse_x, mouse_y)
-
-        if not loader.solve(headnum, camnum):
+        if not self._pin_drag(kid, area, mouse_x, mouse_y):
             _log.error('MOVE PIN PROBLEM')
             return {'FINISHED'}
 

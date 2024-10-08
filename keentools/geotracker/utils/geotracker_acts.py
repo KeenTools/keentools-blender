@@ -32,7 +32,8 @@ from ...addon_config import (ActionStatus,
                              get_settings,
                              fb_settings,
                              ft_settings,
-                             product_name)
+                             product_name,
+                             show_unlicensed_warning)
 from ...geotracker_config import GTConfig
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
@@ -72,8 +73,7 @@ from .prechecks import (common_checks,
                         get_alone_ft_object_in_scene,
                         prepare_camera,
                         revert_camera,
-                        show_warning_dialog,
-                        show_unlicensed_warning)
+                        show_warning_dialog)
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
 from ...utils.images import (get_background_image_object,
