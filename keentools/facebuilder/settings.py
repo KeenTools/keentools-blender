@@ -811,13 +811,15 @@ class FBSceneSettings(PropertyGroup):
     selection_y: FloatProperty(name='Selection Y', default=0.0)
 
     def start_selection(self, mouse_x: int, mouse_y: int) -> None:
+        _log.green('start_selection start')
         self.selection_x = mouse_x
         self.selection_y = mouse_y
         self.selection_mode = True
         self.do_selection(mouse_x, mouse_y)
+        _log.output('start_selection end >>>')
 
     def do_selection(self, mouse_x: int=0, mouse_y: int=0) -> None:
-        _log.output('DO SELECTION: {}'.format(self.selection_mode))
+        _log.yellow(f'do_selection: selection_mode={self.selection_mode}')
         vp = self.loader().viewport()
         selector = vp.selector()
         if not self.selection_mode:
@@ -827,12 +829,16 @@ class FBSceneSettings(PropertyGroup):
         selector.add_rectangle(self.selection_x, self.selection_y,
                                mouse_x, mouse_y)
         selector.create_batch()
+        _log.output('do_selection end >>>')
 
     def cancel_selection(self) -> None:
+        _log.yellow('cancel_selection start')
         self.selection_mode = False
         self.do_selection()
+        _log.output('cancel_selection end >>>')
 
     def end_selection(self, area: Area, mouse_x: int, mouse_y: int) -> None:
+        _log.green('end_selection start')
         shift_x, shift_y = get_scene_camera_shift()
         x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area,
                                        shift_x, shift_y)
@@ -845,6 +851,7 @@ class FBSceneSettings(PropertyGroup):
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
+        _log.output('end_selection end >>>')
 
     tex_width: IntProperty(
         description="Width in pixels",

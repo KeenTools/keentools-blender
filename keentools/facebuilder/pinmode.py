@@ -674,6 +674,8 @@ class FB_OT_PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
+                if not self._is_shift_pressed():
+                    vp.pins().set_add_selection_mode(False)
                 loader.update_fb_viewport_shaders(pins_and_residuals=True)
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
