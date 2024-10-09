@@ -30,9 +30,12 @@ from ..addon_config import (Config,
                             fb_settings,
                             get_operator,
                             ErrorType,
+                            ProductType,
                             show_user_preferences,
+                            show_tool_preferences,
                             supported_gpu_backend,
-                            common_loader)
+                            common_loader,
+                            show_unlicensed_warning)
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (operator_with_context,
                                 bpy_view_camera,
@@ -550,10 +553,8 @@ class FB_OT_PinMode(Operator):
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
-                warn = get_operator(Config.kt_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
                 settings.license_error = False
-                show_user_preferences(facebuilder=False, geotracker=False)
+                show_unlicensed_warning(ProductType.FACEBUILDER)
             return True
 
         # Quit when camera rotated by user

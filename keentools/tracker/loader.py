@@ -24,10 +24,7 @@ from bpy.types import Area
 from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import (Config,
-                            get_operator,
-                            ErrorType,
-                            show_user_preferences,
+from ..addon_config import (show_unlicensed_warning,
                             ProductType,
                             ActionStatus)
 from ..geotracker.viewport import GTViewport
@@ -472,12 +469,7 @@ class Loader:
         except pkt_module().UnlicensedException as err:
             _log.error(f'solve UnlicensedException: \n{str(err)}')
             cls.out_pinmode()
-            show_user_preferences(facebuilder=False, geotracker=False)
-            warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT',
-                 msg=ErrorType.NoFaceTrackerLicense
-                 if settings.product_type() == ProductType.FACETRACKER
-                 else ErrorType.NoGeoTrackerLicense)
+            show_unlicensed_warning(settings.product_type())
             return False
         except Exception as err:
             _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')

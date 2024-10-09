@@ -506,8 +506,10 @@ class FB_OT_AddonSetupDefaults(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        show_user_preferences(facebuilder=True, geotracker=False)
-        show_tool_preferences(facebuilder=True, geotracker=False)
+        show_user_preferences(facebuilder=True, geotracker=False,
+                              facetracker=False)
+        show_tool_preferences(facebuilder=True, geotracker=False,
+                              facetracker=False)
         bpy_show_addon_preferences()
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}

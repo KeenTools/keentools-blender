@@ -734,8 +734,10 @@ class FT_OT_AddonSetupDefaults(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        show_user_preferences(facebuilder=False, geotracker=False, facetracker=True)
-        show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
+        show_user_preferences(facebuilder=False, geotracker=False,
+                              facetracker=True)
+        show_tool_preferences(facebuilder=False, geotracker=False,
+                              facetracker=True)
         bpy_show_addon_preferences()
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}

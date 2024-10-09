@@ -357,6 +357,8 @@ def check_addon_settings_var_type(name: str) -> Any:
 def show_user_preferences(*, facebuilder: Optional[bool] = None,
                           geotracker: Optional[bool] = None,
                           facetracker: Optional[bool] = None) -> None:
+    _log.yellow(f'show_user_preferences: '
+                f'fb={facebuilder} gt={geotracker} ft={facetracker}')
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.show_fb_user_preferences = facebuilder
@@ -369,6 +371,8 @@ def show_user_preferences(*, facebuilder: Optional[bool] = None,
 def show_tool_preferences(*, facebuilder: Optional[bool] = None,
                           geotracker: Optional[bool] = None,
                           facetracker: Optional[bool] = None) -> None:
+    _log.yellow(f'show_tool_preferences: '
+                f'fb={facebuilder} gt={geotracker} ft={facetracker}')
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.facebuilder_expanded = facebuilder
@@ -612,12 +616,17 @@ def license_checker_module() -> Any:
 
 def show_unlicensed_warning(product: int = ProductType.UNDEFINED) -> None:
     _log.output(f'show_unlicensed_warning call {product_name(product)}')
+    show_user_preferences(facebuilder=False, geotracker=False,
+                          facetracker=False)
     warn = get_operator(Config.kt_warning_idname)
     if product == ProductType.FACEBUILDER:
         warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
+        show_tool_preferences(facebuilder=True, geotracker=False, facetracker=False)
     elif product == ProductType.GEOTRACKER:
         warn('INVOKE_DEFAULT', msg=ErrorType.NoGeoTrackerLicense)
+        show_tool_preferences(facebuilder=False, geotracker=True, facetracker=False)
     elif product == ProductType.FACETRACKER:
         warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceTrackerLicense)
+        show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
     else:
         assert False, f'Unknown product in show_unlicensed_warning [{product}]'
