@@ -24,6 +24,7 @@ from bl_operators.presets import AddPresetBase
 from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
+from ...utils.version import BVersion
 from ...addon_config import (Config,
                              ft_settings, fb_settings,
                              facetracker_enabled,
@@ -1230,10 +1231,14 @@ class FT_PT_TexturePanel(AllVisible):
             op.product = ProductType.FACETRACKER
 
         layout.separator()
-        row = layout.row()
-        row.scale_y = Config.btn_scale_y
-        op = row.operator(GTConfig.gt_reproject_tex_sequence_idname)
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(GTConfig.gt_reproject_tex_sequence_idname)
         op.product = ProductType.FACETRACKER
+
+        if BVersion.debug_logging_mode:
+            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+            op.product = ProductType.FACETRACKER
 
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
