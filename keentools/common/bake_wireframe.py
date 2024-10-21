@@ -41,6 +41,7 @@ class LitWireframeRenderer(KTLitEdgeShaderLocal3D):
 
     def draw_main(self) -> None:
         set_depth_test('LESS_EQUAL')
+        set_depth_mask(True)
         set_color_mask(False, False, False, False)
         self.draw_empty_fill()
 
