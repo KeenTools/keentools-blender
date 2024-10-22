@@ -23,7 +23,11 @@ import bmesh
 from bpy.types import Object, Area, Mesh
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import fb_settings, ActionStatus, common_loader
+from ..addon_config import (fb_settings,
+                            ActionStatus,
+                            common_loader,
+                            ProductType,
+                            show_unlicensed_warning)
 from ..facebuilder_config import FBConfig
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             focal_by_projection_matrix_mm,
@@ -177,7 +181,7 @@ class FBLoader:
         headnum = settings.current_headnum
 
         _log.yellow(f'out_pinmode_without_save start: h={headnum}')
-        area = FBLoader.get_work_area()
+        area = cls.get_work_area()
         cls.stop_viewport_shaders()
 
         if settings.is_proper_headnum(headnum):
@@ -275,7 +279,7 @@ class FBLoader:
         camera = settings.get_camera(headnum, camnum)
         if camera is None:
             return
-        fb = FBLoader.get_builder()
+        fb = cls.get_builder()
         keyframe = camera.get_keyframe()
         if not fb.is_key_at(keyframe):
             fb.set_centered_geo_keyframe(keyframe)
@@ -485,7 +489,9 @@ class FBLoader:
             fb.solve_for_current_pins(kid)
             update_camera_focal(camera, fb)
         except pkt_module().UnlicensedException:
-            _exception_handling('SOLVE LICENSE EXCEPTION')
+            _exception_handling('SOLVE LICENSE EXCEPTION',
+                                license_err=True)
+            show_unlicensed_warning(ProductType.FACEBUILDER)
             _log.output(f'{cls.__name__} solve False 1 end >>>')
             return False
         except pkt_module().InvalidArgumentException:
@@ -657,7 +663,7 @@ class FBLoader:
         wf.init_geom_data_from_fb(fb, obj, keyframe)  # TODO: Optimize it!
         wf.init_edge_indices()
         geo = fb.applied_args_model_at(keyframe)
-        wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
+        wf.init_geom_data_from_core(*cls.get_geo_shader_data(geo))
         wf.create_batches()
         _log.output('_update_wireframe end >>>')
 

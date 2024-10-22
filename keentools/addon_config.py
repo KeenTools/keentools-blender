@@ -18,7 +18,6 @@
 
 from typing import Any, Callable, Optional, Tuple, Set, Dict, List
 from dataclasses import dataclass
-import os
 
 import bpy
 from bpy.types import Scene
@@ -35,12 +34,12 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2024.2.2'  # (3/6)
+    addon_version = '2024.2.3'  # (3/6)
     addon_version_tuple = tuple(map(int, addon_version.split('.')))
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
-                                  (3, 5), (3, 6), (4, 0), (4, 1), (4, 2))
+                                  (3, 5), (3, 6), (4, 0), (4, 1), (4, 2), (4, 3))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
@@ -358,6 +357,8 @@ def check_addon_settings_var_type(name: str) -> Any:
 def show_user_preferences(*, facebuilder: Optional[bool] = None,
                           geotracker: Optional[bool] = None,
                           facetracker: Optional[bool] = None) -> None:
+    _log.yellow(f'show_user_preferences: '
+                f'fb={facebuilder} gt={geotracker} ft={facetracker}')
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.show_fb_user_preferences = facebuilder
@@ -370,6 +371,8 @@ def show_user_preferences(*, facebuilder: Optional[bool] = None,
 def show_tool_preferences(*, facebuilder: Optional[bool] = None,
                           geotracker: Optional[bool] = None,
                           facetracker: Optional[bool] = None) -> None:
+    _log.yellow(f'show_tool_preferences: '
+                f'fb={facebuilder} gt={geotracker} ft={facetracker}')
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.facebuilder_expanded = facebuilder
@@ -609,3 +612,21 @@ _ft_loader_func = _init_ft_loader
 def license_checker_module() -> Any:
     from .common import license_checker
     return license_checker
+
+
+def show_unlicensed_warning(product: int = ProductType.UNDEFINED) -> None:
+    _log.output(f'show_unlicensed_warning call {product_name(product)}')
+    show_user_preferences(facebuilder=False, geotracker=False,
+                          facetracker=False)
+    warn = get_operator(Config.kt_warning_idname)
+    if product == ProductType.FACEBUILDER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceBuilderLicense)
+        show_tool_preferences(facebuilder=True, geotracker=False, facetracker=False)
+    elif product == ProductType.GEOTRACKER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoGeoTrackerLicense)
+        show_tool_preferences(facebuilder=False, geotracker=True, facetracker=False)
+    elif product == ProductType.FACETRACKER:
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoFaceTrackerLicense)
+        show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
+    else:
+        assert False, f'Unknown product in show_unlicensed_warning [{product}]'

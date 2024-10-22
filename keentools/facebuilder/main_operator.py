@@ -506,8 +506,10 @@ class FB_OT_AddonSetupDefaults(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        show_user_preferences(facebuilder=True, geotracker=False)
-        show_tool_preferences(facebuilder=True, geotracker=False)
+        show_user_preferences(facebuilder=True, geotracker=False,
+                              facetracker=False)
+        show_tool_preferences(facebuilder=True, geotracker=False,
+                              facetracker=False)
         bpy_show_addon_preferences()
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
@@ -983,6 +985,9 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_special_color = Config.fb_color_schemes['default'][1]
         settings.wireframe_midline_color = Config.fb_midline_color
         settings.wireframe_opacity = Config.fb_wireframe_opacity
+        settings.show_specials = True
+        settings.wireframe_backface_culling = True
+        settings.use_adaptive_opacity = True
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 

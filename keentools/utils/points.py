@@ -144,6 +144,7 @@ class KTScreenPins:
                         dtype=np.int32)
 
     def set_add_selection_mode(self, value: bool) -> None:
+        _log.green(f'set_add_selection_mode: {value}')
         self._add_selection_mode = value
 
     def get_add_selection_mode(self) -> bool:

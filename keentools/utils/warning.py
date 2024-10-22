@@ -88,7 +88,7 @@ class KT_OT_AddonWarning(Operator):
                         ErrorType.FBGracePeriod,
                         ErrorType.GTGracePeriod):
             op = get_operator(Config.kt_addon_settings_idname)
-            op('EXEC_DEFAULT', show='all')
+            op('EXEC_DEFAULT', show='no_changes')
 
         return {'FINISHED'}
 

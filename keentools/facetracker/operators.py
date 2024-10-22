@@ -684,8 +684,8 @@ class FT_OT_SplitVideoExec(Operator):
         op = get_operator(GTConfig.gt_split_video_to_frames_idname)
         op('INVOKE_DEFAULT', from_frame=1,
            to_frame=get_movieclip_duration(geotracker.movie_clip),
-           filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
-
+           filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath), ''),
+           product=ProductType.FACETRACKER)
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -716,6 +716,9 @@ class FT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_special_color = Config.ft_color_schemes['default'][1]
         settings.wireframe_midline_color = Config.ft_midline_color
         settings.wireframe_opacity = Config.ft_wireframe_opacity
+        settings.show_specials = True
+        settings.wireframe_backface_culling = True
+        settings.use_adaptive_opacity = True
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -731,8 +734,10 @@ class FT_OT_AddonSetupDefaults(Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        show_user_preferences(facebuilder=False, geotracker=False, facetracker=True)
-        show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
+        show_user_preferences(facebuilder=False, geotracker=False,
+                              facetracker=True)
+        show_tool_preferences(facebuilder=False, geotracker=False,
+                              facetracker=True)
         bpy_show_addon_preferences()
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}

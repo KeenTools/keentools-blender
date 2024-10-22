@@ -76,6 +76,9 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
 
+    def set_selection_fill_color(self, color: Tuple) -> None:
+        self.selection_fill_color = color
+
     def init_shaders(self) -> Optional[bool]:
         changes = False
         res = [True] * 2

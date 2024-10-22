@@ -229,7 +229,8 @@ class PinMode(Operator):
             return {'FINISHED'}
         self.recalculate_focal(False)
 
-        if loader.product_type() == ProductType.FACETRACKER:
+        product_is_facetracker = loader.product_type() == ProductType.FACETRACKER
+        if product_is_facetracker:
             wf = vp.wireframer()
             geo = gt.applied_args_model_at(kid)
             wf.init_geom_data_from_core(*loader.get_geo_shader_data(geo,
@@ -248,6 +249,8 @@ class PinMode(Operator):
             wf.create_batches()
 
         loader.update_viewport_shaders(wireframe=True,
+                                       wireframe_data=product_is_facetracker,
+                                       geomobj_matrix=True,
                                        pins_and_residuals=True,
                                        tag_redraw=True)
         loader.save_geotracker()
@@ -546,6 +549,8 @@ class PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
+                if not self._is_shift_pressed():
+                    vp.pins().set_add_selection_mode(False)
                 loader.update_viewport_shaders(pins_and_residuals=True)
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
