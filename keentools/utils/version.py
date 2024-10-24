@@ -74,3 +74,4 @@ class BVersion:
     # Property fields of operators cannot be inherited in old Blenders (< 2.93)
 
     demo_mode: bool = 'KEENTOOLS_ENABLE_DEMO_MODE' in os.environ
+    debug_logging_mode: bool = 'KEENTOOLS_ENABLE_DEBUG_LOGGING' in os.environ

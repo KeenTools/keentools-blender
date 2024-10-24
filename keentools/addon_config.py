@@ -100,6 +100,7 @@ class Config:
     kt_interrupt_modal_idname = operators + '.interrupt_modal'
 
     kt_actor_idname = operators + '.actor'
+    kt_bake_wireframe_sequence_idname = operators + '.bake_wireframe_sequence'
 
     kt_move_wrapper_idname = operators + '.move_wrapper'
     kt_pan_detector_idname = operators + '.pan_detector'
