@@ -131,6 +131,7 @@ class FTConfig:
     ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
     ft_cancel_choose_frame_idname = operators + '.cancel_choose_frame'
     ft_add_chosen_frame_idname = operators + '.add_chosen_frame'
+    ft_transfer_facs_animation_idname = operators + '.transfer_facs_animation'
 
     ft_appearance_preset_add_idname = operators + '.appearance_preset_add'
 

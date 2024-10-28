@@ -53,6 +53,7 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_set_current_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
+                                 bpy_data,
                                  bpy_scene,
                                  bpy_render_single_frame,
                                  bpy_scene_selected_objects,
@@ -106,6 +107,10 @@ from ...utils.unbreak import (mark_object_keyframes,
                               unbreak_rotation_act,
                               unbreak_rotation_with_status)
 from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ...utils.fcurve_operations import (get_safe_action_fcurve,
+                                        put_anim_data_in_fcurve,
+                                        cleanup_keys_in_interval,
+                                        snap_keys_in_interval)
 
 
 _log = KTLogger(__name__)
@@ -1417,10 +1422,11 @@ def revert_default_render_action(*, product: int) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def save_facs_as_csv_action(*, filepath: str,
+def save_facs_as_csv_action(*, filepath: Optional[str] = None,
                             from_frame: int = 1,
                             to_frame: int = 1,
-                            use_tracked_only: bool = False) -> ActionStatus:
+                            use_tracked_only: bool = False,
+                            facs_animation_object: Optional[Any] = None) -> ActionStatus:
     _log.yellow(f'save_facs_as_csv_action start')
     check_status = common_checks(product=ProductType.FACETRACKER,
                                  object_mode=True, is_calculating=True,
@@ -1444,7 +1450,9 @@ def save_facs_as_csv_action(*, filepath: str,
         neutral_geo = ft.scaled_input_geo()
         face_model_scale = ft.get_face_model_scale()
         facs_executor = pkt_module().FacsExecutor(neutral_geo, face_model_scale)
-        facs_animation = pkt_module().FacsAnimation()
+        facs_animation = facs_animation_object \
+            if facs_animation_object is not None \
+            else pkt_module().FacsAnimation()
 
         if not use_tracked_only:
             frames = [x for x in range(from_frame, to_frame + 1)]
@@ -1461,18 +1469,66 @@ def save_facs_as_csv_action(*, filepath: str,
             frame_count += 1
             bpy_progress_update(frame_count)
 
-        bpy_progress_end()
-
-        res = facs_animation.save_as_csv_to_file(filepath, fps)
-        if not res:
-            return ActionStatus(False, 'Cannot save FACS animation as CSV')
+        if filepath is not None:
+            res = facs_animation.save_as_csv_to_file(filepath, fps)
+            if not res:
+                return ActionStatus(False, 'Cannot save FACS animation as CSV')
+            res_str = 'ok'
+        else:
+            res_str = facs_animation.save_as_csv_to_string(fps)
     except Exception as err:
         _log.error(f'save_facs_as_csv_action Exception:\n{str(err)}')
-        bpy_progress_end()
         return ActionStatus(False, 'Exception while save FACS animation')
+    finally:
+        bpy_progress_end()
+        _log.output(f'save_facs_as_csv_action '
+                    f'time: {time.time() - start_time:.2f} sec. end >>>')
+    return ActionStatus(True, res_str)
 
-    _log.output(f'save_facs_as_csv_action '
-                f'time: {time.time() - start_time:.2f} sec. end >>>')
+
+def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
+                                  use_tracked_only: bool = False,
+                                  obj: Object) -> ActionStatus:
+    _log.yellow(f'save_facs_as_csv_action start')
+    facs_animation = pkt_module().FacsAnimation()
+    save_status = save_facs_as_csv_action(filepath=None,
+                                          from_frame=from_frame,
+                                          to_frame=to_frame,
+                                          use_tracked_only=use_tracked_only,
+                                          facs_animation_object=facs_animation)
+    if not save_status.success:
+        return save_status
+
+    facs_names = pkt_module().FacsExecutor.facs_names
+    action_name = 'ktFACS_anim'
+    blendshapes_action = bpy_data().actions.new(action_name)
+
+    for name in facs_names:
+        blendshape_fcurve = get_safe_action_fcurve(
+            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+
+        keyframes = [x for x in facs_animation.keyframes()]
+        if len(keyframes) > 0:
+            start_keyframe = keyframes[0]
+            end_keyframe = keyframes[-1]
+        else:
+            start_keyframe = 0
+            end_keyframe = -1
+        cleanup_keys_in_interval(blendshape_fcurve,
+                                 start_keyframe, end_keyframe)
+
+        anim_data = [x for x in zip(keyframes, facs_animation.at_name(name))]
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        snap_keys_in_interval(blendshape_fcurve,
+                              start_keyframe, end_keyframe)
+
+    if not obj.data.shape_keys:
+        obj.shape_key_add(name='Basis')
+    if not obj.data.shape_keys.animation_data:
+        obj.data.shape_keys.animation_data_create()
+    obj.data.shape_keys.animation_data.action = blendshapes_action
+    obj.data.update()
+
     return ActionStatus(True, 'ok')
 
 

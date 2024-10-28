@@ -1179,6 +1179,8 @@ class FT_PT_ScenePanel(AllVisible):
             op = row.operator(FTConfig.ft_export_animated_empty_idname)
             op.product = ProductType.FACETRACKER
 
+        layout.operator(FTConfig.ft_transfer_facs_animation_idname)
+
 
 class FT_UL_selected_frame_list(UIList):
     bl_idname = FTConfig.ft_selected_frame_list_item_idname

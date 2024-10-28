@@ -56,7 +56,8 @@ from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_end_frame,
                                 bpy_view_camera,
                                 bpy_current_frame,
-                                bpy_new_image)
+                                bpy_new_image,
+                                bpy_context)
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
@@ -83,7 +84,8 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 refine_all_async_action,
                                                 create_animated_empty_action,
                                                 create_soft_empties_from_selected_pins_action,
-                                                save_facs_as_csv_action)
+                                                save_facs_as_csv_action,
+                                                save_facs_as_animation_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 from ..preferences.hotkeys import (pan_keymaps_register,
                                    all_keymaps_unregister)
@@ -1312,6 +1314,45 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_TransferFACSAnimation(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_transfer_facs_animation_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        obj = bpy_context().object
+        if not obj or obj.type != 'MESH':
+            msg = 'Target object should be a Mesh object'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        settings = ft_settings()
+        for geotracker in settings.trackers():
+            if obj == geotracker.geomobj:
+                msg = 'Target object should not be a FaceTracker Geometry'
+                _log.error(msg)
+                self.report({'ERROR'}, msg)
+                return {'CANCELLED'}
+
+        save_facs_as_animation_action(from_frame=bpy_start_frame(),
+                                      to_frame=bpy_end_frame(),
+                                      use_tracked_only=True, obj=obj)
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -1353,4 +1394,5 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_CreateNewHead,
                   FT_OT_EditHead,
                   FT_OT_CancelChooseFrame,
-                  FT_OT_AddChosenFrame)
+                  FT_OT_AddChosenFrame,
+                  FT_OT_TransferFACSAnimation)

@@ -346,6 +346,10 @@ buttons = {
         'Take Snapshot',
         'Add current frame as a reference image for FaceBuilder'
     ),
+    FTConfig.ft_transfer_facs_animation_idname: Button(
+        'Transfer FACS animation',
+        'Transfer FACS animation to selected object'
+    ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
         'Clear menu',
