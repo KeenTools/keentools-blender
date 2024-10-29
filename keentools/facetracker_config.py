@@ -165,6 +165,7 @@ class FTConfig:
     ft_texture_panel_idname = _PT + 'texture_panel'
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
+    ft_export_panel_idname = _PT + 'export_panel'
     ft_support_panel_idname = _PT + 'support_panel'
     ft_choose_snapshot_frame_idname = _PT + 'choose_snapshot_frame_panel'
     ft_selected_frame_list_item_idname = _UL + 'selected_frame_list_item'

@@ -1317,6 +1317,55 @@ class FT_PT_TexturePanel(AllVisible):
             _draw_calculating_indicator(layout)
 
 
+class FT_PT_ExportPanel(View3DPanel):
+    bl_idname = FTConfig.ft_export_panel_idname
+    bl_label = 'Export'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        if _fb_head_in_ft_mode_active():
+            return False
+        facetracker = settings.get_current_geotracker_item()
+        if not facetracker.geomobj:
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.operator(FTConfig.ft_transfer_facs_animation_idname)
+        col.operator(FTConfig.ft_save_facs_idname)
+
+        if not BVersion.debug_logging_mode:
+            return
+
+        settings = ft_settings()
+        col = layout.column(align=True)
+        col.prop(settings, 'export_locator_selector', text='')
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            row = col.split(factor=0.4, align=True)
+            row.label(text='Orientation')
+            row.prop(settings, 'export_locator_orientation', text='')
+
+        if settings.export_locator_selector == 'SAVE_FACS':
+            col.operator(FTConfig.ft_save_facs_idname)
+        else:
+            row = col.split(factor=0.4, align=True)
+            row.prop(settings, 'export_linked_locator')
+            op = row.operator(FTConfig.ft_export_animated_empty_idname)
+            op.product = ProductType.FACETRACKER
+
+
 class FT_PT_SupportPanel(View3DPanel):
     bl_idname = FTConfig.ft_support_panel_idname
     bl_label = 'Support'
