@@ -1162,25 +1162,6 @@ class FT_PT_ScenePanel(AllVisible):
                           text='Bake')
         op.product = ProductType.FACETRACKER
 
-        layout.separator()
-
-        col = layout.column(align=True)
-        col.prop(settings, 'export_locator_selector', text='')
-        if settings.export_locator_selector == 'SELECTED_PINS':
-            row = col.split(factor=0.4, align=True)
-            row.label(text='Orientation')
-            row.prop(settings, 'export_locator_orientation', text='')
-
-        if settings.export_locator_selector == 'SAVE_FACS':
-            col.operator(FTConfig.ft_save_facs_idname)
-        else:
-            row = col.split(factor=0.4, align=True)
-            row.prop(settings, 'export_linked_locator')
-            op = row.operator(FTConfig.ft_export_animated_empty_idname)
-            op.product = ProductType.FACETRACKER
-
-        layout.operator(FTConfig.ft_transfer_facs_animation_idname)
-
 
 class FT_UL_selected_frame_list(UIList):
     bl_idname = FTConfig.ft_selected_frame_list_item_idname
@@ -1341,13 +1322,7 @@ class FT_PT_ExportPanel(View3DPanel):
     def draw(self, context):
         layout = self.layout
 
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(FTConfig.ft_transfer_facs_animation_idname)
-        col.operator(FTConfig.ft_save_facs_idname)
-
-        if not BVersion.debug_logging_mode:
-            return
+        layout.label(text='Empty')
 
         settings = ft_settings()
         col = layout.column(align=True)
@@ -1357,13 +1332,18 @@ class FT_PT_ExportPanel(View3DPanel):
             row.label(text='Orientation')
             row.prop(settings, 'export_locator_orientation', text='')
 
-        if settings.export_locator_selector == 'SAVE_FACS':
-            col.operator(FTConfig.ft_save_facs_idname)
-        else:
-            row = col.split(factor=0.4, align=True)
-            row.prop(settings, 'export_linked_locator')
-            op = row.operator(FTConfig.ft_export_animated_empty_idname)
-            op.product = ProductType.FACETRACKER
+        row = col.split(factor=0.4, align=True)
+        row.prop(settings, 'export_linked_locator')
+        op = row.operator(FTConfig.ft_export_animated_empty_idname)
+        op.product = ProductType.FACETRACKER
+
+        layout.label(text='MoCap')
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.operator(FTConfig.ft_transfer_facs_animation_idname)
+        col.operator(FTConfig.ft_transfer_facs_animation_idname,
+                     text='Transfer animation to rig')
+        col.operator(FTConfig.ft_save_facs_idname)
 
 
 class FT_PT_SupportPanel(View3DPanel):

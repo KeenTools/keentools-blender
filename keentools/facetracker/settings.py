@@ -474,8 +474,7 @@ class FTSceneSettings(TRSceneSetting):
              'Use Camera as animation source', 1),
             ('SELECTED_PINS', 'Selected pins',
              'Use selected pins as animation source', 2),
-            ('SAVE_FACS', 'FACS as a CSV file',
-             'Use selected pins as animation source', 3),],
+        ],
         description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(
