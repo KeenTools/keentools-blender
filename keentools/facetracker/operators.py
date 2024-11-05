@@ -1359,6 +1359,24 @@ class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    detect_scale: BoolProperty(
+        name='Detect scale',
+        default=True)
+    scale: FloatVectorProperty(
+        description='Scale movement data',
+        name='Scale', subtype='XYZ',
+        default=(1.0, 1.0, 1.0),
+        min=0.001, max=1000.0)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'detect_scale')
+        layout.prop(self, 'scale')
+
+    def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        return self.execute(context)
+
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
 
@@ -1381,14 +1399,15 @@ class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
         geotracker = settings.get_current_geotracker_item()
         ft = settings.loader().kt_geotracker()
 
-        transfer_status = transfer_animation_to_rig(obj=geotracker.geomobj,
+        transfer_status = transfer_animation_to_rig(operator=self,
+                                                    obj=geotracker.geomobj,
                                                     arm_obj=obj,
                                                     facetracker=ft,
                                                     use_tracked_only=True,
-                                                    detect_scale=True,
+                                                    detect_scale=self.detect_scale,
                                                     from_frame=bpy_start_frame(),
                                                     to_frame=bpy_end_frame(),
-                                                    scale=(1.0, 1.0, 1.0))
+                                                    scale=self.scale)
         if not transfer_status.success:
             self.report({'ERROR'}, transfer_status.error_message)
             return {'CANCELLED'}

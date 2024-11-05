@@ -25,12 +25,13 @@ from mathutils import Vector, Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import ActionStatus
-from ..utils.manipulate import select_object_only, switch_to_mode
+from ..utils.manipulate import (select_object_only,
+                                switch_to_object_mode,
+                                switch_to_edit_mode,
+                                switch_to_pose_mode)
 from ..utils.bpy_common import (update_depsgraph,
                                 bpy_set_current_frame,
                                 bpy_current_frame,
-                                bpy_start_frame,
-                                bpy_end_frame,
                                 bpy_progress_begin,
                                 bpy_progress_update,
                                 bpy_progress_end)
@@ -136,6 +137,7 @@ def _set_constraints_on_bones(arm_obj, bones_list, state=False):
 
 
 def transfer_animation_to_rig(*,
+                              operator: Any,
                               obj: Object,
                               arm_obj: Object,
                               facetracker: Any,
@@ -149,13 +151,14 @@ def transfer_animation_to_rig(*,
     all_points = get_control_point_array()
 
     select_object_only(arm_obj)
-    switch_to_mode('EDIT')
+    switch_to_edit_mode()
 
     points = [cpoint for cpoint in all_points
               if cpoint.name in arm_obj.data.edit_bones]
     if len(points) == 0:
         msg = f'No target bones in rig'
         _log.error(msg)
+        switch_to_object_mode()
         return ActionStatus(False, msg)
 
     if len(points) < len(all_points):
@@ -172,6 +175,7 @@ def transfer_animation_to_rig(*,
         if left_bone not in point_indices or right_bone not in point_indices:
             msg = 'No necessary eye bones in target rig'
             _log.error(msg)
+            switch_to_object_mode()
             return ActionStatus(False, msg)
 
         left_eye_arm_corner = arm_obj.data.edit_bones[left_bone].head.copy()
@@ -184,11 +188,12 @@ def transfer_animation_to_rig(*,
 
         sc_factor = base_arm.length / np.linalg.norm(base_eye_corner)
         sc = (sc_factor, sc_factor, sc_factor)
+        operator.scale = sc
     else:
         sc = scale
     _log.output(f'scale: {sc}')
 
-    switch_to_mode('POSE')
+    switch_to_pose_mode()
 
     constrained_bones = _find_bones_with_constraints(arm_obj, points)
     bone_dict = _get_constraint_states_on_bones(arm_obj, constrained_bones)
@@ -235,6 +240,6 @@ def transfer_animation_to_rig(*,
         bpy_progress_update(i)
 
     bpy_progress_end()
-    switch_to_mode('OBJECT')
+    switch_to_object_mode()
     bpy_set_current_frame(current_frame)
     return ActionStatus(True, 'ok')

@@ -64,12 +64,24 @@ def switch_to_mode(mode: str = 'OBJECT') -> None:
     bpy.ops.object.mode_set(mode=mode, toggle=False)
 
 
+def switch_to_object_mode() -> None:
+    switch_to_mode(mode='OBJECT')
+
+
+def switch_to_edit_mode() -> None:
+    switch_to_mode(mode='EDIT')
+
+
+def switch_to_pose_mode() -> None:
+    switch_to_mode(mode='POSE')
+
+
 def select_object_only(obj: Optional[Object]) -> None:
     _log.yellow(f'select_object_only: {obj}')
     if not obj:
         return
     if bpy.context.mode != 'OBJECT':
-        switch_to_mode('OBJECT')
+        switch_to_object_mode()
     deselect_all()
     if object_is_on_view_layer(obj):
         _log.output('object_is_on_view_layer')
