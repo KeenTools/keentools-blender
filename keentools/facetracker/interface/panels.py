@@ -1218,10 +1218,6 @@ class FT_PT_TexturePanel(AllVisible):
         op = col.operator(GTConfig.gt_reproject_tex_sequence_idname)
         op.product = ProductType.FACETRACKER
 
-        if BVersion.debug_logging_mode:
-            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
-            op.product = ProductType.FACETRACKER
-
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
         col = box.column()
@@ -1342,6 +1338,13 @@ class FT_PT_ExportPanel(View3DPanel):
         col.operator(FTConfig.ft_transfer_facs_animation_idname)
         col.operator(FTConfig.ft_transfer_animation_to_rig_idname)
         col.operator(FTConfig.ft_save_facs_idname)
+
+        if BVersion.debug_logging_mode:
+            layout.label(text='Render wireframe')
+            col = layout.column(align=True)
+            col.scale_y = Config.btn_scale_y
+            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+            op.product = ProductType.FACETRACKER
 
 
 class FT_PT_SupportPanel(View3DPanel):

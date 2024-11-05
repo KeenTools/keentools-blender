@@ -145,6 +145,7 @@ class GTConfig:
     gt_texture_panel_idname = _PT + 'texture_panel'
     gt_rendering_panel_idname = _PT + 'rendering_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
+    gt_export_panel_idname = _PT + 'export_panel'
     gt_support_panel_idname = _PT + 'support_panel'
     gt_selected_frame_list_item_idname = _UL + 'selected_frame_list_item'
 
