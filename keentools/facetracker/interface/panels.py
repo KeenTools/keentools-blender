@@ -606,12 +606,6 @@ class FT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
-
-        row = col.row(align=True)
-        row.scale_y = 1.5
-        row.operator(FTConfig.ft_pickmode_starter_idname,
-                     **KTIcons.key_value('align_face'))
-
         col.prop(settings, 'stabilize_viewport_enabled',
                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
@@ -710,6 +704,11 @@ class FT_PT_TrackingPanel(AllVisible):
         self._tracking_pinmode_button(settings, layout, context)
 
         if settings.pinmode:
+            row = layout.row(align=True)
+            row.scale_y = 1.5
+            row.operator(FTConfig.ft_pickmode_starter_idname,
+                         **KTIcons.key_value('align_face'))
+
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
