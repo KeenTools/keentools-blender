@@ -1341,8 +1341,7 @@ class FT_PT_ExportPanel(View3DPanel):
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
         col.operator(FTConfig.ft_transfer_facs_animation_idname)
-        col.operator(FTConfig.ft_transfer_facs_animation_idname,
-                     text='Transfer animation to rig')
+        col.operator(FTConfig.ft_transfer_animation_to_rig_idname)
         col.operator(FTConfig.ft_save_facs_idname)
 
 

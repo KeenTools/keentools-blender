@@ -350,6 +350,10 @@ buttons = {
         'Transfer FACS animation',
         'Transfer FACS animation to selected object'
     ),
+    FTConfig.ft_transfer_animation_to_rig_idname: Button(
+        'Transfer animation to rig',
+        'Transfer animation to rig description'
+    ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
         'Clear menu',
