@@ -1359,24 +1359,6 @@ class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    detect_scale: BoolProperty(
-        name='Detect scale',
-        default=True)
-    scale: FloatVectorProperty(
-        description='Scale movement data',
-        name='Scale', subtype='XYZ',
-        default=(1.0, 1.0, 1.0),
-        min=0.001, max=1000.0)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, 'detect_scale')
-        layout.prop(self, 'scale')
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        return self.execute(context)
-
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
 
@@ -1388,32 +1370,61 @@ class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        obj = bpy_context().object
+        settings = ft_settings()
+        obj = settings.transfer_facial_animation_armature
         if not obj or obj.type != 'ARMATURE':
             msg = 'Target object should be an Armature object'
             _log.error(msg)
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
-        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
-        ft = settings.loader().kt_geotracker()
 
-        transfer_status = transfer_animation_to_rig(operator=self,
-                                                    obj=geotracker.geomobj,
-                                                    arm_obj=obj,
-                                                    facetracker=ft,
-                                                    use_tracked_only=True,
-                                                    detect_scale=self.detect_scale,
-                                                    from_frame=bpy_start_frame(),
-                                                    to_frame=bpy_end_frame(),
-                                                    scale=self.scale)
+        transfer_status = transfer_animation_to_rig(
+            obj=geotracker.geomobj,
+            arm_obj=obj,
+            facetracker=settings.loader().kt_geotracker(),
+            use_tracked_only=True,
+            detect_scale=settings.transfer_facial_animation_detect_scale,
+            from_frame=bpy_start_frame(),
+            to_frame=bpy_end_frame(),
+            scale=tuple([settings.transfer_facial_animation_scale] * 3))
         if not transfer_status.success:
             self.report({'ERROR'}, transfer_status.error_message)
             return {'CANCELLED'}
 
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
+
+
+class FT_OT_TransferAnimationToRigOptions(Operator):
+    bl_idname = FTConfig.ft_transfer_animation_to_rig_options_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        settings = ft_settings()
+        if settings is None:
+            return
+
+        col = layout.column(align=True)
+        col.prop(settings, 'transfer_facial_animation_detect_scale')
+        row = col.row()
+        row.enabled = not settings.transfer_facial_animation_detect_scale
+        row.prop(settings, 'transfer_facial_animation_scale')
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        return context.window_manager.invoke_props_dialog(self, width=350)
 
 
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
@@ -1459,4 +1470,5 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_CancelChooseFrame,
                   FT_OT_AddChosenFrame,
                   FT_OT_TransferFACSAnimation,
-                  FT_OT_TransferAnimationToRig)
+                  FT_OT_TransferAnimationToRig,
+                  FT_OT_TransferAnimationToRigOptions)

@@ -1160,14 +1160,8 @@ class KTAddonPreferences(AddonPreferences):
         self._draw_plugin_license_info(col, ProductType.GEOTRACKER)
 
     def _draw_facetracker_preferences(self, layout: Any) -> None:
-        ft_license_timer.start_timer()
         col = self._make_indent_column(layout)
-        draw_upgrade_license_box(col, ProductType.FACETRACKER,
-                                 days_left_template='Beta: {} days left',
-                                 over_template='Current Beta expired. Check Update!',
-                                 button=False, red_icon=False, separator=False)
-        if Config.show_ft_licensing:
-            self._draw_plugin_license_info(col, ProductType.FACETRACKER)
+        self._draw_plugin_license_info(col, ProductType.FACETRACKER)
 
     def _draw_unsupported_gpu_detected(self, layout: Any) -> None:
         box = layout.box()
@@ -1224,7 +1218,7 @@ class KTAddonPreferences(AddonPreferences):
         row.prop(self, 'facetracker_expanded', text='', emboss=False,
                  icon=_expand_icon(self.facetracker_expanded))
         row.prop(self, 'facetracker_enabled', text='')
-        row.label(text='FaceTracker (Beta)')
+        row.label(text='FaceTracker')
 
         if self.facetracker_expanded:
             self._draw_facetracker_preferences(layout)

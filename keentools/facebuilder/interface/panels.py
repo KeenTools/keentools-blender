@@ -416,7 +416,7 @@ class FB_PT_AppearancePanel(COMMON_FB_PT_AppearancePanel, Panel):
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_blendshapes_panel_idname
-    bl_label = 'FACS Blendshapes'
+    bl_label = 'ARKit Blendshapes'
 
     @classmethod
     def poll(cls, context):

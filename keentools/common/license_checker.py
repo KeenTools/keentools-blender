@@ -169,7 +169,7 @@ def get_upgrade_url(*, product: int = ProductType.UNDEFINED,
                              days_left=license_status.days_left,
                              source=source)
     elif product == ProductType.FACETRACKER:
-        license_status = get_product_license_status(ProductType.GEOTRACKER)
+        license_status = get_product_license_status(ProductType.FACETRACKER)
         return url_with_data(plugin_name='facetracker',
                              days_left=license_status.days_left,
                              source=source)

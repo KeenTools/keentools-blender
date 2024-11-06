@@ -182,9 +182,11 @@ error_messages: Dict = {
         'Please check the license settings.'
     ]),
     ErrorType.NoFaceTrackerLicense: ErrorMessage(_default_width, [
-        'FaceTracker',
+        'FaceTracker license is not found',
         ' ',
-        'Current Beta expired. Check Update!'
+        'You have 0 days of trial left and there is no license installed',
+        'or something wrong has happened with the installed license.',
+        'Please check the license settings.'
     ]),
     ErrorType.SceneDamaged: ErrorMessage(_default_width, [
         'Scene was damaged',

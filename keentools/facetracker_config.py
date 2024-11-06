@@ -133,6 +133,7 @@ class FTConfig:
     ft_add_chosen_frame_idname = operators + '.add_chosen_frame'
     ft_transfer_facs_animation_idname = operators + '.transfer_facs_animation'
     ft_transfer_animation_to_rig_idname = operators + '.transfer_animation_to_rig'
+    ft_transfer_animation_to_rig_options_idname = operators + '.transfer_animation_to_rig_options'
 
     ft_appearance_preset_add_idname = operators + '.appearance_preset_add'
 

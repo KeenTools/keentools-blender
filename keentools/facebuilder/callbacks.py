@@ -290,7 +290,7 @@ def update_expression_view(head: Any, context: Any) -> None:
             'Expressions can\'t be used with blendshapes\n' \
             '\n' \
             'Unfortunately, using expressions for a model\n' \
-            'that has FACS blendshapes is impossible. \n' \
+            'that has ARKit blendshapes is impossible. \n' \
             'Please remove blendshapes before choosing an expression.'
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,

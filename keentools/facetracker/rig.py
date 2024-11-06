@@ -137,7 +137,6 @@ def _set_constraints_on_bones(arm_obj, bones_list, state=False):
 
 
 def transfer_animation_to_rig(*,
-                              operator: Any,
                               obj: Object,
                               arm_obj: Object,
                               facetracker: Any,
@@ -188,7 +187,6 @@ def transfer_animation_to_rig(*,
 
         sc_factor = base_arm.length / np.linalg.norm(base_eye_corner)
         sc = (sc_factor, sc_factor, sc_factor)
-        operator.scale = sc
     else:
         sc = scale
     _log.output(f'scale: {sc}')
