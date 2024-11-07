@@ -1331,14 +1331,14 @@ class FT_OT_TransferFACSAnimation(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        obj = bpy_context().object
+        settings = ft_settings()
+        obj = settings.transfer_facial_animation_mesh
         if not obj or obj.type != 'MESH':
             msg = 'Target object should be a Mesh object'
             _log.error(msg)
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
-        settings = ft_settings()
         for geotracker in settings.trackers():
             if obj == geotracker.geomobj:
                 msg = 'Target object should not be a FaceTracker Geometry'
