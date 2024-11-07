@@ -243,22 +243,24 @@ def poll_is_facebuilder_mesh(self: Any, obj: Optional[Object]) -> bool:
 
 
 def update_geomobj(geotracker, context: Any) -> None:
-    _log.yellow(f'ft update_geomobj: {geotracker.geomobj}')
+    _log.magenta(f'ft update_geomobj: {geotracker.geomobj} start')
     settings = ft_settings()
     loader = settings.loader()
     product = settings.product_type()
+    loader.increment_geo_hash()
 
     if not geotracker.geomobj:
         if settings.pinmode:
             loader.out_pinmode()
+        _log.output('ft update_geomobj 1 end >>>')
         return
 
     if not is_facebuilder_head_topology(geotracker.geomobj):
         msg = 'Geometry for FaceTracker should have KeenTools Head Topology'
         warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=msg)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage, msg_content=msg)
         geotracker.geomobj = None
+        _log.output('ft update_geomobj 2 end >>>')
         return
 
     loader.load_geotracker()
