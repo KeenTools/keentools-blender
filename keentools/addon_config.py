@@ -241,7 +241,7 @@ class Config:
 
     kt_convert_video_scene_name: str = 'kt_convert_video'
 
-    show_ft_licensing: bool = False
+    show_ft_licensing: bool = True
     show_trial_warnings: bool = True
 
     # Colors

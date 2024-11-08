@@ -270,15 +270,17 @@ class PinMode(Operator):
         product = settings.product_type()
         loader = settings.loader()
         if not loader.load_geotracker():
-            _log.output('NEW KT_GEOTRACKER')
+            _log.red('NEW KT_GEOTRACKER')
             loader.new_kt_geotracker()
 
         geotracker = settings.get_current_geotracker_item()
+        gt = loader.kt_geotracker()
+        _log.output(f'tracker_num: {settings.current_tracker_num()} {geotracker.geomobj}')
 
         self.perform_checks_before_pinmode()
-        geotracker.check_pins_on_geometry(loader.kt_geotracker())
+        geotracker.check_pins_on_geometry(gt)
 
-        _log.output('GT START SHADERS')
+        _log.output('TRACKER START SHADERS')
         loader.load_pins_into_viewport()
 
         settings.reload_mask_2d()
@@ -286,7 +288,7 @@ class PinMode(Operator):
 
         vp = loader.viewport()
         vp.create_batch_2d(area)
-        _log.output('GT REGISTER SHADER HANDLERS')
+        _log.output('TRACKER REGISTER SHADER HANDLERS')
         loader.update_viewport_shaders(area, wireframe_colors=True,
                                        wireframe_data=True,
                                        edge_indices=True,
@@ -381,7 +383,7 @@ class PinMode(Operator):
             how_to_show_wireframe_screen_message(product=product)
 
     def perform_checks_before_pinmode(self) -> None:
-        pass
+        _log.yellow(f'{self.__class__.__name__} perform_checks_before_pinmode')
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.green(f'{self.__class__.__name__} invoke')

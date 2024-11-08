@@ -27,7 +27,10 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ProductType, fb_settings
 from .ftloader import FTLoader
-from ..utils.bpy_common import bpy_poll_is_camera
+from ..utils.bpy_common import (bpy_poll_is_mesh,
+                                bpy_poll_is_camera,
+                                bpy_poll_is_armature,
+                                bpy_object_is_in_scene)
 from ..utils.viewport_state import ViewportStateItem
 from .callbacks import (update_camobj,
                         poll_is_facebuilder_mesh,
@@ -69,6 +72,13 @@ def poll_is_camera_not_in_fb(self: Any, obj: Optional[Object]) -> bool:
         return False
     settings = fb_settings()
     return obj not in settings.get_all_camobj()
+
+
+def poll_mesh_has_blendshapes_and_not_ft(self: Any, obj: Optional[Object]) -> bool:
+    if (not obj or not obj.type == 'MESH' or not obj.data or
+            not obj.data.shape_keys or not bpy_object_is_in_scene(obj)):
+        return False
+    return obj not in [facetracker.geomobj for facetracker in self.trackers()]
 
 
 class FaceTrackerItem(TrackerItem):
@@ -456,6 +466,36 @@ class FTSceneSettings(TRSceneSetting):
             ('CAMERA_TO_GEOMETRY', 'Camera to Head', '', 1),],
         description='All animation will be converted from')
 
+    transfer_facial_animation_selector: EnumProperty(
+        name='Select destination',
+        items=[
+            ('ARKIT', 'ARKit', '', 0),
+            ('RIGIFY', 'Rigify', '', 1),],
+        description='Convert facial animation to')
+
+    transfer_facial_animation_mesh: PointerProperty(
+        name='Target Geometry',
+        description='Select target geometry',
+        type=Object,
+        poll=poll_mesh_has_blendshapes_and_not_ft)
+
+    transfer_facial_animation_armature: PointerProperty(
+        name='Target Rig',
+        description='Select target Armature',
+        type=Object,
+        poll=bpy_poll_is_armature)
+
+    transfer_facial_animation_detect_scale: BoolProperty(
+        name='Detect scale',
+        description='Adjust to model scale',
+        default=True)
+
+    transfer_facial_animation_scale: FloatProperty(
+        description='Scale movement data',
+        name='Scale',
+        default=1.0,
+        min=0.001, max=1000.0)
+
     bake_animation_selector: EnumProperty(name='Bake selector',
         items=[
             ('GEOMETRY_AND_CAMERA', 'Head & Camera',
@@ -474,8 +514,7 @@ class FTSceneSettings(TRSceneSetting):
              'Use Camera as animation source', 1),
             ('SELECTED_PINS', 'Selected pins',
              'Use selected pins as animation source', 2),
-            ('SAVE_FACS', 'FACS as a CSV file',
-             'Use selected pins as animation source', 3),],
+        ],
         description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(

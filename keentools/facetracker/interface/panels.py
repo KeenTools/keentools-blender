@@ -190,10 +190,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             self._pkt_install_offer(layout)
             return
 
-        draw_upgrade_license_box(layout, ProductType.FACETRACKER,
-                                 days_left_template='Beta: {} days left',
-                                 over_template='Current Beta expired\nCheck Update',
-                                 button=False, red_icon=False, separator=False)
+        draw_upgrade_license_box(layout, ProductType.FACETRACKER)
 
         col = layout.column(align=True)
         col.enabled = common_loader().ft_head_mode() == 'NONE'
@@ -606,12 +603,6 @@ class FT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
-
-        row = col.row(align=True)
-        row.scale_y = 1.5
-        row.operator(FTConfig.ft_pickmode_starter_idname,
-                     **KTIcons.key_value('align_face'))
-
         col.prop(settings, 'stabilize_viewport_enabled',
                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
@@ -710,6 +701,11 @@ class FT_PT_TrackingPanel(AllVisible):
         self._tracking_pinmode_button(settings, layout, context)
 
         if settings.pinmode:
+            row = layout.row(align=True)
+            row.scale_y = 1.5
+            row.operator(FTConfig.ft_pickmode_starter_idname,
+                         **KTIcons.key_value('align_face'))
+
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
@@ -1162,23 +1158,6 @@ class FT_PT_ScenePanel(AllVisible):
                           text='Bake')
         op.product = ProductType.FACETRACKER
 
-        layout.separator()
-
-        col = layout.column(align=True)
-        col.prop(settings, 'export_locator_selector', text='')
-        if settings.export_locator_selector == 'SELECTED_PINS':
-            row = col.split(factor=0.4, align=True)
-            row.label(text='Orientation')
-            row.prop(settings, 'export_locator_orientation', text='')
-
-        if settings.export_locator_selector == 'SAVE_FACS':
-            col.operator(FTConfig.ft_save_facs_idname)
-        else:
-            row = col.split(factor=0.4, align=True)
-            row.prop(settings, 'export_linked_locator')
-            op = row.operator(FTConfig.ft_export_animated_empty_idname)
-            op.product = ProductType.FACETRACKER
-
 
 class FT_UL_selected_frame_list(UIList):
     bl_idname = FTConfig.ft_selected_frame_list_item_idname
@@ -1235,10 +1214,6 @@ class FT_PT_TexturePanel(AllVisible):
         col.scale_y = Config.btn_scale_y
         op = col.operator(GTConfig.gt_reproject_tex_sequence_idname)
         op.product = ProductType.FACETRACKER
-
-        if BVersion.debug_logging_mode:
-            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
-            op.product = ProductType.FACETRACKER
 
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
@@ -1313,6 +1288,79 @@ class FT_PT_TexturePanel(AllVisible):
 
         if settings.is_calculating('REPROJECT'):
             _draw_calculating_indicator(layout)
+
+
+class FT_PT_ExportPanel(View3DPanel):
+    bl_idname = FTConfig.ft_export_panel_idname
+    bl_label = 'Export'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        if _fb_head_in_ft_mode_active():
+            return False
+        facetracker = settings.get_current_geotracker_item()
+        if not facetracker.geomobj:
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+        settings = ft_settings()
+
+        layout.label(text='Facial Animation')
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(settings, 'transfer_facial_animation_selector', expand=True)
+        if settings.transfer_facial_animation_selector == 'ARKIT':
+            col = layout.column(align=True)
+            row = col.split(factor=0.25, align=True)
+            row.label(text='Target')
+            row.prop(settings, 'transfer_facial_animation_mesh', text='')
+            row = col.row(align=True)
+            row.enabled = not not settings.transfer_facial_animation_mesh
+            row.operator(FTConfig.ft_transfer_facs_animation_idname)
+
+            layout.operator(FTConfig.ft_save_facs_idname)
+        else:
+            col = layout.column(align=True)
+            row = col.split(factor=0.25, align=True)
+            row.label(text='Target')
+            row.prop(settings, 'transfer_facial_animation_armature', text='')
+            row = col.row(align=True)
+            row.enabled = not not settings.transfer_facial_animation_armature
+            row.operator(FTConfig.ft_transfer_animation_to_rig_idname)
+            row.operator(FTConfig.ft_transfer_animation_to_rig_options_idname,
+                         text='', icon='PREFERENCES')
+
+        layout.separator(factor=0.4)
+        layout.label(text='Empty')
+
+        col = layout.column(align=True)
+        col.prop(settings, 'export_locator_selector', text='')
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            row = col.split(factor=0.4, align=True)
+            row.label(text='Orientation')
+            row.prop(settings, 'export_locator_orientation', text='')
+
+        row = col.split(factor=0.4, align=True)
+        row.prop(settings, 'export_linked_locator')
+        op = row.operator(FTConfig.ft_export_animated_empty_idname)
+        op.product = ProductType.FACETRACKER
+
+        if BVersion.debug_logging_mode:
+            layout.separator(factor=0.4)
+            layout.label(text='Render wireframe')
+            col = layout.column(align=True)
+            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+            op.product = ProductType.FACETRACKER
 
 
 class FT_PT_SupportPanel(View3DPanel):

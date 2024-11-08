@@ -60,7 +60,7 @@ class KTLogger():
             self.output = self.debug
 
         _add_module_name(name)
-        self.green(f'import: {name}')
+        self.green(f'\nimport: {name}')
 
     def info(self, message: str) -> None:
         if self._info_color is None:

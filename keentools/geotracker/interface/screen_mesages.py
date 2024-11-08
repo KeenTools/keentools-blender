@@ -136,7 +136,7 @@ def texture_projection_screen_message(current_num: int,
                                       *, product: int) -> None:
     vp = _get_viewport(product)
     vp.message_to_screen(
-        [{'text': 'Projection: '
+        [{'text': 'Projecting: '
                   f'{current_num}/{total_frames}', 'y': 60,
           'color': (1.0, 0.0, 0.0, _text_opacity)},
          {'text': 'ESC to abort', 'y': 30,

@@ -56,7 +56,8 @@ from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_end_frame,
                                 bpy_view_camera,
                                 bpy_current_frame,
-                                bpy_new_image)
+                                bpy_new_image,
+                                bpy_context)
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
@@ -83,12 +84,14 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 refine_all_async_action,
                                                 create_animated_empty_action,
                                                 create_soft_empties_from_selected_pins_action,
-                                                save_facs_as_csv_action)
+                                                save_facs_as_csv_action,
+                                                save_facs_as_animation_action)
 from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 from ..preferences.hotkeys import (pan_keymaps_register,
                                    all_keymaps_unregister)
 from ..utils.localview import exit_area_localview
 from ..utils.viewport_state import force_show_ui_overlays
+from ..facetracker.rig import transfer_animation_to_rig
 
 
 _log = KTLogger(__name__)
@@ -1312,6 +1315,118 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_TransferFACSAnimation(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_transfer_facs_animation_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = ft_settings()
+        obj = settings.transfer_facial_animation_mesh
+        if not obj or obj.type != 'MESH':
+            msg = 'Target object is not a Mesh'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        for geotracker in settings.trackers():
+            if obj == geotracker.geomobj:
+                msg = 'Target mesh is already used by FaceTracker'
+                _log.error(msg)
+                self.report({'ERROR'}, msg)
+                return {'CANCELLED'}
+
+        save_facs_as_animation_action(from_frame=bpy_start_frame(),
+                                      to_frame=bpy_end_frame(),
+                                      use_tracked_only=True, obj=obj)
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
+class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_transfer_animation_to_rig_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+
+        product = ProductType.FACETRACKER
+        check_status = common_checks(product=product, reload_geotracker=True,
+                                     object_mode=True, is_calculating=True,
+                                     geotracker=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = ft_settings()
+        obj = settings.transfer_facial_animation_armature
+        if not obj or obj.type != 'ARMATURE':
+            msg = 'Target object is not an Armature'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        geotracker = settings.get_current_geotracker_item()
+
+        transfer_status = transfer_animation_to_rig(
+            obj=geotracker.geomobj,
+            arm_obj=obj,
+            facetracker=settings.loader().kt_geotracker(),
+            use_tracked_only=True,
+            detect_scale=settings.transfer_facial_animation_detect_scale,
+            from_frame=bpy_start_frame(),
+            to_frame=bpy_end_frame(),
+            scale=tuple([settings.transfer_facial_animation_scale] * 3))
+        if not transfer_status.success:
+            self.report({'ERROR'}, transfer_status.error_message)
+            return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end >>>')
+        return {'FINISHED'}
+
+
+class FT_OT_TransferAnimationToRigOptions(Operator):
+    bl_idname = FTConfig.ft_transfer_animation_to_rig_options_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        settings = ft_settings()
+        if settings is None:
+            return
+
+        col = layout.column(align=True)
+        col.prop(settings, 'transfer_facial_animation_detect_scale')
+        row = col.row()
+        row.enabled = not settings.transfer_facial_animation_detect_scale
+        row.prop(settings, 'transfer_facial_animation_scale')
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -1353,4 +1468,7 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_CreateNewHead,
                   FT_OT_EditHead,
                   FT_OT_CancelChooseFrame,
-                  FT_OT_AddChosenFrame)
+                  FT_OT_AddChosenFrame,
+                  FT_OT_TransferFACSAnimation,
+                  FT_OT_TransferAnimationToRig,
+                  FT_OT_TransferAnimationToRigOptions)

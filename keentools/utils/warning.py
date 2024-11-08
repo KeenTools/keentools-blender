@@ -76,9 +76,10 @@ class KT_OT_AddonWarning(Operator):
             op.source = self.source
 
         elif self.msg == ErrorType.NoFaceTrackerLicense:
-            op = self.layout.operator(Config.kt_open_url_idname,
-                                      text='Download from Website')
-            op.url = 'https://keentools.io/products/facetracker-for-blender?utm_source=outdated-beta'
+            op = self.layout.operator(Config.kt_upgrade_product_idname,
+                                      text='Purchase a license')
+            op.product = ProductType.FACETRACKER
+            op.source = self.source
 
     def execute(self, context: Any) -> Set:
         if self.msg in (ErrorType.PktProblem,

@@ -50,7 +50,7 @@ class FTLoader(Loader):
 
     @classmethod
     def new_kt_geotracker(cls) -> Any:
-        _log.output(_log.color('magenta', '*** new_kt_facetracker ***'))
+        _log.magenta('*** new_kt_facetracker ***')
         cls._geo_input = KTClassLoader.FTGeoInput_class()()
         cls._image_input = KTClassLoader.FTImageInput_class()()
         cls._camera_input = KTClassLoader.FTCameraInput_class()()
@@ -95,8 +95,10 @@ class FTLoader(Loader):
         gt = cls.kt_geotracker()
         with settings.ui_write_mode_context():
             try:
+                _log.output('viewport parameters')
                 settings.wireframe_backface_culling = gt.back_face_culling()
                 settings.track_focal_length = gt.track_focal_length()
+                _log.output('coefficients')
                 geotracker.smoothing_depth_coeff = gt.get_smoothing_depth_coeff()
                 geotracker.smoothing_focal_length_coeff = gt.get_smoothing_focal_length_coeff()
                 geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
