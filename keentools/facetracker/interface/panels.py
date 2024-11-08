@@ -1326,11 +1326,9 @@ class FT_PT_ExportPanel(View3DPanel):
             row.prop(settings, 'transfer_facial_animation_mesh', text='')
             row = col.row(align=True)
             row.enabled = not not settings.transfer_facial_animation_mesh
-            row.operator(FTConfig.ft_transfer_facs_animation_idname,
-                         text='Convert')
+            row.operator(FTConfig.ft_transfer_facs_animation_idname)
 
-            layout.operator(FTConfig.ft_save_facs_idname,
-                            text='Save as .csv')
+            layout.operator(FTConfig.ft_save_facs_idname)
         else:
             col = layout.column(align=True)
             row = col.split(factor=0.25, align=True)
@@ -1338,8 +1336,7 @@ class FT_PT_ExportPanel(View3DPanel):
             row.prop(settings, 'transfer_facial_animation_armature', text='')
             row = col.row(align=True)
             row.enabled = not not settings.transfer_facial_animation_armature
-            row.operator(FTConfig.ft_transfer_animation_to_rig_idname,
-                         text='Convert')
+            row.operator(FTConfig.ft_transfer_animation_to_rig_idname)
             row.operator(FTConfig.ft_transfer_animation_to_rig_options_idname,
                          text='', icon='PREFERENCES')
 

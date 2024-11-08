@@ -471,24 +471,23 @@ class FTSceneSettings(TRSceneSetting):
         items=[
             ('ARKIT', 'ARKit', '', 0),
             ('RIGIFY', 'Rigify', '', 1),],
-        description='Facial animation will be converted to')
+        description='Convert facial animation to')
 
     transfer_facial_animation_mesh: PointerProperty(
         name='Target Geometry',
-        description='Select target geometry from the list '
-                    'of objects in your Scene',
+        description='Select target geometry',
         type=Object,
         poll=poll_mesh_has_blendshapes_and_not_ft)
 
     transfer_facial_animation_armature: PointerProperty(
         name='Target Rig',
-        description='Select target Armature from the list '
-                    'of objects in your Scene',
+        description='Select target Armature',
         type=Object,
         poll=bpy_poll_is_armature)
 
     transfer_facial_animation_detect_scale: BoolProperty(
         name='Detect scale',
+        description='Adjust to model scale',
         default=True)
 
     transfer_facial_animation_scale: FloatProperty(

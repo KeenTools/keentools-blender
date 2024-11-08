@@ -155,7 +155,7 @@ def transfer_animation_to_rig(*,
     points = [cpoint for cpoint in all_points
               if cpoint.name in arm_obj.data.edit_bones]
     if len(points) == 0:
-        msg = f'No target bones in rig'
+        msg = f'No suitable target bones found in rig'
         _log.error(msg)
         switch_to_object_mode()
         return ActionStatus(False, msg)
@@ -163,7 +163,7 @@ def transfer_animation_to_rig(*,
     if len(points) < len(all_points):
         lost_bones = [cpoint.name for cpoint in all_points
                       if cpoint.name not in arm_obj.data.edit_bones]
-        msg = f'Not all target bones are in rig: {lost_bones}'
+        msg = f'Suitable target bones missing in rig: {lost_bones}'
         _log.warning(msg)
 
     point_indices = {point.name: x for x, point in enumerate(points)}
@@ -172,7 +172,7 @@ def transfer_animation_to_rig(*,
         left_bone = 'lid.T.L'
         right_bone = 'lid.T.R'
         if left_bone not in point_indices or right_bone not in point_indices:
-            msg = 'No necessary eye bones in target rig'
+            msg = 'Necessary eye bones missing in target rig'
             _log.error(msg)
             switch_to_object_mode()
             return ActionStatus(False, msg)

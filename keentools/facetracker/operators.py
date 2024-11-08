@@ -1334,14 +1334,14 @@ class FT_OT_TransferFACSAnimation(ButtonOperator, Operator):
         settings = ft_settings()
         obj = settings.transfer_facial_animation_mesh
         if not obj or obj.type != 'MESH':
-            msg = 'Target object should be a Mesh object'
+            msg = 'Target object is not a Mesh'
             _log.error(msg)
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
         for geotracker in settings.trackers():
             if obj == geotracker.geomobj:
-                msg = 'Target object should not be a FaceTracker Geometry'
+                msg = 'Target mesh is already used by FaceTracker'
                 _log.error(msg)
                 self.report({'ERROR'}, msg)
                 return {'CANCELLED'}
@@ -1373,7 +1373,7 @@ class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
         settings = ft_settings()
         obj = settings.transfer_facial_animation_armature
         if not obj or obj.type != 'ARMATURE':
-            msg = 'Target object should be an Armature object'
+            msg = 'Target object is not an Armature'
             _log.error(msg)
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
