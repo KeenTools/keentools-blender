@@ -1364,7 +1364,7 @@ class FT_OT_TransferAnimationToRig(ButtonOperator, Operator):
 
         product = ProductType.FACETRACKER
         check_status = common_checks(product=product, reload_geotracker=True,
-                                     object_mode=True, is_calculating=True,
+                                     is_calculating=True,
                                      geotracker=True, geometry=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
