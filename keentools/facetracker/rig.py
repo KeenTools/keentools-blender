@@ -34,11 +34,17 @@ from ..utils.bpy_common import (update_depsgraph,
                                 bpy_current_frame,
                                 bpy_progress_begin,
                                 bpy_progress_update,
-                                bpy_progress_end)
+                                bpy_progress_end,
+                                create_empty_object)
 from ..utils.coords import get_obj_verts, xy_to_xz_rotation_matrix_3x3
 
 
 _log = KTLogger(__name__)
+
+
+_left_bone_name: str = 'lid.T.L'
+_right_bone_name: str = 'lid.T.R'
+_head_bone_name: str = 'head'
 
 
 CPoint = namedtuple('CPoint', ['name', 'vertex', 'scale'])
@@ -59,6 +65,8 @@ def get_control_point_array() -> List:
         CPoint('chin.R', 7539, (1.0, 1.0, 1.0)),
         CPoint('cheek.B.L.001', 4253, (1.0, 1.0, 1.0)),
         CPoint('cheek.B.R.001', 4246, (1.0, 1.0, 1.0)),
+        CPoint('cheek.T.L.001', 0, (1.0, 1.0, 1.0)),
+        CPoint('cheek.T.R.001', 1, (1.0, 1.0, 1.0)),
         CPoint('nose.002', 5723, (1.0, 1.0, 1.0)),
         CPoint('nose.L.001', 975, (1.0, 1.0, 1.0)),
         CPoint('nose.R.001', 1178, (1.0, 1.0, 1.0)),
@@ -108,6 +116,7 @@ def get_control_point_array() -> List:
         CPoint('jaw.R.001', 5803, (1.0, 1.0, 1.0)),
         CPoint('jaw.R', 4015, (1.0, 1.0, 1.0)),
         CPoint('jaw', 9861, (1.0, 1.0, 1.0)),
+        CPoint('chin.001', 8446, (1.0, 1.0, 1.0)),
         CPoint('chin.002', 8769, (1.0, 1.0, 1.0)),
     ]
 
@@ -169,20 +178,18 @@ def transfer_animation_to_rig(*,
     point_indices = {point.name: x for x, point in enumerate(points)}
 
     if detect_scale:
-        left_bone = 'lid.T.L'
-        right_bone = 'lid.T.R'
-        if left_bone not in point_indices or right_bone not in point_indices:
+        if _left_bone_name not in point_indices or _right_bone_name not in point_indices:
             msg = 'Necessary eye bones missing in target rig'
             _log.error(msg)
             switch_to_object_mode()
             return ActionStatus(False, msg)
 
-        left_eye_arm_corner = arm_obj.data.edit_bones[left_bone].head.copy()
-        right_eye_arm_corner = arm_obj.data.edit_bones[right_bone].head.copy()
+        left_eye_arm_corner = arm_obj.data.edit_bones[_left_bone_name].head.copy()
+        right_eye_arm_corner = arm_obj.data.edit_bones[_right_bone_name].head.copy()
         base_arm = left_eye_arm_corner - right_eye_arm_corner
 
-        left_eye_corner = neutral_verts[points[point_indices[left_bone]].vertex]
-        right_eye_corner = neutral_verts[points[point_indices[right_bone]].vertex]
+        left_eye_corner = neutral_verts[points[point_indices[_left_bone_name]].vertex]
+        right_eye_corner = neutral_verts[points[point_indices[_right_bone_name]].vertex]
         base_eye_corner = left_eye_corner - right_eye_corner
 
         sc_factor = base_arm.length / np.linalg.norm(base_eye_corner)
@@ -190,6 +197,14 @@ def transfer_animation_to_rig(*,
     else:
         sc = scale
     _log.output(f'scale: {sc}')
+
+    head_bone = arm_obj.data.edit_bones[_head_bone_name]
+    head_mat = head_bone.matrix.copy()
+    head_mat_inv = head_mat.inverted()
+
+    offset_mat = {
+        point.name: head_mat_inv @ arm_obj.data.edit_bones[point.name].matrix
+        for point in points}
 
     switch_to_pose_mode()
 
@@ -205,9 +220,9 @@ def transfer_animation_to_rig(*,
                   if from_frame <= x <= to_frame]
 
     bpy_progress_begin(0, len(frames))
+    head_pbone = arm_obj.pose.bones[_head_bone_name]
     for i, frame in enumerate(frames):
         bpy_set_current_frame(frame)
-
         verts = (facetracker.applied_args_model_vertices_at(frame) @
                  xy_to_xz_rotation_matrix_3x3())
         delta = verts - neutral_verts
@@ -217,10 +232,12 @@ def transfer_animation_to_rig(*,
             delta_mat = Matrix.Translation(
                 (delta[point.vertex] * point.scale) * sc)
             pbone = arm_obj.pose.bones[name]
-            m0 = delta_mat @ pbone.bone.matrix_local
+            m0 = head_pbone.matrix @ offset_mat[name] @ head_mat_inv @ delta_mat @ head_mat
             pbone.matrix = m0
             m0_dict[name] = m0.copy()
             _ = pbone.keyframe_insert(data_path='location', frame=frame)
+            _ = pbone.keyframe_insert(data_path='rotation_quaternion', frame=frame)
+
         update_depsgraph()
         m1_dict = {name: arm_obj.pose.bones[name].matrix.copy()
                    for name in constrained_bones}
