@@ -5,7 +5,7 @@ from bpy.types import Object, Area, SpaceView3D
 import gpu
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_settings, get_operator
+from ..addon_config import Config, get_settings, get_operator, ProductType
 from ..utils.version import BVersion
 from ..utils.bpy_common import (bpy_context,
                                 bpy_set_current_frame,
@@ -32,7 +32,8 @@ _log = KTLogger(__name__)
 
 
 _bake_generator_var: Optional[Any] = None
-_wireframer: Optional[Any] = None
+_gt_wireframer: Optional[Any] = None
+_ft_wireframer: Optional[Any] = None
 
 
 class LitWireframeRenderer(KTLitEdgeShaderLocal3D):
@@ -45,19 +46,51 @@ class LitWireframeRenderer(KTLitEdgeShaderLocal3D):
         set_color_mask(False, False, False, False)
         self.draw_empty_fill()
 
-        set_color_mask(True, True, True, True)
         set_depth_mask(False)
+        set_color_mask(True, True, True, True)
         set_blend_alpha()
         self.draw_edges()
 
         revert_blender_viewport_state()
 
 
-def get_wireframer():
-    global _wireframer
-    if _wireframer is None:
-        _wireframer = LitWireframeRenderer()
-    return _wireframer
+def get_FaceLitWireframeRenderer() -> Any:
+    from ..facetracker.edges import FTRasterEdgeShader3D
+    class FaceLitWireframeRenderer(FTRasterEdgeShader3D):
+        def __init__(self):
+            super().__init__(target_class=SpaceView3D)
+
+        def draw_main(self) -> None:
+            set_depth_test('LESS_EQUAL')
+            set_depth_mask(True)
+            set_color_mask(False, False, False, False)
+            self.draw_empty_fill()
+
+            set_depth_mask(False)
+            set_color_mask(True, True, True, True)
+            set_blend_alpha()
+            if not self.use_simple_shader:
+                self._draw_textured_line()
+            else:
+                self._draw_simple_line()
+
+            revert_blender_viewport_state()
+
+    return FaceLitWireframeRenderer()
+
+
+def get_wireframer(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        global _gt_wireframer
+        if _gt_wireframer is None:
+            _gt_wireframer = LitWireframeRenderer()
+        return _gt_wireframer
+    elif product == ProductType.FACETRACKER:
+        global _ft_wireframer
+        if _ft_wireframer is None:
+            _ft_wireframer = get_FaceLitWireframeRenderer()
+        return _ft_wireframer
+    assert False, f'Wrong product type [{product}] in get_wireframer'
 
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
@@ -108,15 +141,17 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
         settings = get_settings(product)
         loader = settings.loader()
 
-        wireframer = get_wireframer()
+        wireframer = get_wireframer(product)
         wireframer.viewport_size = (rx, ry)
         wireframer.init_geom_data_from_mesh(geomobj)
         wireframer.set_object_world_matrix(geomobj.matrix_world)
         wireframer.set_camera_pos(geomobj.matrix_world, camobj.matrix_world)
 
-        geo = build_geo(geomobj, get_uv=True)
-        wireframer.init_geom_data_from_core(*loader.get_geo_shader_data(geo,
-                                            geomobj.matrix_world))
+        geo = loader.get_geo()
+        if product == ProductType.FACETRACKER:
+            wireframer.init_edge_indices()
+        wireframer.init_geom_data_from_core(
+            *loader.get_geo_shader_data(geo, geomobj.matrix_world))
 
         wireframer.create_batches()
 
@@ -169,6 +204,8 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                             digits: int = 4, product: int,
                             line_width: float = 1.0,
                             line_color: Tuple = (0., 1., 0., 1.0),
+                            special_color: Tuple = (1., 0., 0., 1.0),
+                            midline_color: Tuple = (1., 1., 0., 1.0),
                             lit_wireframe: bool = True,
                             backface_culling: bool = True) -> None:
     _log.yellow('bake_wireframe_sequence start')
@@ -186,10 +223,15 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
     if not settings.pinmode:
         vp.texter().register_handler(area=area)
 
-    wireframer = get_wireframer()
+    wireframer = get_wireframer(product)
     wireframer.set_line_width(line_width)
     wireframer.init_shaders()
-    wireframer.init_color_data(line_color)
+    if product == ProductType.GEOTRACKER:
+        wireframer.init_color_data(line_color)
+    elif product == ProductType.FACETRACKER:
+        wireframer.init_colors((line_color, special_color, midline_color),
+                               settings.wireframe_opacity)
+        wireframer.init_wireframe_image(True)
     wireframer.set_lit_wireframe(lit_wireframe)
     wireframer.set_backface_culling(backface_culling)
 

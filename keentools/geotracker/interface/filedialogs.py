@@ -903,6 +903,18 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
         default=Config.gt_wireframe_color,
         min=0.0, max=1.0)
 
+    wireframe_special_color: FloatVectorProperty(
+        description='Color of special parts in pin-mode',
+        name='Wireframe Special Color', subtype='COLOR',
+        default=Config.ft_color_schemes['default'][1],
+        min=0.0, max=1.0)
+
+    wireframe_midline_color: FloatVectorProperty(
+        description='Color of midline in pin-mode',
+        name='Wireframe Midline Color', subtype='COLOR',
+        default=Config.ft_midline_color,
+        min=0.0, max=1.0)
+
     wireframe_opacity: FloatProperty(
         description='From 0.0 to 1.0',
         name='Wireframe opacity',
@@ -934,9 +946,19 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
         row = col.row(align=True)
         row.label(text='Wireframe')
         col.prop(self, 'wireframe_line_width', slider=True)
-        split = col.split(factor=0.25, align=True)
-        split.prop(self, 'wireframe_color', text='')
-        split.prop(self, 'wireframe_opacity', text='', slider=True)
+        if self.product == ProductType.GEOTRACKER:
+            split = col.split(factor=0.25, align=True)
+            split.prop(self, 'wireframe_color', text='')
+            split.prop(self, 'wireframe_opacity', text='', slider=True)
+        elif self.product == ProductType.FACETRACKER:
+            split = col.split(factor=0.375, align=True)
+            split2 = split.split(factor=0.34, align=True)
+            split2.prop(self, 'wireframe_color', text='')
+            split3 = split2.split(factor=0.5, align=True)
+            split3.prop(self, 'wireframe_special_color', text='')
+            split3.prop(self, 'wireframe_midline_color', text='')
+            split.prop(self, 'wireframe_opacity', text='', slider=True)
+
         col.prop(self, 'wireframe_backface_culling')
         col.prop(self, 'lit_wireframe')
 
@@ -979,6 +1001,9 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
 
         settings = get_settings(self.product)
         self.wireframe_color = settings.wireframe_color
+        if self.product == ProductType.FACETRACKER:
+            self.wireframe_special_color = settings.wireframe_special_color
+            self.wireframe_midline_color = settings.wireframe_midline_color
         self.wireframe_opacity = settings.wireframe_opacity
         self.wireframe_backface_culling = settings.wireframe_backface_culling
         self.lit_wireframe = settings.lit_wireframe
@@ -1024,6 +1049,8 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
                                 frames=frames,
                                 line_width=self.wireframe_line_width,
                                 line_color=(*self.wireframe_color, self.wireframe_opacity),
+                                special_color=self.wireframe_special_color,
+                                midline_color=self.wireframe_midline_color,
                                 lit_wireframe=self.lit_wireframe,
                                 backface_culling=self.wireframe_backface_culling,
                                 product=self.product)
