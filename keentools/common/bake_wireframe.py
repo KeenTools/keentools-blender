@@ -26,6 +26,9 @@ from ..utils.gpu_control import (set_blend_alpha,
                                  set_depth_mask,
                                  set_color_mask,
                                  revert_blender_viewport_state)
+from ..utils.polygons import KTRasterImage
+from ..utils.images import get_background_image_strict, inverse_gamma_color
+from ..geotracker.utils.prechecks import prepare_camera
 
 
 _log = KTLogger(__name__)
@@ -34,13 +37,29 @@ _log = KTLogger(__name__)
 _bake_generator_var: Optional[Any] = None
 _gt_wireframer: Optional[Any] = None
 _ft_wireframer: Optional[Any] = None
+_background_shader: Optional[Any] = None
 
 
 class LitWireframeRenderer(KTLitEdgeShaderLocal3D):
     def __init__(self):
         super().__init__(target_class=SpaceView3D, mask_color=(1, 0, 0, 1))
+        self.background: Any = KTRasterImage(target_class=SpaceView3D)
+
+    def init_shaders(self) -> Optional[bool]:
+        if not super().init_shaders():
+            return False
+        return self.background.init_shaders()
+
+    def create_batches(self) -> None:
+        _log.red(f'{self.__class__.__name__}.create_batches start')
+        super().create_batches()
+        self.background.create_batch()
+        _log.output(f'{self.__class__.__name__}.create_batches end >>>')
 
     def draw_main(self) -> None:
+        set_depth_test('NONE')
+        self.background.draw_main()
+
         set_depth_test('LESS_EQUAL')
         set_depth_mask(True)
         set_color_mask(False, False, False, False)
@@ -59,8 +78,23 @@ def get_FaceLitWireframeRenderer() -> Any:
     class FaceLitWireframeRenderer(FTRasterEdgeShader3D):
         def __init__(self):
             super().__init__(target_class=SpaceView3D)
+            self.background: Any = KTRasterImage(target_class=SpaceView3D)
+
+        def init_shaders(self) -> Optional[bool]:
+            if not super().init_shaders():
+                return False
+            return self.background.init_shaders()
+
+        def create_batches(self) -> None:
+            _log.red(f'{self.__class__.__name__}.create_batches start')
+            super().create_batches()
+            self.background.create_batch()
+            _log.output(f'{self.__class__.__name__}.create_batches end >>>')
 
         def draw_main(self) -> None:
+            set_depth_test('NONE')
+            self.background.draw_main()
+
             set_depth_test('LESS_EQUAL')
             set_depth_mask(True)
             set_color_mask(False, False, False, False)
@@ -93,9 +127,16 @@ def get_wireframer(product: int) -> Any:
     assert False, f'Wrong product type [{product}] in get_wireframer'
 
 
+def get_background_shader() -> Any:
+    global _background_shader
+    if _background_shader is None:
+        _background_shader = KTRasterImage(target_class=SpaceView3D)
+    return _background_shader
+
+
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                    *, file_format: str = 'PNG', frames: List[int],
-                   digits: int = 4, product: int) -> Any:
+                   digits: int = 4, product: int, use_background: bool) -> Any:
     def _finish():
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode,
@@ -154,7 +195,9 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             *loader.get_geo_shader_data(geo, geomobj.matrix_world))
 
         wireframer.create_batches()
-
+        wireframer.background.image = (None if not use_background else
+                                       get_background_image_strict(camobj,
+                                                                   index=0))
         with offscreen.bind():
             set_depth_mask(True)
             set_depth_test('LESS')
@@ -207,7 +250,8 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                             special_color: Tuple = (1., 0., 0., 1.0),
                             midline_color: Tuple = (1., 1., 0., 1.0),
                             lit_wireframe: bool = True,
-                            backface_culling: bool = True) -> None:
+                            backface_culling: bool = True,
+                            use_background: bool = False) -> None:
     _log.yellow('bake_wireframe_sequence start')
     op = get_operator(Config.kt_interrupt_modal_idname)
     op('INVOKE_DEFAULT', product=product)
@@ -217,7 +261,9 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                                          filepath_pattern,
                                          file_format=file_format,
                                          frames=frames, digits=digits,
-                                         product=product)
+                                         product=product,
+                                         use_background=use_background)
+    prepare_camera(area, product=product)
     settings = get_settings(product)
     vp = settings.loader().viewport()
     if not settings.pinmode:
@@ -227,9 +273,11 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
     wireframer.set_line_width(line_width)
     wireframer.init_shaders()
     if product == ProductType.GEOTRACKER:
-        wireframer.init_color_data(line_color)
+        wireframer.init_color_data(inverse_gamma_color(list(line_color)))
     elif product == ProductType.FACETRACKER:
-        wireframer.init_colors((line_color, special_color, midline_color),
+        wireframer.init_colors([inverse_gamma_color(list(line_color)),
+                                inverse_gamma_color(list(special_color)),
+                                inverse_gamma_color(list(midline_color))],
                                settings.wireframe_opacity)
         wireframer.init_wireframe_image(True)
     wireframer.set_lit_wireframe(lit_wireframe)

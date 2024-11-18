@@ -929,6 +929,10 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
         name='Lit wireframe',
         default=True)
 
+    use_background: BoolProperty(
+        name='Use background',
+        default=True)
+
     product: IntProperty(default=ProductType.UNDEFINED)
 
     def draw(self, context):
@@ -961,6 +965,7 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
 
         col.prop(self, 'wireframe_backface_culling')
         col.prop(self, 'lit_wireframe')
+        col.prop(self, 'use_background')
 
         layout.label(text='Frame range:')
         row = layout.row()
@@ -1053,5 +1058,6 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
                                 midline_color=self.wireframe_midline_color,
                                 lit_wireframe=self.lit_wireframe,
                                 backface_culling=self.wireframe_backface_culling,
+                                use_background=self.use_background,
                                 product=self.product)
         return {'FINISHED'}
