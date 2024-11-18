@@ -1156,7 +1156,7 @@ class GT_PT_ExportPanel(View3DPanel):
         row = col.split(factor=0.4, align=True)
         row.prop(settings, 'export_linked_locator')
         op = row.operator(GTConfig.gt_export_animated_empty_idname)
-        op.product = ProductType.FACETRACKER
+        op.product = ProductType.GEOTRACKER
 
         if BVersion.debug_logging_mode:
             layout.label(text='Render wireframe')
