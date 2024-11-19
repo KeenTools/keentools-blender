@@ -249,6 +249,7 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                             line_color: Tuple = (0., 1., 0., 1.0),
                             special_color: Tuple = (1., 0., 0., 1.0),
                             midline_color: Tuple = (1., 1., 0., 1.0),
+                            show_specials: bool = True,
                             lit_wireframe: bool = True,
                             backface_culling: bool = True,
                             use_background: bool = False) -> None:
@@ -279,7 +280,7 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                                 inverse_gamma_color(list(special_color)),
                                 inverse_gamma_color(list(midline_color))],
                                settings.wireframe_opacity)
-        wireframer.init_wireframe_image(True)
+        wireframer.init_wireframe_image(show_specials)
     wireframer.set_lit_wireframe(lit_wireframe)
     wireframer.set_backface_culling(backface_culling)
 

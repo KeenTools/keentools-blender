@@ -929,6 +929,10 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
         name='Lit wireframe',
         default=True)
 
+    show_specials: BoolProperty(
+        name='Highlight facial features',
+        default=True)
+
     use_background: BoolProperty(
         name='Use background',
         default=True)
@@ -963,6 +967,7 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
             split3.prop(self, 'wireframe_midline_color', text='')
             split.prop(self, 'wireframe_opacity', text='', slider=True)
 
+        col.prop(self, 'show_specials')
         col.prop(self, 'wireframe_backface_culling')
         col.prop(self, 'lit_wireframe')
         col.prop(self, 'use_background')
@@ -1054,6 +1059,7 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
                                 frames=frames,
                                 line_width=self.wireframe_line_width,
                                 line_color=(*self.wireframe_color, self.wireframe_opacity),
+                                show_specials=self.show_specials,
                                 special_color=self.wireframe_special_color,
                                 midline_color=self.wireframe_midline_color,
                                 lit_wireframe=self.lit_wireframe,
