@@ -24,6 +24,7 @@ from bl_operators.presets import AddPresetBase
 from bl_ui.utils import PresetPanel
 
 from ...utils.kt_logging import KTLogger
+from ...utils.version import BVersion
 from ...addon_config import (Config,
                              gt_settings,
                              geotracker_enabled,
@@ -875,9 +876,9 @@ class GT_PT_TexturePanel(AllVisible):
             op.product = ProductType.GEOTRACKER
 
         layout.separator()
-        row = layout.row()
-        row.scale_y = Config.btn_scale_y
-        op = row.operator(GTConfig.gt_reproject_tex_sequence_idname)
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(GTConfig.gt_reproject_tex_sequence_idname)
         op.product = ProductType.GEOTRACKER
 
     def _draw_no_uv_warning(self, layout):
@@ -1027,19 +1028,6 @@ class GT_PT_ScenePanel(AllVisible):
                           text='Bake')
         op.product = ProductType.GEOTRACKER
 
-        layout.separator()
-
-        col = layout.column(align=True)
-        col.prop(settings, 'export_locator_selector', text='')
-        if settings.export_locator_selector == 'SELECTED_PINS':
-            row = col.split(factor=0.4, align=True)
-            row.label(text='Orientation')
-            row.prop(settings, 'export_locator_orientation', text='')
-        row = col.split(factor=0.4, align=True)
-        row.prop(settings, 'export_linked_locator')
-        op = row.operator(GTConfig.gt_export_animated_empty_idname)
-        op.product = ProductType.GEOTRACKER
-
 
 class GT_PT_RenderingPanel(AllVisible):
     bl_idname = GTConfig.gt_rendering_panel_idname
@@ -1131,6 +1119,51 @@ class GT_PT_SmoothingPanel(AllVisible):
 
         if not GTConfig.hidden_feature:
             self._tracking_locks(layout, geotracker)
+
+
+class GT_PT_ExportPanel(View3DPanel):
+    bl_idname = GTConfig.gt_export_panel_idname
+    bl_label = 'Export'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not geotracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = gt_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker.geomobj:
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.label(text='Empty')
+
+        settings = gt_settings()
+        col = layout.column(align=True)
+        col.prop(settings, 'export_locator_selector', text='')
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            row = col.split(factor=0.4, align=True)
+            row.label(text='Orientation')
+            row.prop(settings, 'export_locator_orientation', text='')
+
+        row = col.split(factor=0.4, align=True)
+        row.prop(settings, 'export_linked_locator')
+        op = row.operator(GTConfig.gt_export_animated_empty_idname)
+        op.product = ProductType.GEOTRACKER
+
+        if BVersion.debug_logging_mode:
+            layout.label(text='Render wireframe')
+            col = layout.column(align=True)
+            col.scale_y = Config.btn_scale_y
+            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+            op.product = ProductType.GEOTRACKER
 
 
 class GT_PT_SupportPanel(AllVisible, Panel):

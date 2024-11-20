@@ -16,7 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional, List
+import math
+from typing import Optional, List, Tuple
 
 from bpy.types import Action, FCurve
 from mathutils import Vector, Matrix
@@ -63,3 +64,31 @@ def put_anim_data_in_fcurve(fcurve: Optional[FCurve],
     for i, point in enumerate(anim_data):
         fcurve.keyframe_points[start_index + i].co = point
     fcurve.update()
+
+
+def cleanup_keys_in_interval(fcurve: FCurve, start_keyframe: float,
+                             end_keyframe: float) -> None:
+    for p in reversed(fcurve.keyframe_points):
+        if start_keyframe <= p.co[0] <= end_keyframe:
+            fcurve.keyframe_points.remove(p)
+    fcurve.update()
+
+
+def snap_keys_in_interval(fcurve: FCurve, start_keyframe: float,
+                          end_keyframe: float) -> None:
+    left = min(start_keyframe, round(start_keyframe))
+    right = max(end_keyframe, round(end_keyframe))
+    points = list(set([round(p.co[0]) for p in fcurve.keyframe_points
+                       if start_keyframe <= p.co[0] <= end_keyframe]))
+    points.sort()
+    anim_data = [(x, fcurve.evaluate(x)) for x in points]
+    cleanup_keys_in_interval(fcurve, left, right)
+    put_anim_data_in_fcurve(fcurve, anim_data)
+
+
+def add_zero_keys_at_start_and_end(fcurve: FCurve, start_keyframe: float,
+                                   end_keyframe: float) -> None:
+    left = round(start_keyframe)
+    right = math.floor(end_keyframe)
+    anim_data = [(left, 0), (right, 0)]
+    put_anim_data_in_fcurve(fcurve, anim_data)

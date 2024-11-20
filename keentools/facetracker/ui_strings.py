@@ -37,7 +37,7 @@ buttons = {
         'Modal Operator for Pick Face mode'
     ),
     FTConfig.ft_pickmode_starter_idname: Button(
-        'Auto align',
+        'Auto Align',
         'Auto align mesh in current view'
     ),
     FTConfig.ft_switch_to_camera_mode_idname: Button(
@@ -323,8 +323,8 @@ buttons = {
         'Setup scene rendering settings to match default render view'
     ),
     FTConfig.ft_save_facs_idname: Button(
-        'Save FACS animation',
-        'Save FACS as a CSV file'
+        'Save as .csv',
+        'Save facial animation as a .csv file'
     ),
     FTConfig.ft_create_new_head_idname: Button(
         'New',
@@ -345,6 +345,18 @@ buttons = {
     FTConfig.ft_add_chosen_frame_idname: Button(
         'Take Snapshot',
         'Add current frame as a reference image for FaceBuilder'
+    ),
+    FTConfig.ft_transfer_facs_animation_idname: Button(
+        'Convert',
+        'Transfer facial animation to target geometry'
+    ),
+    FTConfig.ft_transfer_animation_to_rig_idname: Button(
+        'Convert',
+        'Transfer facial animation to target rig'
+    ),
+    FTConfig.ft_transfer_animation_to_rig_options_idname: Button(
+        'Options',
+        'Setup transfer settings'
     ),
     # Menu buttons
     FTConfig.ft_clear_tracking_menu_exec_idname: Button(
@@ -452,7 +464,7 @@ help_texts = {
         'Select whether the focal length in your shot is variable or fixed',
     ]),
     FTConfig.ft_help_tracking_idname: HelpText(_help_default_width, [
-        'Select whether you\'re tracking \'Head + facial performance\' or \'Camera + facial performance\'.',
+        'Select Head + facial mocap or Camera + facial mocap.',
         'Use Auto Align for automatic model placement.',
         'Line up face geometry to the background image as precisely as possible using pins.',
         'Track forward or backwards using tracking buttons.',

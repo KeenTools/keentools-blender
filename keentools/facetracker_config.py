@@ -131,6 +131,9 @@ class FTConfig:
     ft_choose_frame_mode_idname = operators + '.choose_frame_mode'
     ft_cancel_choose_frame_idname = operators + '.cancel_choose_frame'
     ft_add_chosen_frame_idname = operators + '.add_chosen_frame'
+    ft_transfer_facs_animation_idname = operators + '.transfer_facs_animation'
+    ft_transfer_animation_to_rig_idname = operators + '.transfer_animation_to_rig'
+    ft_transfer_animation_to_rig_options_idname = operators + '.transfer_animation_to_rig_options'
 
     ft_appearance_preset_add_idname = operators + '.appearance_preset_add'
 
@@ -164,6 +167,7 @@ class FTConfig:
     ft_texture_panel_idname = _PT + 'texture_panel'
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'
+    ft_export_panel_idname = _PT + 'export_panel'
     ft_support_panel_idname = _PT + 'support_panel'
     ft_choose_snapshot_frame_idname = _PT + 'choose_snapshot_frame_panel'
     ft_selected_frame_list_item_idname = _UL + 'selected_frame_list_item'

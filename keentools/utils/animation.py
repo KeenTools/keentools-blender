@@ -22,6 +22,7 @@ from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector, Matrix
 
 from .kt_logging import KTLogger
+from .version import BVersion
 from .bpy_common import (bpy_current_frame,
                          bpy_start_frame,
                          bpy_end_frame,
@@ -106,6 +107,12 @@ def _get_safe_action(obj: Object,
             return None
     if not animation_data.action:
         animation_data.action = bpy_new_action(action_name)
+
+        if BVersion.action_slots_exist and not animation_data.action_slot:
+            if len(animation_data.action_slots) == 0:
+                animation_data.action.slots.new()
+            animation_data.action_slot = animation_data.action_slots[0]
+
     return animation_data.action
 
 

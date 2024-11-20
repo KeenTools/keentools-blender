@@ -24,11 +24,14 @@ from bpy.props import (StringProperty,
                        IntProperty,
                        CollectionProperty,
                        BoolProperty,
-                       EnumProperty)
+                       EnumProperty,
+                       FloatProperty,
+                       FloatVectorProperty)
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
+from ...utils.version import BVersion
 from ...addon_config import (Config,
                              gt_settings,
                              get_settings,
@@ -36,7 +39,6 @@ from ...addon_config import (Config,
                              ProductType,
                              product_name)
 from ...geotracker_config import GTConfig
-from ...facetracker_config import FTConfig
 from ...utils.images import (get_sequence_file_number,
                              find_bpy_image_by_name)
 from ...utils.video import (convert_movieclip_to_frames,
@@ -51,6 +53,7 @@ from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
 from ..utils.textures import bake_texture_sequence
 from ...utils.ui_redraw import timeline_view_all
+from ...common.bake_wireframe import bake_wireframe_sequence
 
 
 _log = KTLogger(__name__)
@@ -854,3 +857,174 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         self.filepath = geotracker.preview_texture_name()
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
+    bl_idname = Config.kt_bake_wireframe_sequence_idname
+    bl_label = 'Bake wireframe'
+    bl_description = 'Bake wireframe'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    filepath: StringProperty(
+        default='',
+        subtype='FILE_PATH'
+    )
+    file_format: EnumProperty(name='Image file format',
+                              items=_image_format_items(default='PNG',
+                                                        show_exr=True),
+                              description='Choose image file format')
+    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    use_half_precision: BoolProperty(name='Use half-precission', default=True)
+
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+    filename_ext: StringProperty()
+
+    wireframe_line_width: FloatProperty(
+        description='',
+        name='Line Width',
+        default=1.0,
+        min=0.0, soft_max=10.0, max=100.0)
+
+    wireframe_color: FloatVectorProperty(
+        description='',
+        name='Base mesh colour', subtype='COLOR',
+        default=Config.gt_wireframe_color,
+        min=0.0, max=1.0)
+
+    wireframe_opacity: FloatProperty(
+        description='From 0.0 to 1.0',
+        name='Wireframe opacity',
+        default=Config.gt_wireframe_opacity,
+        min=0.0, max=1.0)
+
+    wireframe_backface_culling: BoolProperty(
+        name='Backface culling',
+        default=True)
+
+    lit_wireframe: BoolProperty(
+        name='Lit wireframe',
+        default=True)
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Output files format:')
+        layout.prop(self, 'file_format', expand=True)
+
+        if self.file_format == 'JPEG':
+            layout.prop(self, 'quality', slider=True)
+        if self.file_format == 'OPEN_EXR':
+            layout.prop(self, 'use_half_precision')
+            layout.prop(bpy_image_settings(), 'exr_codec')
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Wireframe')
+        col.prop(self, 'wireframe_line_width', slider=True)
+        split = col.split(factor=0.25, align=True)
+        split.prop(self, 'wireframe_color', text='')
+        split.prop(self, 'wireframe_opacity', text='', slider=True)
+        col.prop(self, 'wireframe_backface_culling')
+        col.prop(self, 'lit_wireframe')
+
+        layout.label(text='Frame range:')
+        row = layout.row()
+        row.prop(self, 'from_frame', expand=True)
+        row.prop(self, 'to_frame', expand=True)
+
+        layout.separator()
+
+        layout.label(text='Output file names:')
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        file_pattern = self._file_pattern()
+        col.label(text=file_pattern.format(str(self.from_frame).zfill(4)))
+        col.label(text='...')
+        col.label(text=file_pattern.format(str(self.to_frame).zfill(4)))
+
+    def invoke(self, context, _event):
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
+                                     object_mode=True, is_calculating=True,
+                                     reload_geotracker=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        if BVersion.use_old_bgl_shaders:
+            msg = 'Blender version is too old for wireframe baking (min. 3.4)'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        self.filepath = ''
+        self.from_frame = bpy_start_frame()
+        self.to_frame = bpy_end_frame()
+
+        settings = get_settings(self.product)
+        self.wireframe_color = settings.wireframe_color
+        self.wireframe_opacity = settings.wireframe_opacity
+        self.wireframe_backface_culling = settings.wireframe_backface_culling
+        self.lit_wireframe = settings.lit_wireframe
+
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def _file_pattern(self):
+        return f'{self.filepath}' + '{}' + f'{_filename_ext(self.file_format)}'
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
+                                     object_mode=True, is_calculating=True,
+                                     reload_geotracker=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        self.filename_ext = _filename_ext(self.file_format)
+        _log.output(f'OUTPUT reproject filepath: {self.filepath}')
+
+        settings = get_settings(self.product)
+        geotracker = settings.get_current_geotracker_item()
+
+        filepath_pattern = self._file_pattern()
+
+        if self.to_frame < self.from_frame:
+            msg = 'Wrong frame range'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        frames = [x for x in range(self.from_frame, self.to_frame + 1)]
+
+        bake_wireframe_sequence(area=context.area,
+                                geotracker=geotracker,
+                                filepath_pattern=filepath_pattern,
+                                file_format=self.file_format,
+                                frames=frames,
+                                line_width=self.wireframe_line_width,
+                                line_color=(*self.wireframe_color, self.wireframe_opacity),
+                                lit_wireframe=self.lit_wireframe,
+                                backface_culling=self.wireframe_backface_culling,
+                                product=self.product)
+        return {'FINISHED'}

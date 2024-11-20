@@ -218,6 +218,10 @@ def bpy_poll_is_camera(self: Any, obj: Optional[Object]) -> bool:
     return obj and obj.type == 'CAMERA' and bpy_object_is_in_scene(obj)
 
 
+def bpy_poll_is_armature(self: Any, obj: Optional[Object]) -> bool:
+    return obj and obj.type == 'ARMATURE' and bpy_object_is_in_scene(obj)
+
+
 def _operator_with_context_old(operator: Operator,
                                context_override_dict: Dict,
                                *args, **kwargs) -> None:

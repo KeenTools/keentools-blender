@@ -16,13 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import math
 import os
 from typing import Any, List, Optional, Tuple, Dict
 
 from bpy.types import Object, Action, FCurve
 
-from .fcurve_operations import *
 from .kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..utils.bpy_common import (operator_with_context,
@@ -37,6 +35,14 @@ from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             get_obj_verts)
 from ..utils.manipulate import deselect_all
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from .fcurve_operations import (cleanup_keys_in_interval,
+                                snap_keys_in_interval,
+                                put_anim_data_in_fcurve,
+                                add_zero_keys_at_start_and_end,
+                                get_safe_action_fcurve,
+                                get_action_fcurve,
+                                get_fcurve_data,
+                                clear_fcurve)
 
 
 _log = KTLogger(__name__)
@@ -206,40 +212,6 @@ def restore_facs_blendshapes(obj: Object, scale: float,
     return counter
 
 
-def _cleanup_interval(start_keyframe: float, end_keyframe: float):
-    return min(start_keyframe, round(start_keyframe)), end_keyframe
-
-
-def _animation_interval(start_keyframe: float,
-                        end_keyframe: float) -> Tuple[int, int]:
-    return round(start_keyframe), math.floor(end_keyframe)
-
-
-def _cleanup_keys_in_interval(fcurve: FCurve, start_keyframe: float,
-                              end_keyframe: float) -> None:
-    for p in reversed(fcurve.keyframe_points):
-        if start_keyframe <= p.co[0] <= end_keyframe:
-            fcurve.keyframe_points.remove(p)
-    fcurve.update()
-
-
-def _add_zero_keys_at_start_and_end(fcurve: FCurve, start_keyframe: float,
-                                    end_keyframe: float) -> None:
-    left_keyframe, right_keyframe = _animation_interval(start_keyframe,
-                                                        end_keyframe)
-    anim_data = [(left_keyframe, 0), (right_keyframe,0)]
-    put_anim_data_in_fcurve(fcurve, anim_data)
-
-
-def _snap_keys_in_interval(fcurve: FCurve, start_keyframe: float,
-                           end_keyframe: float) -> None:
-    anim_data = [(x, fcurve.evaluate(x)) for x in
-                 range(*_animation_interval(start_keyframe, end_keyframe))]
-    _cleanup_keys_in_interval(fcurve, *_cleanup_interval(start_keyframe,
-                                                         end_keyframe))
-    put_anim_data_in_fcurve(fcurve, anim_data)
-
-
 def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
     try:
         _log.info(f'LOADING CSV FILE: {filepath}')
@@ -282,16 +254,16 @@ def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
     for name in facs_names:
         blendshape_fcurve = get_safe_action_fcurve(
             blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
-        _cleanup_keys_in_interval(blendshape_fcurve,
-                                  start_keyframe, end_keyframe)
+        cleanup_keys_in_interval(blendshape_fcurve,
+                                 start_keyframe, end_keyframe)
         if name in read_facs:
             anim_data = [x for x in zip(keyframes, fan.at_name(name))]
             put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
-            _snap_keys_in_interval(blendshape_fcurve,
-                                   start_keyframe, end_keyframe)
+            snap_keys_in_interval(blendshape_fcurve,
+                                  start_keyframe, end_keyframe)
         else:
-            _add_zero_keys_at_start_and_end(blendshape_fcurve,
-                                            start_keyframe, end_keyframe)
+            add_zero_keys_at_start_and_end(blendshape_fcurve,
+                                           start_keyframe, end_keyframe)
     obj.data.update()
     if len(keyframes) > 0:
         extend_scene_timeline_end(int(keyframes[-1]))

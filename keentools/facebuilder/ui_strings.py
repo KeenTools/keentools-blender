@@ -184,7 +184,7 @@ buttons = {
     ),
     FBConfig.fb_create_blendshapes_idname: Button(
         'Create',
-        'Create FACS blendshapes'
+        'Create ARKit blendshapes'
     ),
     FBConfig.fb_delete_blendshapes_idname: Button(
         'Delete',
@@ -377,7 +377,7 @@ help_texts = {
         '\u2013 Autofill: automatically fills the gaps with the generated texture.'
     ]),
     FBConfig.fb_help_blendshapes_idname: HelpText(_help_default_width, [
-        'Сreate ARKit-compatible FACS blendshapes, load animation '
+        'Сreate ARKit-compatible blendshapes (FACS), load animation '
         'from a CSV file. ',
         ' ',
         'Press \'Create\' button to generate 51 ARKit-compatible blendshapes. ',
@@ -416,7 +416,7 @@ help_texts = {
 Warning = namedtuple('Warning', ['content_red', 'content_white'])
 warnings = {
     FBConfig.fb_blendshapes_warning_idname: Warning([
-        'Your model contains FACS blendshapes. Once you change',
+        'Your model contains ARKit blendshapes. Once you change',
         'topology, blendshapes will be recreated. All modifications',
         'added to blendshapes as well as custom blendshapes will be lost.',
         ' '
@@ -430,8 +430,8 @@ warnings = {
     ]),
     FBConfig.fb_noblenshapes_until_expression_warning_idname: Warning([
         'Unfortunately, expressions extracted from photos ',
-        'can\'t be mixed with FACS blendshapes. ',
-        'You need a neutral expression in order to create FACS blendshapes.',
+        'can\'t be mixed with existing ARKit blendshapes. ',
+        'You need a neutral expression in order to create ARKit blendshapes.',
         ' '
     ], [
     ]),

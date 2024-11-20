@@ -189,9 +189,11 @@ class TrackerItem(PropertyGroup):
                     return True
             return False
 
+        _log.yellow('check_pins_on_geometry start')
         geomobj = self.geomobj
         if not geomobj or not geomobj.type == 'MESH':
             gt.remove_pins()
+            _log.output('check_pins_on_geometry 1 end >>>')
             return False
 
         verts_count = len(geomobj.data.vertices)
@@ -199,6 +201,7 @@ class TrackerItem(PropertyGroup):
         keyframes = gt.keyframes()
         if len(keyframes) == 0:
             gt.remove_pins()
+            _log.output('check_pins_on_geometry 2 end >>>')
             return False
 
         mesh = geomobj.data
@@ -227,6 +230,7 @@ class TrackerItem(PropertyGroup):
         except pkt_module().FaceGeoInputException as err:
             _log.red(f'check_pins_on_geometry FaceGeoInputException:\n{str(err)}')
             gt.remove_pins()
+            _log.output('check_pins_on_geometry 3 end >>>')
             return False
 
         if len(wrong_pins) > 0:
@@ -239,6 +243,7 @@ class TrackerItem(PropertyGroup):
             else:
                 gt.spring_pins_back(keyframes[0])
 
+        _log.output('check_pins_on_geometry end >>>')
         return True
 
     def get_geomobj_name(self) -> str:

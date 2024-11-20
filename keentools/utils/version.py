@@ -66,6 +66,7 @@ class BVersion:
     use_old_bgl_shaders: bool = ver < (3, 4, 0)
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
     principled_shader_has_specular: bool = ver < (4, 0, 0)
+    action_slots_exist: bool = ver >= (4, 4, 0)
 
     pack_uv_problem_exists: bool = ver == (3, 6, 0)
 
@@ -74,3 +75,4 @@ class BVersion:
     # Property fields of operators cannot be inherited in old Blenders (< 2.93)
 
     demo_mode: bool = 'KEENTOOLS_ENABLE_DEMO_MODE' in os.environ
+    debug_logging_mode: bool = 'KEENTOOLS_ENABLE_DEBUG_LOGGING' in os.environ
