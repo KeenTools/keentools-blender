@@ -6,6 +6,8 @@
 
 ## Release History
 
+2024.3.0 - 20 November 2024
+
 2024.2.3 - 23 October 2024
 
 2024.2.2 - 2 October 2024

@@ -34,7 +34,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2024.2.3'  # (3/6)
+    addon_version = '2024.3.0'  # (3/6)
     addon_version_tuple = tuple(map(int, addon_version.split('.')))
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),

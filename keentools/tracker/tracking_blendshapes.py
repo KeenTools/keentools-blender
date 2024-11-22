@@ -23,6 +23,7 @@ from typing import Any, Set, Tuple, List, Optional
 from bpy.types import Area, Object
 
 from ..utils.kt_logging import KTLogger
+from ..utils.version import BVersion
 from ..addon_config import ft_settings
 from ..facetracker_config import FTConfig
 from ..utils.bpy_common import (bpy_new_action,
@@ -228,6 +229,11 @@ def create_relative_shape_keyframe(frame: int, *,
     if not action:
         action = bpy_new_action(action_name)
         anim_data.action = action
+
+        if BVersion.action_slots_exist and not anim_data.action_slot:
+            if len(anim_data.action_slots) == 0:
+                anim_data.action.slots.new()
+            anim_data.action_slot = anim_data.action_slots[0]
 
     keyframe_set = set(gt.keyframes())
     main_fcurve = get_safe_action_fcurve(action,
