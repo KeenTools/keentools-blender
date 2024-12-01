@@ -25,7 +25,7 @@ from .kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..utils.bpy_common import (operator_with_context,
                                 extend_scene_timeline_end,
-                                bpy_data,
+                                bpy_new_action,
                                 bpy_scene,
                                 bpy_ops)
 from ..facebuilder_config import FBConfig
@@ -107,7 +107,7 @@ def _get_safe_blendshapes_action(
             return None
     if not animation_data.action:
         animation_data.action = \
-            bpy_data().actions.new(action_name)
+            bpy_new_action(action_name)
     return animation_data.action
 
 
@@ -456,7 +456,7 @@ def convert_blendshapes_animation_to_controls(obj: Object) -> bool:
         if not item['slider'].animation_data:
             item['slider'].animation_data_create()
         if not item['slider'].animation_data.action:
-            item['slider'].animation_data.action = bpy_data().actions.new(name + 'Action')
+            item['slider'].animation_data.action = bpy_new_action(name + 'Action')
         control_action = item['slider'].animation_data.action
         control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
         clear_fcurve(control_fcurve)
@@ -475,7 +475,7 @@ def create_facs_test_animation_on_sliders(obj: Object, start_time: float = 1,
         if not item['slider'].animation_data:
             item['slider'].animation_data_create()
         if not item['slider'].animation_data.action:
-            item['slider'].animation_data.action = bpy_data().actions.new(name + 'Action')
+            item['slider'].animation_data.action = bpy_new_action(name + 'Action')
         control_action = item['slider'].animation_data.action
         control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
         anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]

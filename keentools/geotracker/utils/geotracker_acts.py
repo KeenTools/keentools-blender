@@ -53,7 +53,7 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_set_current_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
-                                 bpy_data,
+                                 bpy_new_action,
                                  bpy_scene,
                                  bpy_render_single_frame,
                                  bpy_scene_selected_objects,
@@ -1501,7 +1501,7 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
 
     facs_names = pkt_module().FacsExecutor.facs_names
     action_name = 'ktFACS_anim'
-    blendshapes_action = bpy_data().actions.new(action_name)
+    blendshapes_action = bpy_new_action(action_name)
 
     for name in facs_names:
         blendshape_fcurve = get_safe_action_fcurve(
