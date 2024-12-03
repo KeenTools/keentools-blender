@@ -26,7 +26,7 @@ from ..utils.kt_logging import KTLogger
 from ..utils.version import BVersion
 from ..addon_config import ft_settings
 from ..facetracker_config import FTConfig
-from ..utils.bpy_common import (bpy_new_action,
+from ..utils.bpy_common import (bpy_new_action_with_slot,
                                 bpy_shape_key_move_top,
                                 bpy_shape_key_move_up,
                                 bpy_shape_key_move_bottom)
@@ -136,9 +136,9 @@ def make_fcurve_pile_animation(fcurve: Any, frames: List,
         return
     clear_fcurve(fcurve)
     pile = [0.0, 1.0, 0.0]
-    anim_data = [x for x in zip(frames, pile) if x[0] != -1]
-    fcurve.keyframe_points.add(len(anim_data))
-    for i, point in enumerate(anim_data):
+    anim_data_list = [x for x in zip(frames, pile) if x[0] != -1]
+    fcurve.keyframe_points.add(len(anim_data_list))
+    for i, point in enumerate(anim_data_list):
         kp = fcurve.keyframe_points[i]
         kp.co = point
         kp.interpolation = 'LINEAR'
@@ -227,13 +227,7 @@ def create_relative_shape_keyframe(frame: int, *,
 
     action = anim_data.action
     if not action:
-        action = bpy_new_action(action_name)
-        anim_data.action = action
-
-        if BVersion.action_slots_exist and not anim_data.action_slot:
-            if len(anim_data.action_slots) == 0:
-                anim_data.action.slots.new()
-            anim_data.action_slot = anim_data.action_slots[0]
+        action = bpy_new_action_with_slot(anim_data, action_name)
 
     keyframe_set = set(gt.keyframes())
     main_fcurve = get_safe_action_fcurve(action,

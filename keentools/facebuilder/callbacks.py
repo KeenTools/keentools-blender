@@ -19,18 +19,17 @@
 from typing import Any
 import numpy as np
 
-import bpy
-
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, fb_settings, get_operator, ErrorType
 from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
-from ..utils import coords
+from ..utils.coords import update_head_mesh_non_neutral
 from ..utils.manipulate import (get_vertex_groups,
                                 create_vertex_groups)
 from ..utils.blendshapes import (restore_facs_blendshapes,
-                                 disconnect_blendshapes_action)
+                                 disconnect_blendshape_action)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.bpy_common import bpy_remove_mesh, bpy_init_action_slot
 
 
 _log = KTLogger(__name__)
@@ -50,7 +49,7 @@ def mesh_update_accepted(headnum: int) -> None:
 
     if not head.has_no_blendshapes():
         names = [kb.name for kb in head.headobj.data.shape_keys.key_blocks[1:]]
-        action = disconnect_blendshapes_action(head.headobj)
+        action = disconnect_blendshape_action(head.headobj)
         _log.output(f'blendshapes: {names}')
         _update_mesh_now(headnum)
 
@@ -66,8 +65,9 @@ def mesh_update_accepted(headnum: int) -> None:
             _log.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
 
         if action:
-            head.headobj.data.shape_keys.animation_data_create()
-            head.headobj.data.shape_keys.animation_data.action = action
+            anim_data = head.headobj.data.shape_keys.animation_data_create()
+            anim_data.action = action
+            bpy_init_action_slot(anim_data)
     else:
         _update_mesh_now(headnum)
 
@@ -205,7 +205,7 @@ def _update_mesh_now(headnum: int) -> bool:
 
     mesh_name = old_mesh.name
     # Delete old mesh
-    bpy.data.meshes.remove(old_mesh, do_unlink=True)
+    bpy_remove_mesh(old_mesh)
     mesh.name = mesh_name
 
     if settings.pinmode:
@@ -225,7 +225,7 @@ def _update_expressions(head: Any, context: Any) -> None:
     fb.set_use_emotions(head.should_use_emotions())
     _log.output(f'EXPRESSIONS: {head.should_use_emotions()}')
 
-    coords.update_head_mesh_non_neutral(fb, head)
+    update_head_mesh_non_neutral(fb, head)
 
     FBLoader.save_fb_serial_str(headnum)
 
@@ -255,7 +255,7 @@ def _update_head_shape_with_expressions(head: Any, context: Any) -> None:
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.save_fb_serial_str(headnum)
 
-    coords.update_head_mesh_non_neutral(fb, head)
+    update_head_mesh_non_neutral(fb, head)
     if not settings.pinmode:
         return
 

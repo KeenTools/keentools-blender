@@ -35,7 +35,7 @@ from ...addon_config import (ActionStatus,
                              product_name,
                              show_unlicensed_warning)
 from ...geotracker_config import GTConfig
-from ...utils.animation import (get_action,
+from ...utils.animation import (get_object_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
                                 delete_locrot_keyframe,
@@ -54,6 +54,7 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_new_action,
+                                 bpy_init_action_slot,
                                  bpy_scene,
                                  bpy_render_single_frame,
                                  bpy_scene_selected_objects,
@@ -107,6 +108,7 @@ from ...utils.unbreak import (mark_object_keyframes,
                               unbreak_rotation_act,
                               unbreak_rotation_with_status)
 from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ...utils.blendshapes import create_basis_blendshape
 from ...utils.fcurve_operations import (get_safe_action_fcurve,
                                         put_anim_data_in_fcurve,
                                         cleanup_keys_in_interval,
@@ -841,7 +843,7 @@ def create_animated_empty_action(
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         msg = 'Selected object has no animation'
         _log.error(msg)
@@ -858,6 +860,7 @@ def create_animated_empty_action(
         empty = create_empty_object(GTConfig.gt_empty_name)
         anim_data = empty.animation_data_create()
         anim_data.action = action
+        bpy_init_action_slot(anim_data)
         select_object_only(empty)
     else:
         obj_animated_frames = get_object_keyframe_numbers(obj)
@@ -1488,7 +1491,8 @@ def save_facs_as_csv_action(*, filepath: Optional[str] = None,
 
 def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
                                   use_tracked_only: bool = False,
-                                  obj: Object) -> ActionStatus:
+                                  obj: Object,
+                                  action_name: str = 'ktARKit_anim') -> ActionStatus:
     _log.yellow(f'save_facs_as_csv_action start')
     facs_animation = pkt_module().FacsAnimation()
     save_status = save_facs_as_csv_action(filepath=None,
@@ -1500,12 +1504,12 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
         return save_status
 
     facs_names = pkt_module().FacsExecutor.facs_names
-    action_name = 'ktFACS_anim'
-    blendshapes_action = bpy_new_action(action_name)
+
+    blendshape_action = bpy_new_action(action_name)
 
     for name in facs_names:
         blendshape_fcurve = get_safe_action_fcurve(
-            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+            blendshape_action, 'key_blocks["{}"].value'.format(name), index=0)
 
         keyframes = [x for x in facs_animation.keyframes()]
         if len(keyframes) > 0:
@@ -1517,16 +1521,17 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
         cleanup_keys_in_interval(blendshape_fcurve,
                                  start_keyframe, end_keyframe)
 
-        anim_data = [x for x in zip(keyframes, facs_animation.at_name(name))]
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
-        snap_keys_in_interval(blendshape_fcurve,
-                              start_keyframe, end_keyframe)
+        anim_data_list = [x for x in zip(keyframes, facs_animation.at_name(name))]
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data_list)
+        snap_keys_in_interval(blendshape_fcurve, start_keyframe, end_keyframe)
 
     if not obj.data.shape_keys:
-        obj.shape_key_add(name='Basis')
-    if not obj.data.shape_keys.animation_data:
-        obj.data.shape_keys.animation_data_create()
-    obj.data.shape_keys.animation_data.action = blendshapes_action
+        create_basis_blendshape(obj)
+    anim_data = obj.data.shape_keys.animation_data
+    if not anim_data:
+        anim_data = obj.data.shape_keys.animation_data_create()
+    anim_data.action = blendshape_action
+    bpy_init_action_slot(anim_data)
     obj.data.update()
 
     return ActionStatus(True, 'ok')

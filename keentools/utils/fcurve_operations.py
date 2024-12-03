@@ -81,14 +81,14 @@ def snap_keys_in_interval(fcurve: FCurve, start_keyframe: float,
     points = list(set([round(p.co[0]) for p in fcurve.keyframe_points
                        if start_keyframe <= p.co[0] <= end_keyframe]))
     points.sort()
-    anim_data = [(x, fcurve.evaluate(x)) for x in points]
+    anim_data_list = [(x, fcurve.evaluate(x)) for x in points]
     cleanup_keys_in_interval(fcurve, left, right)
-    put_anim_data_in_fcurve(fcurve, anim_data)
+    put_anim_data_in_fcurve(fcurve, anim_data_list)
 
 
 def add_zero_keys_at_start_and_end(fcurve: FCurve, start_keyframe: float,
                                    end_keyframe: float) -> None:
     left = round(start_keyframe)
     right = math.floor(end_keyframe)
-    anim_data = [(left, 0), (right, 0)]
-    put_anim_data_in_fcurve(fcurve, anim_data)
+    anim_data_list = [(left, 0), (right, 0)]
+    put_anim_data_in_fcurve(fcurve, anim_data_list)

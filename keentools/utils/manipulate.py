@@ -38,7 +38,7 @@ def has_no_blendshape(obj: Optional[Object]) -> bool:
            not obj.data.shape_keys
 
 
-def has_blendshapes_action(obj: Optional[Object]) -> bool:
+def has_blendshape_action(obj: Optional[Object]) -> bool:
     if obj and obj.type == 'MESH' \
            and obj.data.shape_keys \
            and obj.data.shape_keys.animation_data \

@@ -22,7 +22,6 @@ from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector, Matrix
 
 from .kt_logging import KTLogger
-from .version import BVersion
 from .bpy_common import (bpy_current_frame,
                          bpy_start_frame,
                          bpy_end_frame,
@@ -30,7 +29,7 @@ from .bpy_common import (bpy_current_frame,
                          create_empty_object,
                          operator_with_context,
                          update_depsgraph,
-                         bpy_new_action,
+                         bpy_new_action_with_slot,
                          bpy_remove_action,
                          bpy_ops)
 from .fcurve_operations import *
@@ -40,7 +39,7 @@ _log = KTLogger(__name__)
 
 
 def count_fcurve_points(obj: Object, data_path: str, index: int = 0) -> int:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         return -1
     fcurve = get_action_fcurve(action, data_path, index=index)
@@ -52,7 +51,7 @@ def count_fcurve_points(obj: Object, data_path: str, index: int = 0) -> int:
 def remove_fcurve_point(obj: Object, frame: int, data_path: str,
                         index: int = 0, remove_empty_curve: bool = True,
                         remove_empty_action: bool = True) -> None:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         return
     fcurve = get_action_fcurve(action, data_path, index=index)
@@ -69,7 +68,7 @@ def remove_fcurve_point(obj: Object, frame: int, data_path: str,
 
 def get_evaluated_fcurve(obj: Object, frame: int, data_path: str,
                          index: int = 0) -> Optional[float]:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if not action:
         return None
     fcurve = get_action_fcurve(action, data_path, index=index)
@@ -92,33 +91,28 @@ def _has_action(obj: Object) -> bool:
     return obj.animation_data and obj.animation_data.action
 
 
-def get_action(obj: Object) -> Optional[Action]:
+def get_object_action(obj: Object) -> Optional[Action]:
     if not obj.animation_data:
         return None
     return obj.animation_data.action
 
 
-def _get_safe_action(obj: Object,
-                     action_name: str = 'NewAction') -> Optional[Action]:
-    animation_data = obj.animation_data
-    if not animation_data:
-        animation_data = obj.animation_data_create()
-        if not animation_data:
+def _get_safe_object_action(obj: Object,
+                            action_name: str = 'NewAction') -> Optional[Action]:
+    anim_data = obj.animation_data
+    if not anim_data:
+        anim_data = obj.animation_data_create()
+        if not anim_data:
             return None
-    if not animation_data.action:
-        animation_data.action = bpy_new_action(action_name)
+    if not anim_data.action:
+        _ = bpy_new_action_with_slot(anim_data, action_name)
 
-        if BVersion.action_slots_exist and not animation_data.action_slot:
-            if len(animation_data.action_slots) == 0:
-                animation_data.action.slots.new()
-            animation_data.action_slot = animation_data.action_slots[0]
-
-    return animation_data.action
+    return anim_data.action
 
 
 def create_animation_on_object(obj: Object, anim_dict: Dict,
                                action_name: str = 'gtAction') -> None:
-    action = _get_safe_action(obj, action_name)
+    action = _get_safe_object_action(obj, action_name)
     locrot_dict = get_locrot_dict()
 
     fcurves = {name: get_safe_action_fcurve(action,
@@ -180,7 +174,7 @@ def get_locrot_dict() -> Dict:
 
 def mark_all_points_in_locrot(obj: Object,
                               keyframe_type: str = 'JITTER') -> None:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if not action:
         return None
     locrot_dict = get_locrot_dict()
@@ -193,7 +187,7 @@ def mark_all_points_in_locrot(obj: Object,
 
 def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
                                    keyframe_type: str = 'KEYFRAME') -> None:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if not action:
         return None
     locrot_dict = get_locrot_dict()
@@ -206,7 +200,7 @@ def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
 
 def get_locrot_keys_in_frame(obj: Object, frame: int) -> Dict:
     res = dict()
-    action = get_action(obj)
+    action = get_object_action(obj)
     if not action:
         return res
     locrot_dict = get_locrot_dict()
@@ -243,7 +237,7 @@ def create_animation_locrot_keyframe_force(obj: Object) -> None:
 def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
                               keyframe_type: str, data_path: str,
                               index: int = 0, act_name: str = 'GTAct') -> None:
-    action = _get_safe_action(obj, act_name)
+    action = _get_safe_object_action(obj, act_name)
     if action is None:
         return
     fcurve = get_safe_action_fcurve(action, data_path, index=index)
@@ -261,14 +255,14 @@ def remove_fcurve_from_action(action: Action, data_path: str, index: int = 0,
 
 def remove_fcurve_from_object(obj: Object, data_path: str, index: int = 0,
                               remove_empty_action=True) -> None:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         return
     remove_fcurve_from_action(action, data_path, index, remove_empty_action)
 
 
 def create_locrot_keyframe(obj: Object, keyframe_type: str = 'KEYFRAME') -> None:
-    action = _get_safe_action(obj, 'GTAct')
+    action = _get_safe_object_action(obj, 'GTAct')
     if action is None:
         return
     locrot_dict = get_locrot_dict()
@@ -291,17 +285,8 @@ def delete_locrot_keyframe(obj: Object) -> None:
                           type='BUILTIN_KSI_LocRot')
 
 
-def reset_object_action(obj: Object) -> None:
-    animation_data = obj.animation_data
-    if not animation_data:
-        return
-    act = animation_data.action
-    animation_data.action = None
-    animation_data.action = act
-
-
 def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int) -> None:
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         return
 
@@ -321,7 +306,7 @@ def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
                                 rot: bool = True) -> List[int]:
     if not obj:
         return []
-    action: Action = get_action(obj)
+    action: Action = get_object_action(obj)
     if action is None:
         return []
 

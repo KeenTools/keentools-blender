@@ -33,7 +33,7 @@ from ..utils.blendshapes import (create_blendshape_controls,
                                  remove_blendshape_drivers,
                                  delete_with_children,
                                  select_control_panel_sliders,
-                                 has_blendshapes_action,
+                                 has_blendshape_action,
                                  convert_blendshapes_animation_to_controls)
 from .ui_strings import buttons
 
@@ -73,7 +73,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     head.headobj.data.update()  # update for drivers affection
 
                     head.blendshapes_control_panel = control_panel
-                    if has_blendshapes_action(head.headobj):
+                    if has_blendshape_action(head.headobj):
                         convert_blendshapes_animation_to_controls(head.headobj)
                 else:
                     self.report({'ERROR'}, 'No Blendshapes found. '
