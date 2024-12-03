@@ -35,7 +35,7 @@ from ...addon_config import (ActionStatus,
                              product_name,
                              show_unlicensed_warning)
 from ...geotracker_config import GTConfig
-from ...utils.animation import (get_action,
+from ...utils.animation import (get_object_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
                                 delete_locrot_keyframe,
@@ -54,6 +54,7 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_new_action,
+                                 bpy_init_action_slot,
                                  bpy_scene,
                                  bpy_render_single_frame,
                                  bpy_scene_selected_objects,
@@ -107,6 +108,7 @@ from ...utils.unbreak import (mark_object_keyframes,
                               unbreak_rotation_act,
                               unbreak_rotation_with_status)
 from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ...utils.blendshapes import create_basis_blendshape
 from ...utils.fcurve_operations import (get_safe_action_fcurve,
                                         put_anim_data_in_fcurve,
                                         cleanup_keys_in_interval,
@@ -841,7 +843,7 @@ def create_animated_empty_action(
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         msg = 'Selected object has no animation'
         _log.error(msg)
@@ -858,6 +860,7 @@ def create_animated_empty_action(
         empty = create_empty_object(GTConfig.gt_empty_name)
         anim_data = empty.animation_data_create()
         anim_data.action = action
+        bpy_init_action_slot(anim_data)
         select_object_only(empty)
     else:
         obj_animated_frames = get_object_keyframe_numbers(obj)
@@ -1285,13 +1288,17 @@ def transfer_tracking_to_camera_action(*, product: int) -> ActionStatus:
     all_matrices = {x:gt.model_mat(x) for x in all_animated_frames}
     _log.output(f'ALL: {all_matrices.keys()}')
 
-    for frame in all_matrices:
+    bpy_progress_begin(0, len(all_matrices))
+    for i, frame in enumerate(all_matrices):
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(geomobj)
         geomobj.matrix_world = geom_matrix
         loader.place_camera_relative_to_object(all_matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(camobj)
+        bpy_progress_update(i)
+
+    bpy_progress_end()
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = True
@@ -1341,13 +1348,17 @@ def transfer_tracking_to_geometry_action(*, product: int) -> ActionStatus:
     all_matrices = {x:gt.model_mat(x) for x in all_animated_frames}
     _log.output(f'ALL: {all_matrices.keys()}')
 
-    for frame in all_matrices:
+    bpy_progress_begin(0, len(all_matrices))
+    for i, frame in enumerate(all_matrices):
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(camobj)
         camobj.matrix_world = cam_matrix
         loader.place_object_relative_to_camera(all_matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(geomobj)
+        bpy_progress_update(i)
+
+    bpy_progress_end()
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = False
@@ -1488,7 +1499,8 @@ def save_facs_as_csv_action(*, filepath: Optional[str] = None,
 
 def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
                                   use_tracked_only: bool = False,
-                                  obj: Object) -> ActionStatus:
+                                  obj: Object,
+                                  action_name: str = 'ktARKit_anim') -> ActionStatus:
     _log.yellow(f'save_facs_as_csv_action start')
     facs_animation = pkt_module().FacsAnimation()
     save_status = save_facs_as_csv_action(filepath=None,
@@ -1500,12 +1512,12 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
         return save_status
 
     facs_names = pkt_module().FacsExecutor.facs_names
-    action_name = 'ktFACS_anim'
-    blendshapes_action = bpy_new_action(action_name)
+
+    blendshape_action = bpy_new_action(action_name)
 
     for name in facs_names:
         blendshape_fcurve = get_safe_action_fcurve(
-            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+            blendshape_action, 'key_blocks["{}"].value'.format(name), index=0)
 
         keyframes = [x for x in facs_animation.keyframes()]
         if len(keyframes) > 0:
@@ -1517,16 +1529,17 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
         cleanup_keys_in_interval(blendshape_fcurve,
                                  start_keyframe, end_keyframe)
 
-        anim_data = [x for x in zip(keyframes, facs_animation.at_name(name))]
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
-        snap_keys_in_interval(blendshape_fcurve,
-                              start_keyframe, end_keyframe)
+        anim_data_list = [x for x in zip(keyframes, facs_animation.at_name(name))]
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data_list)
+        snap_keys_in_interval(blendshape_fcurve, start_keyframe, end_keyframe)
 
     if not obj.data.shape_keys:
-        obj.shape_key_add(name='Basis')
-    if not obj.data.shape_keys.animation_data:
-        obj.data.shape_keys.animation_data_create()
-    obj.data.shape_keys.animation_data.action = blendshapes_action
+        create_basis_blendshape(obj)
+    anim_data = obj.data.shape_keys.animation_data
+    if not anim_data:
+        anim_data = obj.data.shape_keys.animation_data_create()
+    anim_data.action = blendshape_action
+    bpy_init_action_slot(anim_data)
     obj.data.update()
 
     return ActionStatus(True, 'ok')
@@ -1656,13 +1669,18 @@ def scale_scene_tracking_action(operator: Operator,
 
     source_geom_matrices = {}
     source_cam_matrices = {}
-    for frame in all_animated_frame_set:
+    bpy_progress_begin(0, len(all_animated_frame_set))
+    for i, frame in enumerate(all_animated_frame_set):
         bpy_set_current_frame(frame)
         source_geom_matrices[frame] = geomobj.matrix_world.copy()
         source_cam_matrices[frame] = camobj.matrix_world.copy()
+        bpy_progress_update(i)
+
+    bpy_progress_end()
 
     if operator.mode == 'GEOMETRY':
-        for frame in geom_animated_frame_set:
+        bpy_progress_begin(0, len(geom_animated_frame_set))
+        for i, frame in enumerate(geom_animated_frame_set):
             bpy_set_current_frame(frame)
             rescale_matrix = _scale_relative_to_point_matrix(
                 LocRotWithoutScale(source_cam_matrices[frame]), operator.value)
@@ -1671,6 +1689,9 @@ def scale_scene_tracking_action(operator: Operator,
             _apply_geomobj_scale(geomobj, operator)
             update_depsgraph()
             create_animation_locrot_keyframe_force(geomobj)
+            bpy_progress_update(i)
+
+        bpy_progress_end()
 
         bpy_set_current_frame(current_frame)
         if len(geom_animated_frame_set) == 0:
@@ -1678,7 +1699,8 @@ def scale_scene_tracking_action(operator: Operator,
                 rescale_matrix @ get_stored_data('geomobj_matrix_world')
 
     elif operator.mode == 'CAMERA':
-        for frame in cam_animated_frame_set:
+        bpy_progress_begin(0, len(cam_animated_frame_set))
+        for i, frame in enumerate(cam_animated_frame_set):
             bpy_set_current_frame(frame)
             rescale_matrix = _scale_relative_to_point_matrix(
                 LocRotWithoutScale(source_geom_matrices[frame]), operator.value)
@@ -1687,13 +1709,17 @@ def scale_scene_tracking_action(operator: Operator,
             _apply_camobj_scale(camobj, operator)
             update_depsgraph()
             create_animation_locrot_keyframe_force(camobj)
+            bpy_progress_update(i)
+
+        bpy_progress_end()
 
         bpy_set_current_frame(current_frame)
         if len(cam_animated_frame_set) == 0:
             camobj.matrix_world = \
                 rescale_matrix @ get_stored_data('camobj_matrix_world')
     else:
-        for frame in all_animated_frame_set:
+        bpy_progress_begin(0, len(all_animated_frame_set))
+        for i, frame in enumerate(all_animated_frame_set):
             bpy_set_current_frame(frame)
             camobj.matrix_world = rescale_matrix @ source_cam_matrices[frame]
             geomobj.matrix_world = rescale_matrix @ source_geom_matrices[frame]
@@ -1704,6 +1730,9 @@ def scale_scene_tracking_action(operator: Operator,
                 create_animation_locrot_keyframe_force(camobj)
             if frame in geom_animated_frame_set:
                 create_animation_locrot_keyframe_force(geomobj)
+            bpy_progress_update(i)
+
+        bpy_progress_end()
 
         bpy_set_current_frame(current_frame)
         if len(cam_animated_frame_set) == 0:
@@ -1852,20 +1881,28 @@ def move_scene_tracking_action(operator: Operator,
     transform_matrix = get_operator_reposition_matrix(operator, product=product)
     _log.output(f'transform_matrix:\n{transform_matrix}')
 
-    for frame in geom_animated_frame_set:
+    bpy_progress_begin(0, len(geom_animated_frame_set))
+    for i, frame in enumerate(geom_animated_frame_set):
         bpy_set_current_frame(frame)
         geomobj.matrix_world = transform_matrix @ geomobj.matrix_world
         update_depsgraph()
         create_animation_locrot_keyframe_force(geomobj)
+        bpy_progress_update(i)
+
+    bpy_progress_end()
 
     if len(geom_animated_frame_set) == 0:
         geomobj.matrix_world = transform_matrix @ geomobj.matrix_world
 
-    for frame in cam_animated_frame_set:
+    bpy_progress_begin(0, len(cam_animated_frame_set))
+    for i, frame in enumerate(cam_animated_frame_set):
         bpy_set_current_frame(frame)
         camobj.matrix_world = transform_matrix @ camobj.matrix_world
         update_depsgraph()
         create_animation_locrot_keyframe_force(camobj)
+        bpy_progress_update(i)
+
+    bpy_progress_end()
 
     if len(cam_animated_frame_set) == 0:
         camobj.matrix_world = transform_matrix @ camobj.matrix_world

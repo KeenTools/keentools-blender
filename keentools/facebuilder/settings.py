@@ -541,7 +541,7 @@ class FBHeadItem(PropertyGroup):
         return not self.headobj or not self.headobj.data or \
                not self.headobj.data.shape_keys
 
-    def has_blendshapes_action(self) -> bool:
+    def has_blendshape_action(self) -> bool:
         if self.headobj and self.headobj.data.shape_keys \
                and self.headobj.data.shape_keys.animation_data \
                and self.headobj.data.shape_keys.animation_data.action:

@@ -26,6 +26,7 @@ from ..addon_config import Config, get_operator, ErrorType
 from ..utils.bpy_common import (operator_with_context,
                                 extend_scene_timeline_end,
                                 bpy_new_action,
+                                bpy_new_action_with_slot,
                                 bpy_scene,
                                 bpy_ops)
 from ..facebuilder_config import FBConfig
@@ -79,12 +80,12 @@ def _has_no_blendshapes(obj: Object) -> bool:
     return not obj.data.shape_keys
 
 
-def has_blendshapes_action(obj: Object) -> bool:
+def has_blendshape_action(obj: Object) -> bool:
     return obj.data.shape_keys and obj.data.shape_keys.animation_data and \
            obj.data.shape_keys.animation_data.action
 
 
-def _create_basis_blendshape(obj: Object) -> None:
+def create_basis_blendshape(obj: Object) -> None:
     if _has_no_blendshapes(obj):
         obj.shape_key_add(name='Basis')
 
@@ -96,19 +97,18 @@ def _get_all_blendshape_names(obj: Object) -> List[str]:
     return res[1:]
 
 
-def _get_safe_blendshapes_action(
-        obj: Object, action_name: str = FBConfig.default_blendshapes_action_name) -> Optional[Any]:
+def _get_safe_blendshape_action(
+        obj: Object, action_name: str = FBConfig.default_blendshape_action_name) -> Optional[Any]:
     if _has_no_blendshapes(obj):
         return None
-    animation_data = obj.data.shape_keys.animation_data
-    if not animation_data:
-        animation_data = obj.data.shape_keys.animation_data_create()
-        if not animation_data:
+    anim_data = obj.data.shape_keys.animation_data
+    if not anim_data:
+        anim_data = obj.data.shape_keys.animation_data_create()
+        if not anim_data:
             return None
-    if not animation_data.action:
-        animation_data.action = \
-            bpy_new_action(action_name)
-    return animation_data.action
+    if not anim_data.action:
+        _ = bpy_new_action_with_slot(anim_data, action_name)
+    return anim_data.action
 
 
 def remove_blendshapes(obj: Object) -> None:
@@ -118,8 +118,8 @@ def remove_blendshapes(obj: Object) -> None:
         obj.shape_key_remove(blendshape)
 
 
-def disconnect_blendshapes_action(obj: Object) -> Optional[Action]:
-    if has_blendshapes_action(obj):
+def disconnect_blendshape_action(obj: Object) -> Optional[Action]:
+    if has_blendshape_action(obj):
         action = obj.data.shape_keys.animation_data.action
         obj.data.shape_keys.animation_data.action = None
         obj.data.update()
@@ -164,7 +164,7 @@ def create_facs_blendshapes(obj: Object, scale: float) -> int:
     if not facs_executor:
         return -1
 
-    _create_basis_blendshape(obj)
+    create_basis_blendshape(obj)
     counter = 0
     for i, name in enumerate(facs_executor.facs_names):
         if obj.data.shape_keys.key_blocks.find(name) < 0:
@@ -195,7 +195,7 @@ def update_facs_blendshapes(obj: Object, scale: float) -> int:
 
 def restore_facs_blendshapes(obj: Object, scale: float,
                              restore_names: List[str]) -> int:
-    _create_basis_blendshape(obj)
+    create_basis_blendshape(obj)
     facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
         return -1
@@ -236,7 +236,7 @@ def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
                 'ignored': [], 'read_facs': []}
 
     action_name = os.path.splitext(os.path.basename(filepath))[0]
-    blendshapes_action = _get_safe_blendshapes_action(obj, action_name)
+    blendshape_action = _get_safe_blendshape_action(obj, action_name)
 
     scene = bpy_scene()
     fps = scene.render.fps
@@ -253,12 +253,12 @@ def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
 
     for name in facs_names:
         blendshape_fcurve = get_safe_action_fcurve(
-            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+            blendshape_action, 'key_blocks["{}"].value'.format(name), index=0)
         cleanup_keys_in_interval(blendshape_fcurve,
                                  start_keyframe, end_keyframe)
         if name in read_facs:
-            anim_data = [x for x in zip(keyframes, fan.at_name(name))]
-            put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+            anim_data_list = [x for x in zip(keyframes, fan.at_name(name))]
+            put_anim_data_in_fcurve(blendshape_fcurve, anim_data_list)
             snap_keys_in_interval(blendshape_fcurve,
                                   start_keyframe, end_keyframe)
         else:
@@ -284,17 +284,17 @@ def create_facs_test_animation_on_blendshapes(obj: Object,
     if _has_no_blendshapes(obj):
         return -1
     counter = 0
-    blendshapes_action = _get_safe_blendshapes_action(
+    blendshape_action = _get_safe_blendshape_action(
         obj, FBConfig.example_animation_action_name)
     time = start_time
     for kb in obj.data.shape_keys.key_blocks[1:]:
         blendshape_fcurve = get_safe_action_fcurve(
-            blendshapes_action,
+            blendshape_action,
             'key_blocks["{}"].value'.format(kb.name),
             index=0)
-        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
+        anim_data_list = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
         time += dtime * 2
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data_list)
         counter += 1
     obj.data.update()
     extend_scene_timeline_end(int(time))
@@ -423,18 +423,18 @@ def convert_controls_animation_to_blendshapes(obj: Object) -> bool:
     if _has_no_blendshapes(obj):
         return False
     all_dict = _get_blendshapes_drivers(obj)
-    blend_action = _get_safe_blendshapes_action(obj)
+    blend_action = _get_safe_blendshape_action(obj)
     if not blend_action:
         return False
     for name in all_dict:
         item = all_dict[name]
         control_action = item['slider'].animation_data.action
         control_fcurve = get_action_fcurve(control_action, 'location', index=0)
-        anim_data = get_fcurve_data(control_fcurve)
+        anim_data_list = get_fcurve_data(control_fcurve)
         blendshape_fcurve = get_safe_action_fcurve(
             blend_action, 'key_blocks["{}"].value'.format(name), index=0)
         clear_fcurve(blendshape_fcurve)
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data_list)
     return True
 
 
@@ -442,7 +442,7 @@ def convert_blendshapes_animation_to_controls(obj: Object) -> bool:
     if _has_no_blendshapes(obj):
         return False
     all_dict = _get_blendshapes_drivers(obj)
-    blend_action = _get_safe_blendshapes_action(obj)
+    blend_action = _get_safe_blendshape_action(obj)
     if not blend_action:
         return False
     for name in all_dict:
@@ -450,7 +450,7 @@ def convert_blendshapes_animation_to_controls(obj: Object) -> bool:
             blend_action, 'key_blocks["{}"].value'.format(name), index=0)
         if not blendshape_fcurve:
             continue
-        anim_data = get_fcurve_data(blendshape_fcurve)
+        anim_data_list = get_fcurve_data(blendshape_fcurve)
 
         item = all_dict[name]
         if not item['slider'].animation_data:
@@ -460,7 +460,7 @@ def convert_blendshapes_animation_to_controls(obj: Object) -> bool:
         control_action = item['slider'].animation_data.action
         control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
         clear_fcurve(control_fcurve)
-        put_anim_data_in_fcurve(control_fcurve, anim_data)
+        put_anim_data_in_fcurve(control_fcurve, anim_data_list)
     return True
 
 
@@ -478,7 +478,7 @@ def create_facs_test_animation_on_sliders(obj: Object, start_time: float = 1,
             item['slider'].animation_data.action = bpy_new_action(name + 'Action')
         control_action = item['slider'].animation_data.action
         control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
-        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
+        anim_data_list = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
         time += dtime * 2
-        put_anim_data_in_fcurve(control_fcurve, anim_data)
+        put_anim_data_in_fcurve(control_fcurve, anim_data_list)
     return True

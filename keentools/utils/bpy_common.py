@@ -20,7 +20,7 @@ from contextlib import contextmanager
 import traceback
 
 import bpy
-from bpy.types import Object, Mesh, Operator, Camera, Scene, Image, Material
+from bpy.types import Object, Mesh, Operator, Camera, Scene, Image, Material, Action
 
 from .version import BVersion
 from .kt_logging import KTLogger
@@ -357,6 +357,10 @@ def bpy_new_mesh(mesh_name: str) -> Mesh:
     return bpy.data.meshes.new(mesh_name)
 
 
+def bpy_remove_mesh(mesh: Mesh) -> None:
+    bpy.data.meshes.remove(mesh, do_unlink=True)
+
+
 def bpy_remove_material(mat: Optional[Material]) -> None:
     if mat is None:
         return
@@ -460,6 +464,21 @@ def bpy_object_name(obj: Object, default_name: str = 'Undefined') -> str:
 
 def bpy_new_action(name: str) -> Any:
     return bpy.data.actions.new(name)
+
+
+def bpy_init_action_slot(animation_data: Any) -> bool:
+    if BVersion.action_slots_exist and not animation_data.action_slot:
+        if len(animation_data.action.slots) == 0:
+            animation_data.action.slots.new()
+        animation_data.action_slot = animation_data.action.slots[0]
+        return True
+    return False
+
+
+def bpy_new_action_with_slot(animation_data: Any, action_name: str) -> Action:
+    animation_data.action = bpy_new_action(action_name)
+    bpy_init_action_slot(animation_data)
+    return animation_data.action
 
 
 def bpy_remove_action(action: Any) -> None:

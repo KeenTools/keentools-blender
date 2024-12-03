@@ -1902,7 +1902,7 @@ class GT_OT_RigWindow(Operator):
             _rig_empty.show_in_front = False
             _rig_empty.show_name = False
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
 
         objects: List[Object] = []
