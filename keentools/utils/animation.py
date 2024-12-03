@@ -31,7 +31,10 @@ from .bpy_common import (bpy_current_frame,
                          update_depsgraph,
                          bpy_new_action_with_slot,
                          bpy_remove_action,
-                         bpy_ops)
+                         bpy_ops,
+                         bpy_progress_begin,
+                         bpy_progress_end,
+                         bpy_progress_update)
 from .fcurve_operations import *
 
 
@@ -336,9 +339,14 @@ def get_world_matrices_in_frames(obj: Object,
                                  frame_list: List[int]) -> Dict[int, Matrix]:
     all_matrices = {}
     current_frame = bpy_current_frame()
-    for frame in frame_list:
+    bpy_progress_begin(0, len(frame_list))
+    for i, frame in enumerate(frame_list):
         bpy_set_current_frame(frame)
         all_matrices[frame] = obj.matrix_world.copy()
+        bpy_progress_update(i)
+
+    bpy_progress_end()
+
     bpy_set_current_frame(current_frame)
     return all_matrices
 
@@ -346,11 +354,16 @@ def get_world_matrices_in_frames(obj: Object,
 def apply_world_matrices_in_frames(obj: Object,
                                    matrices: Dict[int, Matrix]) -> None:
     current_frame = bpy_current_frame()
-    for frame in matrices:
+    bpy_progress_begin(0, len(matrices))
+    for i, frame in enumerate(matrices):
         bpy_set_current_frame(frame)
         obj.matrix_world = matrices[frame]
         update_depsgraph()
         create_animation_locrot_keyframe_force(obj)
+        bpy_progress_update(i)
+
+    bpy_progress_end()
+
     bpy_set_current_frame(current_frame)
 
 
