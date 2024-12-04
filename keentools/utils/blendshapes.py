@@ -97,15 +97,26 @@ def _get_all_blendshape_names(obj: Object) -> List[str]:
     return res[1:]
 
 
-def _get_safe_blendshape_action(
-        obj: Object, action_name: str = FBConfig.default_blendshape_action_name) -> Optional[Any]:
-    if _has_no_blendshapes(obj):
-        return None
+def _get_safe_blendshape_animation_data_with_action(
+        obj: Object, action_name: str) -> Optional[Any]:
+    assert not not obj.data.shape_keys, 'No shape keys on object'
     anim_data = obj.data.shape_keys.animation_data
     if not anim_data:
         anim_data = obj.data.shape_keys.animation_data_create()
         if not anim_data:
             return None
+    if not anim_data.action:
+        _ = bpy_new_action_with_slot(anim_data, action_name)
+    return anim_data
+
+
+def _get_safe_blendshape_action(
+        obj: Object, action_name: str = FBConfig.default_blendshape_action_name) -> Optional[Any]:
+    if _has_no_blendshapes(obj):
+        return None
+    anim_data = _get_safe_blendshape_animation_data_with_action(obj, action_name)
+    if not anim_data:
+        return None
     if not anim_data.action:
         _ = bpy_new_action_with_slot(anim_data, action_name)
     return anim_data.action

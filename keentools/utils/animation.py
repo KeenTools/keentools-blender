@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional, List, Set, Dict
+from typing import Optional, List, Set, Dict, Any
 
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector, Matrix
@@ -100,8 +100,8 @@ def get_object_action(obj: Object) -> Optional[Action]:
     return obj.animation_data.action
 
 
-def _get_safe_object_action(obj: Object,
-                            action_name: str = 'NewAction') -> Optional[Action]:
+def _get_safe_object_animation_data_with_action(
+        obj: Object, action_name: str) -> Optional[Any]:
     anim_data = obj.animation_data
     if not anim_data:
         anim_data = obj.animation_data_create()
@@ -109,7 +109,13 @@ def _get_safe_object_action(obj: Object,
             return None
     if not anim_data.action:
         _ = bpy_new_action_with_slot(anim_data, action_name)
+    return anim_data
 
+
+def _get_safe_object_action(obj: Object, action_name: str) -> Optional[Action]:
+    anim_data = _get_safe_object_animation_data_with_action(obj, action_name)
+    if not anim_data:
+        return None
     return anim_data.action
 
 

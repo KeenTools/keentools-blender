@@ -109,12 +109,12 @@ def update_mesh_simple(head: Any, context: Any) -> None:
 
 
 def _update_mesh_now(headnum: int) -> bool:
-    _log.output('callbacks.update_mesh')
+    _log.yellow('callbacks.update_mesh start')
 
     settings = fb_settings()
     head = settings.get_head(headnum)
     if not head:
-        _log.output('WRONG_HEAD')
+        _log.error('WRONG HEAD')
         return False
 
     if head.should_use_emotions() and \
@@ -160,13 +160,13 @@ def _update_mesh_now(headnum: int) -> bool:
 
     _log.output(f'MODEL_TYPE: [{model_index}] {head.model_type}')
 
-    # Create new mesh
+    _log.output('Create new mesh')
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
                                      uv_set=head.tex_uv_shape,
                                      keyframe=keyframe)
     try:
-        # Copy old material
+        _log.output('Copy old material')
         if old_mesh.materials:
             mesh.materials.append(old_mesh.materials[0])
     except Exception:
@@ -184,7 +184,7 @@ def _update_mesh_now(headnum: int) -> bool:
     head.headobj.data = mesh
     FBLoader.save_fb_serial_str(headnum)
 
-    # Copy blendshapes and animation
+    _log.output('Copy blendshapes and animation')
     if old_mesh.shape_keys and len(old_mesh.vertices) == len(mesh.vertices):
         for kb in old_mesh.shape_keys.key_blocks:
             shape = head.headobj.shape_key_add(name=kb.name)
@@ -194,8 +194,9 @@ def _update_mesh_now(headnum: int) -> bool:
             shape.data.foreach_set('co', verts.ravel())
             shape.value = kb.value
         if old_mesh.shape_keys.animation_data and old_mesh.shape_keys.animation_data.action:
-            mesh.shape_keys.animation_data_create()
-            mesh.shape_keys.animation_data.action = old_mesh.shape_keys.animation_data.action
+            anim_data = mesh.shape_keys.animation_data_create()
+            anim_data.action = old_mesh.shape_keys.animation_data.action
+            bpy_init_action_slot(anim_data)
 
     if recreate_vertex_groups_flag:
         try:
@@ -204,13 +205,14 @@ def _update_mesh_now(headnum: int) -> bool:
             _log.error(f'_update_mesh_now create VG: {str(err)}')
 
     mesh_name = old_mesh.name
-    # Delete old mesh
+    _log.output('Delete old mesh')
     bpy_remove_mesh(old_mesh)
     mesh.name = mesh_name
 
     if settings.pinmode:
         FBLoader.update_fb_viewport_shaders(wireframe=True,
                                             pins_and_residuals=True)
+    _log.output('_update_mesh_now end >>>')
     return True
 
 
