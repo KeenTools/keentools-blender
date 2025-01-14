@@ -857,20 +857,26 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
         _log.green(f'{self.__class__.__name__} execute '
                    f'[{product_name(self.product)}]')
         settings = get_settings(self.product)
+        geotracker = settings.get_current_geotracker_item()
 
-        if settings.export_locator_selector in ['GEOMETRY', 'CAMERA']:
-            geotracker = settings.get_current_geotracker_item()
-            if settings.export_locator_selector == 'GEOMETRY':
-                obj = geotracker.geomobj
-            elif settings.export_locator_selector == 'CAMERA':
-                obj = geotracker.camobj
+        if settings.export_locator_selector == 'GEOMETRY':
             act_status = create_animated_empty_action(
-                obj, self.product, settings.export_linked_locator)
+                geotracker.geomobj, FTConfig.ft_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
             _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'CAMERA':
+            act_status = create_animated_empty_action(
+                geotracker.camobj, FTConfig.ft_empty_name, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
         elif settings.export_locator_selector == 'SELECTED_PINS':
             if len(settings.loader().viewport().pins().get_selected_pins()) == 0:
                 msg = 'No pins selected'

@@ -48,6 +48,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_scene,
+                                create_empty_object,
                                 bpy_remove_object)
 from ..tracker.calc_timer import TrackTimer, RefineTimer
 
@@ -81,7 +82,6 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     remove_pins_action,
                                     toggle_pins_action,
                                     center_geo_action,
-                                    create_empty_object_by_product,
                                     create_animated_empty_action,
                                     create_hard_empties_from_selected_pins_action,
                                     bake_texture_from_frames_action,
@@ -641,20 +641,26 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
         _log.green(f'{self.__class__.__name__} execute '
                    f'[{product_name(self.product)}]')
         settings = get_settings(self.product)
+        geotracker = settings.get_current_geotracker_item()
 
-        if settings.export_locator_selector in ['GEOMETRY', 'CAMERA']:
-            geotracker = settings.get_current_geotracker_item()
-            if settings.export_locator_selector == 'GEOMETRY':
-                obj = geotracker.geomobj
-            elif settings.export_locator_selector == 'CAMERA':
-                obj = geotracker.camobj
+        if settings.export_locator_selector == 'GEOMETRY':
             act_status = create_animated_empty_action(
-                obj, self.product, settings.export_linked_locator)
+                geotracker.geomobj, GTConfig.gt_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
             _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'CAMERA':
+            act_status = create_animated_empty_action(
+                geotracker.camobj, GTConfig.gt_empty_name, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            _log.output(f'{self.__class__.__name__} execute end >>>')
+            return {'FINISHED'}
+
         elif settings.export_locator_selector == 'SELECTED_PINS':
             if len(settings.loader().viewport().pins().get_selected_pins()) == 0:
                 msg = 'No pins selected'
@@ -1948,7 +1954,7 @@ class GT_OT_RigWindow(Operator):
         geotracker = settings.get_current_geotracker_item()
 
         global _rig_empty
-        _rig_empty = create_empty_object_by_product(product=self.product)
+        _rig_empty = create_empty_object(GTConfig.gt_empty_name)
         _rig_empty.show_in_front = True
         _rig_empty.show_name = True
 

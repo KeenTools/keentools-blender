@@ -34,7 +34,6 @@ from ...addon_config import (ActionStatus,
                              ft_settings,
                              product_name,
                              show_unlicensed_warning)
-from ...facetracker_config import FTConfig
 from ...geotracker_config import GTConfig
 from ...utils.animation import (get_object_action,
                                 remove_fcurve_point,
@@ -836,29 +835,8 @@ def center_geo_action(*, product: int) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def _get_empty_object_name(product: ProductType) -> Optional[str]:
-    if product == ProductType.GEOTRACKER:
-        return GTConfig.gt_empty_name
-    elif product == ProductType.FACETRACKER:
-        return FTConfig.ft_empty_name
-    else:
-        return None
-
-
-def create_empty_object_by_product(*, product: Optional[ProductType] = None,
-                                   force_name: Optional[str] = None) -> Object:
-    if (product is None) == (force_name is None):
-        raise "Choose only one between `force_name` and `product`."
-    if force_name is not None:
-        name = force_name
-    if product is not None:
-        name = _get_empty_object_name(product)
-        assert name, f"Not valid product {product} for empty object creation."
-    return create_empty_object(name)
-
-
 def create_animated_empty_action(
-        obj: Object, product: ProductType, linked: bool=False,
+        obj: Object, name: str, linked: bool=False,
         force_bake_all_frames: bool=False) -> ActionStatus:
     _log.yellow(f'create_animated_empty_action start')
     if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
@@ -879,7 +857,7 @@ def create_animated_empty_action(
             _log.error(msg)
             return ActionStatus(False, msg)
 
-        empty = create_empty_object_by_product(product=product)
+        empty = create_empty_object(name)
         anim_data = empty.animation_data_create()
         anim_data.action = action
         bpy_init_action_slot(anim_data)
@@ -896,7 +874,7 @@ def create_animated_empty_action(
                 _log.error(msg)
                 return ActionStatus(False, msg)
 
-        empty = create_empty_object_by_product(product=product)
+        empty = create_empty_object(name)
 
         for frame in obj_animated_frames:
             bpy_set_current_frame(frame)
@@ -967,7 +945,7 @@ def create_hard_empties_from_selected_pins_action(
     zv = Vector((0, 0, 1))
 
     for i, pos in enumerate(pin_positions):
-        empty = create_empty_object_by_product(force_name='gtPin')
+        empty = create_empty_object('gtPin')
         empty.empty_display_type = 'ARROWS'
         empty.empty_display_size = size
 
@@ -1055,7 +1033,7 @@ def create_soft_empties_from_selected_pins_action(
     zv = Vector((0, 0, 1))
     empties: List[Object] = []
     for i in range(selected_pins_count):
-        empty = create_empty_object_by_product(force_name='ftPin')
+        empty = create_empty_object('ftPin')
         empty.empty_display_type = 'ARROWS'
         empty.empty_display_size = size
         empty.parent = geotracker.geomobj
