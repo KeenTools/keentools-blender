@@ -836,7 +836,7 @@ def center_geo_action(*, product: int) -> ActionStatus:
 
 
 def create_animated_empty_action(
-        obj: Object, linked: bool=False,
+        obj: Object, product: ProductType, linked: bool=False,
         force_bake_all_frames: bool=False) -> ActionStatus:
     _log.yellow(f'create_animated_empty_action start')
     if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
@@ -857,7 +857,7 @@ def create_animated_empty_action(
             _log.error(msg)
             return ActionStatus(False, msg)
 
-        empty = create_empty_object(GTConfig.gt_empty_name)
+        empty = create_empty_object(product=product)
         anim_data = empty.animation_data_create()
         anim_data.action = action
         bpy_init_action_slot(anim_data)
@@ -874,7 +874,7 @@ def create_animated_empty_action(
                 _log.error(msg)
                 return ActionStatus(False, msg)
 
-        empty = create_empty_object(GTConfig.gt_empty_name)
+        empty = create_empty_object(product=product)
 
         for frame in obj_animated_frames:
             bpy_set_current_frame(frame)
@@ -945,7 +945,7 @@ def create_hard_empties_from_selected_pins_action(
     zv = Vector((0, 0, 1))
 
     for i, pos in enumerate(pin_positions):
-        empty = create_empty_object('gtPin')
+        empty = create_empty_object(force_name='gtPin')
         empty.empty_display_type = 'ARROWS'
         empty.empty_display_size = size
 
@@ -1033,7 +1033,7 @@ def create_soft_empties_from_selected_pins_action(
     zv = Vector((0, 0, 1))
     empties: List[Object] = []
     for i in range(selected_pins_count):
-        empty = create_empty_object('ftPin')
+        empty = create_empty_object(force_name='ftPin')
         empty.empty_display_type = 'ARROWS'
         empty.empty_display_size = size
         empty.parent = geotracker.geomobj

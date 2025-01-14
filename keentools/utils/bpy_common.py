@@ -24,7 +24,9 @@ from bpy.types import Object, Mesh, Operator, Camera, Scene, Image, Material, Ac
 
 from .version import BVersion
 from .kt_logging import KTLogger
-from ..addon_config import Config
+from ..addon_config import Config, ProductType
+from ..facetracker_config import FTConfig
+from ..geotracker_config import GTConfig
 
 
 _log = KTLogger(__name__)
@@ -186,7 +188,23 @@ def bpy_create_camera_data(name: str) -> Any:
     return cam
 
 
-def create_empty_object(name: str) -> Object:
+def _get_empty_object_name(product: ProductType) -> Optional[str]:
+    if product == ProductType.GEOTRACKER:
+        return GTConfig.gt_empty_name
+    elif product == ProductType.FACETRACKER:
+        return FTConfig.ft_empty_name
+    else:
+        return None
+
+def create_empty_object(*, product: Optional[ProductType] = None,
+                        force_name: Optional[str] = None) -> Object:
+    if (product is None) == (force_name is None):
+        raise "Choose only one between `force_name` and `product`."
+    if force_name is not None:
+        name = force_name
+    if product is not None:
+        name = _get_empty_object_name(product)
+        assert name, f"Not valid product {product} for empty object creation."
     control = bpy_create_empty(name)
     link_object_to_current_scene_collection(control)
     control.empty_display_type = 'PLAIN_AXES'

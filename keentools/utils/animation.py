@@ -135,7 +135,7 @@ def create_animation_on_object(obj: Object, anim_dict: Dict,
 
 
 def create_animated_empty(anim_dict: Dict) -> Object:
-    empty_obj = create_empty_object('animatorEmpty')
+    empty_obj = create_empty_object(force_name='animatorEmpty')
     create_animation_on_object(empty_obj, anim_dict, 'gtAction')
     return empty_obj
 

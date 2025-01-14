@@ -641,26 +641,20 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
         _log.green(f'{self.__class__.__name__} execute '
                    f'[{product_name(self.product)}]')
         settings = get_settings(self.product)
-        geotracker = settings.get_current_geotracker_item()
 
-        if settings.export_locator_selector == 'GEOMETRY':
+        if settings.export_locator_selector in ['GEOMETRY', 'CAMERA']:
+            geotracker = settings.get_current_geotracker_item()
+            if settings.export_locator_selector == 'GEOMETRY':
+                obj = geotracker.geomobj
+            elif settings.export_locator_selector == 'CAMERA':
+                obj = geotracker.camobj
             act_status = create_animated_empty_action(
-                geotracker.geomobj, settings.export_linked_locator)
+                obj, self.product, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
             _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
-
-        elif settings.export_locator_selector == 'CAMERA':
-            act_status = create_animated_empty_action(
-                geotracker.camobj, settings.export_linked_locator)
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-                return {'CANCELLED'}
-            _log.output(f'{self.__class__.__name__} execute end >>>')
-            return {'FINISHED'}
-
         elif settings.export_locator_selector == 'SELECTED_PINS':
             if len(settings.loader().viewport().pins().get_selected_pins()) == 0:
                 msg = 'No pins selected'
@@ -1954,7 +1948,7 @@ class GT_OT_RigWindow(Operator):
         geotracker = settings.get_current_geotracker_item()
 
         global _rig_empty
-        _rig_empty = create_empty_object(GTConfig.gt_empty_name)
+        _rig_empty = create_empty_object(product=self.product)
         _rig_empty.show_in_front = True
         _rig_empty.show_name = True
 
