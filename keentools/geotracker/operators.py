@@ -48,7 +48,6 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_scene,
-                                create_empty_object,
                                 bpy_remove_object)
 from ..tracker.calc_timer import TrackTimer, RefineTimer
 
@@ -82,6 +81,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     remove_pins_action,
                                     toggle_pins_action,
                                     center_geo_action,
+                                    create_empty_object_by_product,
                                     create_animated_empty_action,
                                     create_hard_empties_from_selected_pins_action,
                                     bake_texture_from_frames_action,
@@ -1948,7 +1948,7 @@ class GT_OT_RigWindow(Operator):
         geotracker = settings.get_current_geotracker_item()
 
         global _rig_empty
-        _rig_empty = create_empty_object(product=self.product)
+        _rig_empty = create_empty_object_by_product(product=self.product)
         _rig_empty.show_in_front = True
         _rig_empty.show_name = True
 

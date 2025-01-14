@@ -26,7 +26,6 @@ from .bpy_common import (bpy_current_frame,
                          bpy_start_frame,
                          bpy_end_frame,
                          bpy_set_current_frame,
-                         create_empty_object,
                          operator_with_context,
                          update_depsgraph,
                          bpy_new_action_with_slot,
@@ -132,12 +131,6 @@ def create_animation_on_object(obj: Object, anim_dict: Dict,
     for name in fcurves.keys():
         clear_fcurve(fcurves[name])
         put_anim_data_in_fcurve(fcurves[name], anim_dict[name])
-
-
-def create_animated_empty(anim_dict: Dict) -> Object:
-    empty_obj = create_empty_object(force_name='animatorEmpty')
-    create_animation_on_object(empty_obj, anim_dict, 'gtAction')
-    return empty_obj
 
 
 def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
