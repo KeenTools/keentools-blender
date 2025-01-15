@@ -861,7 +861,7 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         if settings.export_locator_selector == 'GEOMETRY':
             act_status = create_animated_empty_action(
-                geotracker.geomobj, settings.export_linked_locator)
+                geotracker.geomobj, FTConfig.ft_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
@@ -870,7 +870,7 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         elif settings.export_locator_selector == 'CAMERA':
             act_status = create_animated_empty_action(
-                geotracker.camobj, settings.export_linked_locator)
+                geotracker.camobj, FTConfig.ft_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}

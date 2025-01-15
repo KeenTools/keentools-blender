@@ -836,7 +836,7 @@ def center_geo_action(*, product: int) -> ActionStatus:
 
 
 def create_animated_empty_action(
-        obj: Object, linked: bool=False,
+        obj: Object, name: str, linked: bool=False,
         force_bake_all_frames: bool=False) -> ActionStatus:
     _log.yellow(f'create_animated_empty_action start')
     if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
@@ -857,7 +857,7 @@ def create_animated_empty_action(
             _log.error(msg)
             return ActionStatus(False, msg)
 
-        empty = create_empty_object(GTConfig.gt_empty_name)
+        empty = create_empty_object(name)
         anim_data = empty.animation_data_create()
         anim_data.action = action
         bpy_init_action_slot(anim_data)
@@ -874,7 +874,7 @@ def create_animated_empty_action(
                 _log.error(msg)
                 return ActionStatus(False, msg)
 
-        empty = create_empty_object(GTConfig.gt_empty_name)
+        empty = create_empty_object(name)
 
         for frame in obj_animated_frames:
             bpy_set_current_frame(frame)

@@ -21,7 +21,7 @@ from collections import namedtuple
 import numpy as np
 
 from bpy.types import Object
-from mathutils import Vector, Matrix
+from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import ActionStatus
@@ -34,8 +34,7 @@ from ..utils.bpy_common import (update_depsgraph,
                                 bpy_current_frame,
                                 bpy_progress_begin,
                                 bpy_progress_update,
-                                bpy_progress_end,
-                                create_empty_object)
+                                bpy_progress_end)
 from ..utils.coords import get_obj_verts, xy_to_xz_rotation_matrix_3x3
 
 
