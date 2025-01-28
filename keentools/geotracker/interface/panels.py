@@ -1169,7 +1169,7 @@ class GT_PT_ExportPanel(View3DPanel):
         layout.label(text='Tracking Preview')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+        op = col.operator(GTConfig.gt_bake_wireframe_sequence_idname)
         op.product = ProductType.GEOTRACKER
 
 

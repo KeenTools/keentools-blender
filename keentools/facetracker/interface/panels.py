@@ -1366,7 +1366,7 @@ class FT_PT_ExportPanel(View3DPanel):
         layout.separator(factor=0.4)
         layout.label(text='Tracking Preview')
         col = layout.column(align=True)
-        op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+        op = col.operator(GTConfig.gt_bake_wireframe_sequence_idname)
         op.product = ProductType.FACETRACKER
 
 

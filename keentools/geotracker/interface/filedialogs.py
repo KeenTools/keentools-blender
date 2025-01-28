@@ -869,9 +869,9 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
 
 
 class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
-    bl_idname = Config.kt_bake_wireframe_sequence_idname
-    bl_label = 'Render Wireframe'
-    bl_description = 'Render wireframe animation with or without background as image sequence'
+    bl_idname = GTConfig.gt_bake_wireframe_sequence_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     filter_folder: BoolProperty(

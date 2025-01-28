@@ -100,6 +100,7 @@ class GTConfig:
     gt_remove_bake_frame_idname = operators + '.remove_bake_frame'
     gt_go_to_bake_frame_idname = operators + '.go_to_bake_frame'
     gt_texture_bake_options_idname = operators + '.texture_bake_options'
+    gt_bake_wireframe_sequence_idname = operators + '.bake_wireframe_sequence'
 
     gt_export_animated_empty_idname = operators + '.export_animated_empty'
     gt_transfer_tracking_idname = operators + '.transfer_tracking'
