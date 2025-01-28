@@ -234,6 +234,15 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
 
         geotracker.mask_2d = new_movieclip
 
+        try:
+            geotracker.mask_2d.colorspace_settings.name = 'Non-Color'
+        except TypeError as err:
+            _log.error(f'geotracker.mask_2d.colorspace_settings.name '
+                       f'color space Non-Color is not found:\n{str(err)}')
+        except Exception as err:
+            _log.error(f'geotracker.mask_2d.colorspace_settings.name '
+                       f'unknown Exception:\n{str(err)}')
+
         _log.output(f'LOADED MASK: {geotracker.mask_2d.name}')
         return {'FINISHED'}
 
@@ -967,7 +976,8 @@ class KT_OT_BakeWireframeSequence(Operator, ExportHelper):
             split3.prop(self, 'wireframe_midline_color', text='')
             split.prop(self, 'wireframe_opacity', text='', slider=True)
 
-        col.prop(self, 'show_specials')
+        if self.product == ProductType.FACETRACKER:
+            col.prop(self, 'show_specials')
         col.prop(self, 'wireframe_backface_culling')
         col.prop(self, 'lit_wireframe')
         col.prop(self, 'use_background')
