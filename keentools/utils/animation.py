@@ -107,7 +107,7 @@ def _get_safe_object_animation_data_with_action(
         if not anim_data:
             return None
     if not anim_data.action:
-        _ = bpy_new_action_with_slot(anim_data, action_name)
+        _ = bpy_new_action_with_slot(anim_data, action_name, 'OBJECT')
     return anim_data
 
 
@@ -136,7 +136,7 @@ def create_animation_on_object(obj: Object, anim_dict: Dict,
 def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
                            keyframe_type: Optional[str] = None) -> Keyframe:
     k = fcurve.keyframe_points.insert(frame, value, options={'NEEDED'})
-    if keyframe_type is not None:
+    if keyframe_type is not None and k:
         k.type = keyframe_type
     return k
 

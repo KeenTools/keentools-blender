@@ -67,7 +67,7 @@ def mesh_update_accepted(headnum: int) -> None:
         if action:
             anim_data = head.headobj.data.shape_keys.animation_data_create()
             anim_data.action = action
-            bpy_init_action_slot(anim_data)
+            bpy_init_action_slot(anim_data, 'KEY')
     else:
         _update_mesh_now(headnum)
 
@@ -196,7 +196,7 @@ def _update_mesh_now(headnum: int) -> bool:
         if old_mesh.shape_keys.animation_data and old_mesh.shape_keys.animation_data.action:
             anim_data = mesh.shape_keys.animation_data_create()
             anim_data.action = old_mesh.shape_keys.animation_data.action
-            bpy_init_action_slot(anim_data)
+            bpy_init_action_slot(anim_data, 'KEY')
 
     if recreate_vertex_groups_flag:
         try:
