@@ -1166,12 +1166,11 @@ class GT_PT_ExportPanel(View3DPanel):
         op = row.operator(GTConfig.gt_export_animated_empty_idname)
         op.product = ProductType.GEOTRACKER
 
-        if BVersion.debug_logging_mode:
-            layout.label(text='Render wireframe')
-            col = layout.column(align=True)
-            col.scale_y = Config.btn_scale_y
-            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
-            op.product = ProductType.GEOTRACKER
+        layout.label(text='Tracking Preview')
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+        op.product = ProductType.GEOTRACKER
 
 
 class GT_PT_SupportPanel(AllVisible, Panel):

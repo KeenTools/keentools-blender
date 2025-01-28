@@ -1363,12 +1363,11 @@ class FT_PT_ExportPanel(View3DPanel):
         op = row.operator(FTConfig.ft_export_animated_empty_idname)
         op.product = ProductType.FACETRACKER
 
-        if BVersion.debug_logging_mode:
-            layout.separator(factor=0.4)
-            layout.label(text='Render wireframe')
-            col = layout.column(align=True)
-            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
-            op.product = ProductType.FACETRACKER
+        layout.separator(factor=0.4)
+        layout.label(text='Tracking Preview')
+        col = layout.column(align=True)
+        op = col.operator(Config.kt_bake_wireframe_sequence_idname)
+        op.product = ProductType.FACETRACKER
 
 
 class FT_PT_SupportPanel(View3DPanel):
