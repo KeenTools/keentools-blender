@@ -106,7 +106,7 @@ def _get_safe_blendshape_animation_data_with_action(
         if not anim_data:
             return None
     if not anim_data.action:
-        _ = bpy_new_action_with_slot(anim_data, action_name)
+        _ = bpy_new_action_with_slot(anim_data, action_name, 'KEY')
     return anim_data
 
 
@@ -118,7 +118,7 @@ def _get_safe_blendshape_action(
     if not anim_data:
         return None
     if not anim_data.action:
-        _ = bpy_new_action_with_slot(anim_data, action_name)
+        _ = bpy_new_action_with_slot(anim_data, action_name, 'KEY')
     return anim_data.action
 
 

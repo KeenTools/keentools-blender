@@ -370,8 +370,8 @@ def track_to(forward: bool, *, product: int) -> ActionStatus:
     precalcless = geotracker.precalcless
     if not precalcless and not \
             geotracker.precalc_start <= current_frame <= geotracker.precalc_end:
-        return ActionStatus(False, 'Current frame is outside '
-                                   'of the precalc-file range')
+        return ActionStatus(False, 'Analysis file out of frame range. '
+                                   'Click Re-analyse')
     try:
         precalc_path = None if precalcless else geotracker.precalc_path
         _log.output(f'gt.track_async({current_frame}, {forward}, {precalc_path})')
@@ -860,7 +860,7 @@ def create_animated_empty_action(
         empty = create_empty_object(name)
         anim_data = empty.animation_data_create()
         anim_data.action = action
-        bpy_init_action_slot(anim_data)
+        bpy_init_action_slot(anim_data, 'OBJECT')
         select_object_only(empty)
     else:
         obj_animated_frames = get_object_keyframe_numbers(obj)
@@ -1539,7 +1539,7 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
     if not anim_data:
         anim_data = obj.data.shape_keys.animation_data_create()
     anim_data.action = blendshape_action
-    bpy_init_action_slot(anim_data)
+    bpy_init_action_slot(anim_data, 'KEY')
     obj.data.update()
 
     return ActionStatus(True, 'ok')

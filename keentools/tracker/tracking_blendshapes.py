@@ -227,7 +227,7 @@ def create_relative_shape_keyframe(frame: int, *,
 
     action = anim_data.action
     if not action:
-        action = bpy_new_action_with_slot(anim_data, action_name)
+        action = bpy_new_action_with_slot(anim_data, action_name, 'KEY')
 
     keyframe_set = set(gt.keyframes())
     main_fcurve = get_safe_action_fcurve(action,

@@ -170,59 +170,65 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
 
         yield delta
 
-        rx, ry = bpy_render_frame()
-        offscreen = gpu.types.GPUOffScreen(rx, ry)
-        context = bpy_context()
-        camobj = geotracker.camobj
-        geomobj = geotracker.geomobj
-        view_matrix = camobj.matrix_world.inverted()
-        projection_matrix = camobj.calc_matrix_camera(
-            context.evaluated_depsgraph_get(), x=rx, y=ry)
+        try:
+            rx, ry = bpy_render_frame()
+            offscreen = gpu.types.GPUOffScreen(rx, ry)
+            context = bpy_context()
+            camobj = geotracker.camobj
+            geomobj = geotracker.geomobj
+            view_matrix = camobj.matrix_world.inverted()
+            projection_matrix = camobj.calc_matrix_camera(
+                context.evaluated_depsgraph_get(), x=rx, y=ry)
 
-        settings = get_settings(product)
-        loader = settings.loader()
+            settings = get_settings(product)
+            loader = settings.loader()
 
-        wireframer = get_wireframer(product)
-        wireframer.viewport_size = (rx, ry)
-        wireframer.init_geom_data_from_mesh(geomobj)
-        wireframer.set_object_world_matrix(geomobj.matrix_world)
-        wireframer.set_camera_pos(geomobj.matrix_world, camobj.matrix_world)
+            wireframer = get_wireframer(product)
+            wireframer.viewport_size = (rx, ry)
+            wireframer.init_geom_data_from_mesh(geomobj)
+            wireframer.set_object_world_matrix(geomobj.matrix_world)
+            wireframer.set_camera_pos(geomobj.matrix_world, camobj.matrix_world)
 
-        geo = loader.get_geo()
-        if product == ProductType.FACETRACKER:
-            wireframer.init_edge_indices()
-        wireframer.init_geom_data_from_core(
-            *loader.get_geo_shader_data(geo, geomobj.matrix_world))
+            geo = loader.get_geo()
+            if product == ProductType.FACETRACKER:
+                wireframer.init_edge_indices()
+            wireframer.init_geom_data_from_core(
+                *loader.get_geo_shader_data(geo, geomobj.matrix_world))
 
-        wireframer.create_batches()
-        wireframer.background.image = (None if not use_background else
-                                       get_background_image_strict(camobj,
-                                                                   index=0))
-        with offscreen.bind():
-            set_depth_mask(True)
-            set_depth_test('LESS')
-            framebuffer = gpu.state.active_framebuffer_get()
-            framebuffer.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
-            with gpu.matrix.push_pop():
-                gpu.matrix.load_identity()
-                gpu.matrix.load_matrix(view_matrix)
-                gpu.matrix.load_projection_matrix(projection_matrix)
+            wireframer.create_batches()
+            wireframer.background.image = (None if not use_background else
+                                           get_background_image_strict(camobj,
+                                                                       index=0))
+            with offscreen.bind():
+                set_depth_mask(True)
+                set_depth_test('LESS')
+                framebuffer = gpu.state.active_framebuffer_get()
+                framebuffer.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
+                with gpu.matrix.push_pop():
+                    gpu.matrix.load_identity()
+                    gpu.matrix.load_matrix(view_matrix)
+                    gpu.matrix.load_projection_matrix(projection_matrix)
 
-                wireframer.draw_main()
-                buffer = framebuffer.read_color(0, 0, rx, ry, 4, 0, 'UBYTE')
-                built_texture = np.array(buffer, dtype=np.float32)
-            set_depth_mask(False)
-            set_depth_test('NONE')
+                    wireframer.draw_main()
+                    buffer = framebuffer.read_color(0, 0, rx, ry, 4, 0, 'UBYTE')
+                    built_texture = np.array(buffer, dtype=np.float32)
+                set_depth_mask(False)
+                set_depth_test('NONE')
 
-        offscreen.free()
+            offscreen.free()
 
-        if tex is None:
-            tex = create_compatible_bpy_image(built_texture)
-        tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
-        tex.file_format = file_format
-        assign_pixels_data(tex.pixels, built_texture.T.ravel() / 255)
-        tex.save()
-        _log.info(f'TEXTURE SAVED: {tex.filepath}')
+            if tex is None:
+                tex = create_compatible_bpy_image(built_texture)
+            tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
+            tex.file_format = file_format
+            assign_pixels_data(tex.pixels, built_texture.T.ravel() / 255)
+            tex.save()
+            _log.info(f'TEXTURE SAVED: {tex.filepath}')
+
+        except Exception as err:
+            _log.error(f'bake_wireframe Exception:\n{str(err)}')
+            _finish()
+            return None
 
         yield delta
 
