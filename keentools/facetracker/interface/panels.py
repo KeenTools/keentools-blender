@@ -384,11 +384,9 @@ class FT_PT_InputsPanel(View3DPanel):
         if geotracker.movie_clip:
             row.menu(FTConfig.ft_clip_menu_idname, text='', icon='COLLAPSEMENU')
             col2 = col.column(align=True)
-            col2.active = False
             movie_clip = geotracker.movie_clip
             col2.prop(movie_clip.colorspace_settings, 'name', text='')
-            col3 = col.column(align=True)
-            col3.prop(movie_clip, 'frame_start')
+            col2.prop(movie_clip, 'frame_start')
         else:
             op = row.operator(FTConfig.ft_sequence_filebrowser_idname,
                               text='', icon='FILEBROWSER')
