@@ -334,7 +334,7 @@ def update_model_scale(head: Any, context: Any) -> None:
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh_non_neutral(fb, head)
+    update_head_mesh_non_neutral(fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)
