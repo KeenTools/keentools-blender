@@ -26,7 +26,7 @@ from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import bpy_render_frame, update_depsgraph
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..ui_strings import PrecalcStatusMessage
-from ...utils.animation import (get_action,
+from ...utils.animation import (get_object_action,
                                 get_safe_evaluated_fcurve,
                                 get_safe_action_fcurve,
                                 insert_point_in_fcurve,
@@ -139,7 +139,7 @@ def unbreak_rotation(obj: Object, frame_list: List[int]) -> bool:
     if len(frame_list) < 2:
         return False
 
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         return False
 
@@ -178,7 +178,7 @@ def check_unbreak_rotaion_is_needed(obj: Object) -> bool:
         _log.red('check_unbreak_rotaion_is_needed: not enough frames >>>')
         return False
 
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         _log.red('check_unbreak_rotaion_is_needed: no action >>>')
         return False

@@ -35,7 +35,7 @@ from ...addon_config import (Config,
                              ProductType)
 from ...facebuilder_config import FBConfig
 from ...utils.version import BVersion
-from ...utils.manipulate import has_no_blendshape, has_blendshapes_action
+from ...utils.manipulate import has_no_blendshape, has_blendshape_action
 from ..utils.manipulate import what_is_state, get_obj_from_context
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
@@ -443,7 +443,7 @@ class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
             return
 
         no_blendshapes = has_no_blendshape(obj)
-        has_blendshapes_act = has_blendshapes_action(obj)
+        has_blendshapes_act = has_blendshape_action(obj)
 
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y

@@ -30,7 +30,7 @@ from ..facebuilder.fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .blendshapes import (create_facs_blendshapes,
                           create_facs_test_animation_on_blendshapes,
-                          disconnect_blendshapes_action,
+                          disconnect_blendshape_action,
                           remove_blendshapes,
                           update_facs_blendshapes,
                           zero_all_blendshape_weights)
@@ -159,7 +159,7 @@ def clear_animation(operator):
         _log.output('no object')
         return {'CANCELLED'}
 
-    if disconnect_blendshapes_action(obj):
+    if disconnect_blendshape_action(obj):
         _log.output('action disconnected')
         operator.report({'INFO'}, 'Animation action has been unlinked')
         zero_all_blendshape_weights(obj)

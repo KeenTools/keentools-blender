@@ -384,9 +384,9 @@ class FT_PT_InputsPanel(View3DPanel):
         if geotracker.movie_clip:
             row.menu(FTConfig.ft_clip_menu_idname, text='', icon='COLLAPSEMENU')
             col2 = col.column(align=True)
-            col2.active = False
-            col2.prop(geotracker.movie_clip.colorspace_settings, 'name',
-                      text='')
+            movie_clip = geotracker.movie_clip
+            col2.prop(movie_clip.colorspace_settings, 'name', text='')
+            col2.prop(movie_clip, 'frame_start')
         else:
             op = row.operator(FTConfig.ft_sequence_filebrowser_idname,
                               text='', icon='FILEBROWSER')
@@ -791,7 +791,8 @@ class FT_PT_MasksPanel(AllVisible):
 
     def _mask_2d_block(self, layout: Any, geotracker: Any,
                        show_threshold: bool = False) -> None:
-        row = layout.row(align=True)
+        col = layout.column(align=True)
+        row = col.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
                         bpy_data(), 'movieclips', text='')
         op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
@@ -799,6 +800,11 @@ class FT_PT_MasksPanel(AllVisible):
         op.product = ProductType.FACETRACKER
         row.prop(geotracker, 'mask_2d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
+
+        if geotracker and geotracker.mask_2d:
+            col2 = col.column(align=True)
+            col2.active = True
+            col2.prop(geotracker.mask_2d, 'frame_start')
 
         row = layout.row(align=True)
         row.prop(geotracker, 'mask_2d_channel_r', toggle=1)
@@ -1355,12 +1361,11 @@ class FT_PT_ExportPanel(View3DPanel):
         op = row.operator(FTConfig.ft_export_animated_empty_idname)
         op.product = ProductType.FACETRACKER
 
-        if BVersion.debug_logging_mode:
-            layout.separator(factor=0.4)
-            layout.label(text='Render wireframe')
-            col = layout.column(align=True)
-            op = col.operator(Config.kt_bake_wireframe_sequence_idname)
-            op.product = ProductType.FACETRACKER
+        layout.separator(factor=0.4)
+        layout.label(text='Tracking Preview')
+        col = layout.column(align=True)
+        op = col.operator(GTConfig.gt_bake_wireframe_sequence_idname)
+        op.product = ProductType.FACETRACKER
 
 
 class FT_PT_SupportPanel(View3DPanel):

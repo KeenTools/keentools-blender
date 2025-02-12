@@ -645,7 +645,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         if settings.export_locator_selector == 'GEOMETRY':
             act_status = create_animated_empty_action(
-                geotracker.geomobj, settings.export_linked_locator)
+                geotracker.geomobj, GTConfig.gt_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
@@ -654,7 +654,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         elif settings.export_locator_selector == 'CAMERA':
             act_status = create_animated_empty_action(
-                geotracker.camobj, settings.export_linked_locator)
+                geotracker.camobj, GTConfig.gt_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
@@ -1902,7 +1902,7 @@ class GT_OT_RigWindow(Operator):
             _rig_empty.show_in_front = False
             _rig_empty.show_name = False
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
 
         objects: List[Object] = []

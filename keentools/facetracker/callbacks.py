@@ -46,7 +46,7 @@ from ..utils.bpy_common import (bpy_render_frame,
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
-from ..utils.ui_redraw import total_redraw_ui
+from ..utils.ui_redraw import total_redraw_ui, timeline_view_all
 from ..geotracker.utils.tracking import check_unbreak_rotaion_is_needed
 from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
 from ..facebuilder.utils.manipulate import is_facebuilder_head_topology
@@ -68,14 +68,16 @@ class _Owner:
     pass
 
 
-_old_focal_length_mm: float = 50.0
-_camobj_lens_watcher_owner = _Owner()
-_movie_clip_color_space_watcher_owner = _Owner()
+_ft_old_focal_length_mm: float = 50.0
+_ft_camobj_lens_watcher_owner = _Owner()
+_ft_movie_clip_color_space_watcher_owner = _Owner()
+_ft_movie_clip_frame_start_watcher_owner = _Owner()
+_ft_mask_2d_frame_start_watcher_owner = _Owner()
 
 
 def _set_old_focal_length_mm(value: float):
-    global _old_focal_length_mm
-    _old_focal_length_mm = value
+    global _ft_old_focal_length_mm
+    _ft_old_focal_length_mm = value
 
 
 def unsubscribe_watcher(owner: object) -> None:
@@ -86,14 +88,14 @@ def unsubscribe_watcher(owner: object) -> None:
 
 def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
     _log.yellow('ft subscribe_camera_lens_watcher start')
-    unsubscribe_watcher(_camobj_lens_watcher_owner)
+    unsubscribe_watcher(_ft_camobj_lens_watcher_owner)
     if not camobj or not camobj.data:
         _log.red('ft subscribe_camera_lens_watcher: no camera object')
         return
     subscribe_to = camobj.data.path_resolve('lens', False)
     _set_old_focal_length_mm(camobj.data.lens)
     bpy_msgbus_subscribe_rna(key=subscribe_to,
-                             owner=_camobj_lens_watcher_owner,
+                             owner=_ft_camobj_lens_watcher_owner,
                              args=(),
                              notify=lens_change_callback)
     _log.output('ft subscribe_camera_lens_watcher end >>>')
@@ -101,14 +103,14 @@ def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
 
 def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
     _log.yellow('ft subscribe_movie_clip_color_space_watcher start')
-    unsubscribe_watcher(_movie_clip_color_space_watcher_owner)
+    unsubscribe_watcher(_ft_movie_clip_color_space_watcher_owner)
     if not geotracker or not geotracker.movie_clip \
             or not geotracker.movie_clip.colorspace_settings:
         return
 
     subscribe_to = geotracker.movie_clip.colorspace_settings.path_resolve('name', False)
     bpy_msgbus_subscribe_rna(key=subscribe_to,
-                             owner=_movie_clip_color_space_watcher_owner,
+                             owner=_ft_movie_clip_color_space_watcher_owner,
                              args=(geotracker.movie_clip.colorspace_settings.name,),
                              notify=color_space_change_callback)
     _log.output('ft subscribe_movie_clip_color_space_watcher end >>>')
@@ -121,6 +123,52 @@ def color_space_change_callback(old_name: str) -> None:
     geotracker = settings.get_current_geotracker_item()
     update_movieclip(geotracker, None)
     _log.output('ft color_space_change_callback end >>>')
+
+
+def subscribe_movie_clip_frame_start_watcher(geotracker: Any) -> None:
+    _log.green('subscribe_movie_clip_frame_start_watcher start')
+    unsubscribe_watcher(_ft_movie_clip_frame_start_watcher_owner)
+    if not geotracker or not geotracker.movie_clip:
+        _log.output('subscribe_movie_clip_frame_start_watcher: no movieclip')
+        return
+
+    subscribe_to = geotracker.movie_clip.path_resolve('frame_start', False)
+    bpy_msgbus_subscribe_rna(key=subscribe_to,
+                             owner=_ft_movie_clip_frame_start_watcher_owner,
+                             args=(),
+                             notify=movie_clip_frame_start_change_callback)
+    _log.output('subscribe_movie_clip_frame_start_watcher end >>>')
+
+
+def movie_clip_frame_start_change_callback() -> None:
+    _log.green('movie_clip_frame_start_change_callback start')
+    settings = ft_settings()
+    geotracker = settings.get_current_geotracker_item()
+    update_movieclip(geotracker, None)
+    _log.output('movie_clip_frame_start_change_callback end >>>')
+
+
+def subscribe_mask_2d_frame_start_watcher(geotracker: Any) -> None:
+    _log.green('subscribe_mask_2d_frame_start_watcher start')
+    unsubscribe_watcher(_ft_mask_2d_frame_start_watcher_owner)
+    if not geotracker or not geotracker.mask_2d:
+        _log.output('subscribe_mask_2d_frame_start_watcher: no movieclip')
+        return
+
+    subscribe_to = geotracker.mask_2d.path_resolve('frame_start', False)
+    bpy_msgbus_subscribe_rna(key=subscribe_to,
+                             owner=_ft_mask_2d_frame_start_watcher_owner,
+                             args=(),
+                             notify=mask_2d_clip_frame_start_change_callback)
+    _log.output('subscribe_mask_2d_frame_start_watcher end >>>')
+
+
+def mask_2d_clip_frame_start_change_callback() -> None:
+    _log.green('mask_2d_clip_frame_start_change_callback start')
+    settings = ft_settings()
+    geotracker = settings.get_current_geotracker_item()
+    update_mask_2d(geotracker, None)
+    _log.output('mask_2d_clip_frame_start_change_callback end >>>')
 
 
 def recalculate_focal(use_current_frame: bool = True) -> bool:
@@ -137,7 +185,7 @@ def recalculate_focal(use_current_frame: bool = True) -> bool:
     _log.output(_log.color('magenta', f'start lens calculation'))
     rw, rh = bpy_render_frame()
     old_focal_length_px = focal_mm_to_px(
-        _old_focal_length_mm,
+        _ft_old_focal_length_mm,
         rw, rh, camera_sensor_width(geotracker.camobj))
     new_focal_length_px = focal_mm_to_px(
         camera_focal_length(geotracker.camobj),
@@ -294,7 +342,7 @@ def update_geomobj(geotracker, context: Any) -> None:
 
 
 def update_movieclip(geotracker, context: Any) -> None:
-    _log.yellow('ft update_movieclip')
+    _log.yellow('ft update_movieclip start')
     if not geotracker:
         return
 
@@ -302,6 +350,8 @@ def update_movieclip(geotracker, context: Any) -> None:
         geotracker.precalc_path = ''
         if geotracker.camobj:
             remove_background_image_object(geotracker.camobj, index=0)
+        unsubscribe_watcher(_ft_movie_clip_color_space_watcher_owner)
+        unsubscribe_watcher(_ft_movie_clip_frame_start_watcher_owner)
         return
 
     current_frame = bpy_current_frame()
@@ -321,7 +371,9 @@ def update_movieclip(geotracker, context: Any) -> None:
 
     if context is not None:
         subscribe_movie_clip_color_space_watcher(geotracker)
+        subscribe_movie_clip_frame_start_watcher(geotracker)
 
+    timeline_view_all()
     _log.output('ft update_movieclip end >>>')
 
 
@@ -482,11 +534,15 @@ def update_mask_2d(geotracker, context: Any) -> None:
     settings.reload_current_geotracker()
     if not geotracker.mask_2d:
         remove_background_image_object(geotracker.camobj, index=1)
+        unsubscribe_watcher(_ft_mask_2d_frame_start_watcher_owner)
     else:
         geotracker.setup_background_mask()
 
     total_redraw_ui()
     settings.reload_mask_2d()
+    if context is not None:
+        subscribe_mask_2d_frame_start_watcher(geotracker)
+
     vp = settings.loader().viewport()
     if vp.viewport_is_working():
         vp.create_batch_2d(vp.get_work_area())

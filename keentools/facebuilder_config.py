@@ -165,7 +165,7 @@ class FBConfig:
     tex_builder_matname_template = '{}_preview_mat'
 
     default_driver_name = 'FaceBuilderDriver'
-    default_blendshapes_action_name = 'fbBlendShapesAction'
+    default_blendshape_action_name = 'fbShapeAction'
     example_animation_action_name = 'ExampleAnimAction'
 
     neutral_expression_view_name = '0'

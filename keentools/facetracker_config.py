@@ -192,3 +192,5 @@ class FTConfig:
 
     ft_action_name = 'ftAction'
     ft_wireframe_offset_constant: float = 0.001
+
+    ft_empty_name = 'ftEmpty'

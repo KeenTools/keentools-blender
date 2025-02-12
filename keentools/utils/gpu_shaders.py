@@ -951,3 +951,75 @@ def simple_uniform_color_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
     return shader
+
+
+def raster_image_background_shader(use_old: bool = _use_old_shaders) -> Any:
+    shader_name = 'raster_image_background_shader'
+
+    vertex_vars = '''
+    uniform vec2 left;
+    uniform vec2 right;
+
+    in vec2 texCoord;
+    in vec2 pos;
+    out vec2 texCoord_interp;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = vec4(
+            left.x + pos.x * (right.x - left.x),
+            left.y + pos.y * (right.y - left.y),
+            0.0, 1.0);
+        texCoord_interp = texCoord;
+    }
+    '''
+
+    fragment_vars = '''
+    uniform sampler2D image;
+    in vec2 texCoord_interp;
+    out vec4 fragColor;
+    '''
+
+    fragment_glsl = '''
+    float linear_to_srgb(float c)
+    {
+        if (c < 0.0031308) {
+            return (c < 0.0) ? 0.0 : c * 12.92;
+        }
+        return 1.055 * pow(c, 1.0 / 2.4) - 0.055;
+    }
+
+    void main()
+    {
+        vec4 tex = texture(image, texCoord_interp);
+        fragColor = vec4(linear_to_srgb(tex.r), linear_to_srgb(tex.g),
+                         linear_to_srgb(tex.b), 1.0);
+    }
+    '''
+
+    if use_old:
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
+        _log.magenta(f'{shader_name}: Old Shader')
+        return shader
+
+    vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
+    vert_out.smooth('VEC2', 'texCoord_interp')
+
+    shader_info = gpu.types.GPUShaderCreateInfo()
+    shader_info.push_constant('VEC2', 'left')
+    shader_info.push_constant('VEC2', 'right')
+    shader_info.sampler(0, 'FLOAT_2D', 'image')
+    shader_info.vertex_in(0, 'VEC2', 'texCoord')
+    shader_info.vertex_in(1, 'VEC2', 'pos')
+    shader_info.vertex_out(vert_out)
+    shader_info.fragment_out(0, 'VEC4', 'fragColor')
+
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
+
+    shader = gpu.shader.create_from_info(shader_info)
+    _log.output(f'{shader_name}: GPU Shader')
+    return shader

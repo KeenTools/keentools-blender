@@ -8,7 +8,7 @@ from ..addon_config import (ActionStatus,
                             product_name,
                             get_settings,
                             get_addon_preferences)
-from .animation import (get_action,
+from .animation import (get_object_action,
                         get_object_keyframe_numbers,
                         mark_selected_points_in_locrot)
 from ..geotracker.utils.tracking import (unbreak_rotation,
@@ -25,7 +25,7 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
     if check_unbreak_rotaion_is_needed(obj):
         _log.output(f'{obj} needs for Unbreak Rotation!')
 
-    action = get_action(obj)
+    action = get_object_action(obj)
     if action is None:
         msg = 'Selected object has no animation action'
         _log.error(msg)

@@ -19,18 +19,17 @@
 from typing import Any
 import numpy as np
 
-import bpy
-
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, fb_settings, get_operator, ErrorType
 from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
-from ..utils import coords
+from ..utils.coords import update_head_mesh_non_neutral
 from ..utils.manipulate import (get_vertex_groups,
                                 create_vertex_groups)
 from ..utils.blendshapes import (restore_facs_blendshapes,
-                                 disconnect_blendshapes_action)
+                                 disconnect_blendshape_action)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.bpy_common import bpy_remove_mesh, bpy_init_action_slot
 
 
 _log = KTLogger(__name__)
@@ -50,7 +49,7 @@ def mesh_update_accepted(headnum: int) -> None:
 
     if not head.has_no_blendshapes():
         names = [kb.name for kb in head.headobj.data.shape_keys.key_blocks[1:]]
-        action = disconnect_blendshapes_action(head.headobj)
+        action = disconnect_blendshape_action(head.headobj)
         _log.output(f'blendshapes: {names}')
         _update_mesh_now(headnum)
 
@@ -66,8 +65,9 @@ def mesh_update_accepted(headnum: int) -> None:
             _log.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
 
         if action:
-            head.headobj.data.shape_keys.animation_data_create()
-            head.headobj.data.shape_keys.animation_data.action = action
+            anim_data = head.headobj.data.shape_keys.animation_data_create()
+            anim_data.action = action
+            bpy_init_action_slot(anim_data, 'KEY')
     else:
         _update_mesh_now(headnum)
 
@@ -109,12 +109,12 @@ def update_mesh_simple(head: Any, context: Any) -> None:
 
 
 def _update_mesh_now(headnum: int) -> bool:
-    _log.output('callbacks.update_mesh')
+    _log.yellow('callbacks.update_mesh start')
 
     settings = fb_settings()
     head = settings.get_head(headnum)
     if not head:
-        _log.output('WRONG_HEAD')
+        _log.error('WRONG HEAD')
         return False
 
     if head.should_use_emotions() and \
@@ -160,13 +160,13 @@ def _update_mesh_now(headnum: int) -> bool:
 
     _log.output(f'MODEL_TYPE: [{model_index}] {head.model_type}')
 
-    # Create new mesh
+    _log.output('Create new mesh')
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
                                      uv_set=head.tex_uv_shape,
                                      keyframe=keyframe)
     try:
-        # Copy old material
+        _log.output('Copy old material')
         if old_mesh.materials:
             mesh.materials.append(old_mesh.materials[0])
     except Exception:
@@ -184,7 +184,7 @@ def _update_mesh_now(headnum: int) -> bool:
     head.headobj.data = mesh
     FBLoader.save_fb_serial_str(headnum)
 
-    # Copy blendshapes and animation
+    _log.output('Copy blendshapes and animation')
     if old_mesh.shape_keys and len(old_mesh.vertices) == len(mesh.vertices):
         for kb in old_mesh.shape_keys.key_blocks:
             shape = head.headobj.shape_key_add(name=kb.name)
@@ -194,8 +194,9 @@ def _update_mesh_now(headnum: int) -> bool:
             shape.data.foreach_set('co', verts.ravel())
             shape.value = kb.value
         if old_mesh.shape_keys.animation_data and old_mesh.shape_keys.animation_data.action:
-            mesh.shape_keys.animation_data_create()
-            mesh.shape_keys.animation_data.action = old_mesh.shape_keys.animation_data.action
+            anim_data = mesh.shape_keys.animation_data_create()
+            anim_data.action = old_mesh.shape_keys.animation_data.action
+            bpy_init_action_slot(anim_data, 'KEY')
 
     if recreate_vertex_groups_flag:
         try:
@@ -204,13 +205,14 @@ def _update_mesh_now(headnum: int) -> bool:
             _log.error(f'_update_mesh_now create VG: {str(err)}')
 
     mesh_name = old_mesh.name
-    # Delete old mesh
-    bpy.data.meshes.remove(old_mesh, do_unlink=True)
+    _log.output('Delete old mesh')
+    bpy_remove_mesh(old_mesh)
     mesh.name = mesh_name
 
     if settings.pinmode:
         FBLoader.update_fb_viewport_shaders(wireframe=True,
                                             pins_and_residuals=True)
+    _log.output('_update_mesh_now end >>>')
     return True
 
 
@@ -225,7 +227,7 @@ def _update_expressions(head: Any, context: Any) -> None:
     fb.set_use_emotions(head.should_use_emotions())
     _log.output(f'EXPRESSIONS: {head.should_use_emotions()}')
 
-    coords.update_head_mesh_non_neutral(fb, head)
+    update_head_mesh_non_neutral(fb, head)
 
     FBLoader.save_fb_serial_str(headnum)
 
@@ -255,7 +257,7 @@ def _update_head_shape_with_expressions(head: Any, context: Any) -> None:
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.save_fb_serial_str(headnum)
 
-    coords.update_head_mesh_non_neutral(fb, head)
+    update_head_mesh_non_neutral(fb, head)
     if not settings.pinmode:
         return
 
@@ -332,7 +334,7 @@ def update_model_scale(head: Any, context: Any) -> None:
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh_non_neutral(fb, head)
+    update_head_mesh_non_neutral(fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)

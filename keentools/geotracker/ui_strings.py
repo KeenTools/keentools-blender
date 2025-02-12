@@ -310,6 +310,10 @@ buttons = {
         'Revert default rendering',
         'Setup scene rendering settings to match default render view'
     ),
+    GTConfig.gt_bake_wireframe_sequence_idname: Button(
+        'Render Wireframe',
+        'Render wireframe animation with or without background as image sequence'
+    ),
     # Menu buttons
     GTConfig.gt_clear_tracking_menu_exec_idname: Button(
         'Clear menu',

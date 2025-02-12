@@ -25,7 +25,7 @@ from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig
 from .images import check_gl_image
 from .base_shaders import KTShaderBase
-from .gpu_shaders import raster_image_mask_shader
+from .gpu_shaders import raster_image_mask_shader, raster_image_background_shader
 from .gpu_control import (set_blend_alpha, set_shader_sampler)
 from ..utils.bpy_common import bpy_context
 
@@ -106,6 +106,76 @@ class KTRasterMask(KTShaderBase):
         set_shader_sampler(shader, self.image)
         if self.mask_batch:
             self.mask_batch.draw(shader)
+
+    def register_handler(self, post_type: str = 'POST_PIXEL', *, area: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handler')
+        _log.output('call super().register_handler')
+        super().register_handler(post_type, area=area)
+
+
+class KTRasterImage(KTShaderBase):
+    def __init__(self, target_class: Any):
+        super().__init__(target_class)
+        self.square: List[Tuple[float, float]] = [(0., 0.), (1., 0.),
+                                                  (1., 1), (0., 1)]
+        self.vertices: List[Tuple[float, float]] = self.square
+        self.uvs: List[Tuple[float, float]] = self.square
+        self.image_shader: Any = None
+        self.image_batch: Any = None
+        self.left: Tuple[float, float] = (-1., -1.)
+        self.right: Tuple[float, float] = (1., 1.)
+        self.image: Optional[Image] = None
+
+    def init_shaders(self) -> Optional[bool]:
+        if self.image_shader is not None:
+            _log.output(f'{self.__class__.__name__}.image_shader: skip')
+            return None
+
+        self.image_shader = raster_image_background_shader()
+        res = self.image_shader is not None
+        _log.output(f'{self.__class__.__name__}.image_shader: {res}')
+        return res
+
+    def create_batch(self) -> None:
+        if self.image_shader is None:
+            _log.error(f'{self.__class__.__name__}.image_shader: is empty')
+            return
+        self.image_batch = batch_for_shader(
+            self.image_shader, 'TRI_FAN',
+            {'pos': self.list_for_batch(self.vertices),
+             'texCoord': self.list_for_batch(self.uvs)})
+
+    def draw_checks(self) -> bool:
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return False
+
+        if self.image_shader is None or self.image_batch is None:
+            return False
+
+        if not self.work_area or self.work_area != bpy_context().area:
+            return False
+
+        if not self.image:
+            return False
+
+        if not check_gl_image(self.image):
+            _log.error(f'{self.__class__.__name__}.draw_checks '
+                       f'check_gl_image failed: {self.image}')
+            return False
+        return True
+
+    def draw_main(self) -> None:
+        if not self.image:
+            return
+
+        shader = self.image_shader
+        shader.bind()
+        shader.uniform_float('left', self.left)
+        shader.uniform_float('right', self.right)
+        set_shader_sampler(shader, self.image)
+        if self.image_batch:
+            self.image_batch.draw(shader)
 
     def register_handler(self, post_type: str = 'POST_PIXEL', *, area: Any) -> None:
         _log.yellow(f'{self.__class__.__name__}.register_handler')

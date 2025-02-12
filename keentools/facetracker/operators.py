@@ -861,7 +861,7 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         if settings.export_locator_selector == 'GEOMETRY':
             act_status = create_animated_empty_action(
-                geotracker.geomobj, settings.export_linked_locator)
+                geotracker.geomobj, FTConfig.ft_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
@@ -870,7 +870,7 @@ class FT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         elif settings.export_locator_selector == 'CAMERA':
             act_status = create_animated_empty_action(
-                geotracker.camobj, settings.export_linked_locator)
+                geotracker.camobj, FTConfig.ft_empty_name, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
@@ -1286,7 +1286,7 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
-        if not bpy_start_frame() <= bpy_current_frame() <= bpy_end_frame():
+        if not bpy_start_frame() <= frame <= bpy_end_frame():
             msg = 'Selected frame should be in Scene playback range'
             _log.error(msg)
             self.report({'ERROR'}, msg)
@@ -1303,7 +1303,7 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
 
         img.filepath = movie_clip.filepath
 
-        loader_fb.add_new_camera(headnum, img, frame)
+        loader_fb.add_new_camera(headnum, img, frame - movie_clip.frame_start + 1)
         loader_fb.save_fb_serial_str(headnum)
 
         settings_fb.current_camnum = settings_fb.get_last_camnum(headnum)

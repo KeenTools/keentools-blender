@@ -21,7 +21,7 @@ from collections import namedtuple
 import numpy as np
 
 from bpy.types import Object
-from mathutils import Vector, Matrix
+from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import ActionStatus
@@ -34,8 +34,7 @@ from ..utils.bpy_common import (update_depsgraph,
                                 bpy_current_frame,
                                 bpy_progress_begin,
                                 bpy_progress_update,
-                                bpy_progress_end,
-                                create_empty_object)
+                                bpy_progress_end)
 from ..utils.coords import get_obj_verts, xy_to_xz_rotation_matrix_3x3
 
 
@@ -198,9 +197,13 @@ def transfer_animation_to_rig(*,
         sc = scale
     _log.output(f'scale: {sc}')
 
-    head_bone = arm_obj.data.edit_bones[_head_bone_name]
-    head_mat = head_bone.matrix.copy()
-    head_mat_inv = head_mat.inverted()
+    if _head_bone_name in arm_obj.data.edit_bones:
+        head_bone = arm_obj.data.edit_bones[_head_bone_name]
+        head_mat = head_bone.matrix.copy()
+        head_mat_inv = head_mat.inverted()
+    else:
+        head_mat = Matrix.Identity(4)
+        head_mat_inv = Matrix.Identity(4)
 
     offset_mat = {
         point.name: head_mat_inv @ arm_obj.data.edit_bones[point.name].matrix
@@ -220,19 +223,24 @@ def transfer_animation_to_rig(*,
                   if from_frame <= x <= to_frame]
 
     bpy_progress_begin(0, len(frames))
-    head_pbone = arm_obj.pose.bones[_head_bone_name]
     for i, frame in enumerate(frames):
         bpy_set_current_frame(frame)
         verts = (facetracker.applied_args_model_vertices_at(frame) @
                  xy_to_xz_rotation_matrix_3x3())
         delta = verts - neutral_verts
         m0_dict = dict()
+
+        if _head_bone_name in arm_obj.pose.bones:
+            head_pbone_mat = arm_obj.pose.bones[_head_bone_name].matrix
+        else:
+            head_pbone_mat = Matrix.Identity(4)
+
         for point in points:
             name = point.name
             delta_mat = Matrix.Translation(
                 (delta[point.vertex] * point.scale) * sc)
             pbone = arm_obj.pose.bones[name]
-            m0 = head_pbone.matrix @ offset_mat[name] @ head_mat_inv @ delta_mat @ head_mat
+            m0 = head_pbone_mat @ offset_mat[name] @ head_mat_inv @ delta_mat @ head_mat
             pbone.matrix = m0
             m0_dict[name] = m0.copy()
             _ = pbone.keyframe_insert(data_path='location', frame=frame)
