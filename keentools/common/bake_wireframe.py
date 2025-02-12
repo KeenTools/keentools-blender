@@ -58,6 +58,7 @@ class LitWireframeRenderer(KTLitEdgeShaderLocal3D):
 
     def draw_main(self) -> None:
         set_depth_test('NONE')
+        set_depth_mask(False)
         self.background.draw_main()
 
         set_depth_test('LESS_EQUAL')
@@ -93,6 +94,7 @@ def get_FaceLitWireframeRenderer() -> Any:
 
         def draw_main(self) -> None:
             set_depth_test('NONE')
+            set_depth_mask(False)
             self.background.draw_main()
 
             set_depth_test('LESS_EQUAL')
