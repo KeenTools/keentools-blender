@@ -6,7 +6,7 @@
 
 ## Release History
 
-2025.1.0 - 12 February 2025
+2025.1.0 - 13 February 2025
 
 2024.3.0 - 20 November 2024
 

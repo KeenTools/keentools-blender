@@ -274,7 +274,8 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
                                          use_background=use_background)
     prepare_camera(area, product=product)
     settings = get_settings(product)
-    vp = settings.loader().viewport()
+    loader = settings.loader()
+    vp = loader.viewport()
     if not settings.pinmode:
         vp.texter().register_handler(area=area)
 
@@ -291,6 +292,8 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
         wireframer.init_wireframe_image(show_specials)
     wireframer.set_lit_wireframe(lit_wireframe)
     wireframer.set_backface_culling(backface_culling)
+
+    _ = loader.get_geo()  # Fix for case when Pinmode was not activated before
 
     bpy_timer_register(_bake_caller, first_interval=0.0)
     _log.output('bake_wireframe_sequence end >>>')
