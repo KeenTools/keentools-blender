@@ -60,6 +60,7 @@ from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_context)
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
+from ..utils.images import get_sequence_file_number
 from ..geotracker.utils.precalc import PrecalcTimer
 from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 delete_tracker_action,
@@ -1303,7 +1304,14 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
 
         img.filepath = movie_clip.filepath
 
-        loader_fb.add_new_camera(headnum, img, frame - movie_clip.frame_start + 1)
+        if img.source == 'SEQUENCE':
+            file_number = max(0, get_sequence_file_number(movie_clip.filepath))
+        else:
+            file_number = 1
+
+        frame_number = frame - movie_clip.frame_start + file_number
+
+        loader_fb.add_new_camera(headnum, img, frame_number)
         loader_fb.save_fb_serial_str(headnum)
 
         settings_fb.current_camnum = settings_fb.get_last_camnum(headnum)
