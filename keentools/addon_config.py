@@ -226,7 +226,7 @@ class Config:
         'gt_mask_2d_opacity': {'value': gt_mask_2d_opacity, 'type': 'float'},
     }
 
-    supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
+    supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL', 'VULKAN'}
     strict_shader_check: bool = False
     wireframe_offset_constant: float = 0.004
 

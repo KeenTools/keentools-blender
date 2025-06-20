@@ -38,6 +38,7 @@ def circular_dot_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     uniform mat4 ModelViewProjectionMatrix;
     in vec2 pos;
     in vec4 color;
+    uniform float pointSize;
     flat out vec4 finalColor;
     '''
 
@@ -46,6 +47,7 @@ def circular_dot_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     {
         gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
         finalColor = color;
+        gl_PointSize = pointSize;
     }
     '''
 
@@ -76,6 +78,8 @@ def circular_dot_2d_shader(use_old: bool = _use_old_shaders) -> Any:
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
+    shader_info.push_constant('FLOAT', 'pointSize')
+
     shader_info.vertex_in(0, 'VEC2', 'pos')
     shader_info.vertex_in(1, 'VEC4', 'color')
     shader_info.vertex_out(vert_out)
@@ -96,6 +100,7 @@ def circular_dot_3d_shader(use_old: bool = _use_old_shaders) -> Any:
     uniform mat4 ModelViewProjectionMatrix;
     in vec3 pos;
     in vec4 color;
+    uniform float pointSize;
     flat out vec4 finalColor;
     '''
 
@@ -104,6 +109,7 @@ def circular_dot_3d_shader(use_old: bool = _use_old_shaders) -> Any:
     {
         gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
         finalColor = color;
+        gl_PointSize = pointSize;
     }
     '''
 
@@ -135,6 +141,8 @@ def circular_dot_3d_shader(use_old: bool = _use_old_shaders) -> Any:
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
+    shader_info.push_constant('FLOAT', 'pointSize')
+
     shader_info.vertex_in(0, 'VEC3', 'pos')
     shader_info.vertex_in(1, 'VEC4', 'color')
     shader_info.vertex_out(vert_out)
