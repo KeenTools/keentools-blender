@@ -53,11 +53,6 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
         self.lit_batch: Optional[Any] = None
         self.lit_shading: bool = True
         self.viewport_size: Tuple[float, float] = (1920, 1080)
-        self.lit_light_dist: float = 1000
-        self.lit_light1_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
-        self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
-        self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.wireframe_offset = FTConfig.ft_wireframe_offset_constant
 
     def init_edge_indices(self) -> None:

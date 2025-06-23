@@ -86,6 +86,7 @@ class KTEdgeShaderBase(KTShaderBase):
         self.wide_vertex_opp_indices: Any = np.empty((0, 3), dtype=np.int32)
         self.wide_edge_vertex_normals: Any = np.empty((0, 3), dtype=np.float32)
         self.camera_pos: Vector = Vector((0, 0, 0))
+        self.obj_distance: float = 10.0
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
 
     def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
@@ -97,6 +98,8 @@ class KTEdgeShaderBase(KTShaderBase):
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.camera_pos = mat @ Vector((0, 0, 0))
         self.lit_light_matrix = mat
+        self.obj_distance = np.linalg.norm(
+            np.asarray(geomobj_matrix_world - camobj_matrix_world)[:, 3], axis=0)
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
         self.edge_colors = np.full((len(self.edge_vertices), 4), color,
@@ -515,11 +518,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.lit_batch: Optional[Any] = None
         self.lit_shading: bool = True
         self.viewport_size: Tuple[float, float] = (1920, 1080)
-        self.lit_light_dist: float = 1000
-        self.lit_light1_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
-        self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
-        self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
+        self.lit_light1_pos: Vector = Vector((0, 0, 0))
+        self.lit_light2_pos: Vector = Vector((-2, 0, -1))
+        self.lit_light3_pos: Vector = Vector((2, 0, -1))
+        self.lit_camera_pos: Vector = Vector((0, 0, 0))
         self.wireframe_offset = Config.wireframe_offset_constant
 
     def set_lit_wireframe(self, state: bool) -> None:
@@ -680,11 +682,11 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
             self.object_world_matrix.ravel(), 16)
 
         shader.uniform_float('pos1', self.lit_light_matrix @
-                             (self.lit_light1_pos * self.lit_light_dist))
+                             (self.lit_light1_pos * self.obj_distance))
         shader.uniform_float('pos2', self.lit_light_matrix @
-                             (self.lit_light2_pos * self.lit_light_dist))
+                             (self.lit_light2_pos * self.obj_distance))
         shader.uniform_float('pos3', self.lit_light_matrix @
-                             (self.lit_light3_pos * self.lit_light_dist))
+                             (self.lit_light3_pos * self.obj_distance))
         shader.uniform_float('cameraPos',
                              self.lit_light_matrix @ self.lit_camera_pos)
 
