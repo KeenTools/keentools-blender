@@ -244,6 +244,9 @@ class Config:
     show_ft_licensing: bool = True
     show_trial_warnings: bool = True
 
+    draw_empty_fill: bool = True
+    draw_empty_fill_with_color: bool = False
+
     # Colors
     pin_color: Tuple = (1.0, 0.0, 0.0, 1.0)
     disabled_pin_color: Tuple = (1.0, 1.0, 0.0, 1.0)

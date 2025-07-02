@@ -30,6 +30,7 @@ from .gpu_shaders import (line_3d_local_shader,
                           dashed_2d_shader,
                           black_offset_fill_local_shader,
                           lit_aa_local_shader,
+                          core_lit_aa_local_shader,
                           simple_uniform_color_2d_shader)
 from .coords import (get_mesh_verts,
                      get_triangulation_indices,
@@ -72,6 +73,8 @@ class KTEdgeShaderBase(KTShaderBase):
         # pykeentools data
         self.triangle_vertices: Any = np.empty((0, 3), dtype=np.float32)
         self.edge_vertex_normals: Any = np.empty((0, 3), dtype=np.float32)
+        self.fill_triangle_vertices: Any = np.empty((0, 3), dtype=np.float32)
+        self.fill_triangle_indices: Any = np.empty((0,), dtype=np.int32)
 
         self.backface_culling: bool = True
         self.adaptive_opacity: float = 1.0
@@ -567,7 +570,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
             _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
 
         if self.lit_shader is None:
-            self.lit_shader = lit_aa_local_shader()
+            self.lit_shader = core_lit_aa_local_shader()
             res[3] = self.lit_shader is not None
             _log.output(f'{self.__class__.__name__}.lit_shader: {res[3]}')
             changes = True
@@ -629,7 +632,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
             _log.output('lit self.fill_shader')
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.list_for_batch(self.triangle_vertices)})
+                {'pos': self.list_for_batch(self.fill_triangle_vertices)},
+                indices=self.list_for_batch(self.fill_triangle_indices))
         else:
             _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
 
@@ -697,8 +701,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
 
     def draw_main(self) -> None:
         set_depth_test('LESS_EQUAL')
-        set_color_mask(False, False, False, False)
-        self.draw_empty_fill()
+        if not Config.draw_empty_fill_with_color:
+            set_color_mask(False, False, False, False)
+        if Config.draw_empty_fill:
+            self.draw_empty_fill()
         set_color_mask(True, True, True, True)
         set_depth_mask(False)
         set_blend_alpha()
@@ -748,3 +754,96 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         if len(self.selection_triangle_indices) > 0:
             mesh = evaluated_mesh(obj)
             self.vertices = get_mesh_verts(mesh)
+
+
+class KTCoreLitEdgeShaderLocal3D(KTLitEdgeShaderLocal3D):
+    def __init__(self, target_class: Any, mask_color: Tuple):
+        super().__init__(target_class, mask_color)
+        self.sh_pos: Any = np.empty((0, 3), dtype=np.float32)
+        self.sh_dir: Any = np.empty((0, 3), dtype=np.float32)
+        self.sh_uv: Any = np.empty((0, 2), dtype=np.float32)
+        self.sh_normal: Any = np.empty((0, 3), dtype=np.float32)
+        self.sh_color: Any = np.empty((0, 4), dtype=np.float32)
+
+        self.sh_elements: Any = np.empty((0,), dtype=np.int32)
+
+    def create_batches(self) -> None:
+        _log.yellow(f'{self.__class__.__name__}.create_batches start')
+        if self.lit_shader is not None:
+            _log.magenta('CORE LIT WIREFRAME BATCH:')
+            _log.red(f'\nself.sh_pos: {self.sh_pos.shape}\n'
+                     f'self.sh_dir: {self.sh_dir.shape}\n'
+                     f'self.sh_uv: {self.sh_uv.shape}\n'
+                     f'self.sh_normal: {self.sh_normal.shape}\n'
+                     f'self.sh_color: {self.sh_color.shape}\n')
+            self.lit_batch = batch_for_shader(
+                self.lit_shader, 'TRIS',
+                {'aPos': self.list_for_batch(self.sh_pos),
+                 'aDir': self.list_for_batch(self.sh_dir),
+                 'aUV': self.list_for_batch(self.sh_uv),
+                 'aNormal': self.list_for_batch(self.sh_normal),
+                 'aColor': self.list_for_batch(self.sh_color)},
+                indices=self.sh_elements)
+            _log.output(f'\nbatch: {self.lit_batch}')
+        else:
+            _log.error(f'{self.__class__.__name__}.lit_shader: is empty')
+
+        if self.fill_shader is not None:
+            _log.output('lit self.fill_shader')
+            self.fill_batch = batch_for_shader(
+                self.fill_shader, 'TRIS',
+                {'pos': self.list_for_batch(self.fill_triangle_vertices)},
+                indices=self.list_for_batch(self.fill_triangle_indices))
+        else:
+            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
+
+        if self.selection_fill_shader is not None:
+            verts = np.empty((0, 3), dtype=np.float32)
+            indices = np.empty((0,), dtype=np.int32)
+            verts_count = len(self.vertices)
+            if verts_count > 0 and len(self.selection_triangle_indices) > 0:
+                max_index = np.max(self.selection_triangle_indices)
+                if max_index < verts_count:
+                    verts = self.vertices
+                    indices = self.selection_triangle_indices
+
+            self.selection_fill_batch = batch_for_shader(
+                self.selection_fill_shader, 'TRIS',
+                {'pos': self.list_for_batch(verts)},
+                indices=self.list_for_batch(indices))
+        else:
+            _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
+
+        _log.output(f'{self.__class__.__name__}.create_batches end >>>')
+
+    def draw_edges(self) -> None:
+        shader = self.lit_shader
+        shader.bind()
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('uMV'),
+            np.array(self.lit_light_matrix.inverted_safe(),
+                     dtype=np.float32).transpose().ravel(), 16)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('uNormalTransform'),
+            np.array(self.lit_light_matrix, dtype=np.float32).ravel(), 16)
+        shader.uniform_float('uScreenSize', self.viewport_size)
+        shader.uniform_float('uLineWidth', self.get_line_width())
+        shader.uniform_float('uColor', self.lit_color)
+
+        shader.uniform_int('uHasColorAttribute', 0)  # Not used yet
+        shader.uniform_int('uTexturedAndHasUVAttribute', 0)  # Not used yet
+
+        shader.uniform_int('uBackFaceCullingEnabled', 1 if self.backface_culling else 0)
+        shader.uniform_int('uLightingEnabled', 1 if self.lit_shading else 0)
+
+        shader.uniform_float('uLightPos0', self.lit_light1_pos * self.obj_distance)
+        shader.uniform_float('uLightPos1', self.lit_light2_pos * self.obj_distance)
+        shader.uniform_float('uLightPos2', self.lit_light3_pos * self.obj_distance)
+
+        shader.uniform_float('uAdaptiveOpacity', self.adaptive_opacity)
+
+        if self.lit_batch:
+            self.lit_batch.draw(shader)

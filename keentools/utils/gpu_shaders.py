@@ -1031,3 +1031,188 @@ def raster_image_background_shader(use_old: bool = _use_old_shaders) -> Any:
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
     return shader
+
+
+def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
+    shader_name = 'core_lit_aa_local_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    uniform mat4 uMV;
+    uniform mat4 uNormalTransform;
+
+    uniform vec2 uScreenSize;
+    uniform float uLineWidth;
+
+    in vec3 aPos;
+    in vec3 aDir;
+    in vec2 aUV;
+    in vec3 aNormal;
+    in vec4 aColor;
+
+    out vec2 vLineCenter;
+    out vec2 vUV;
+    out vec3 vNormal;
+    out vec4 vColor;
+    out vec3 vPos;
+    out float vDistance;
+    '''
+
+    vertex_glsl = '''
+    vec3 localToClipPoint(vec3 local)
+    {
+        vec4 clip = ModelViewProjectionMatrix * modelMatrix * vec4(local, 1.0);
+        return clip.xyz / clip.w;
+    }
+
+    vec2 clipToScreenPoint(vec2 clipXY)
+    {
+        return (clipXY + 1.0) / 2.0 * uScreenSize;
+    }
+
+    vec2 screenToClipVec(vec2 screen)
+    {
+        return screen * 2.0 / uScreenSize;
+    }
+
+    void main()
+    {
+        vec3 cPos = localToClipPoint(aPos);
+        vec3 cEnd = localToClipPoint(aPos + aDir);
+        vec2 edgeNormal = normalize(vec2(cEnd.y - cPos.y, cPos.x - cEnd.x));
+        vec2 cOffset = screenToClipVec(edgeNormal) * (uLineWidth * 1.5);
+
+        vLineCenter = clipToScreenPoint(cPos.xy);
+        vUV = aUV;
+        vNormal = normalize(vec3(uNormalTransform * vec4(aNormal, 0.0) ));
+        vPos = vec3(uMV * vec4(aPos, 1.0));
+        vColor = aColor;
+
+        gl_Position = vec4(cPos.xy + cOffset, cPos.z, 1.0);
+    }
+    '''
+
+    fragment_vars = '''
+    in vec2 vLineCenter;
+    in vec2 vUV;
+    in vec3 vNormal;
+    in vec4 vColor;
+    in vec3 vPos;
+
+    uniform float uLineWidth;
+    uniform vec4 uColor;
+    uniform sampler2D uTexture;
+
+    uniform bool uHasColorAttribute;
+    uniform bool uTexturedAndHasUVAttribute;
+    uniform bool uBackFaceCullingEnabled;
+    uniform bool uLightingEnabled;
+
+    uniform vec3 uLightPos0;
+    uniform vec3 uLightPos1;
+    uniform vec3 uLightPos2;
+
+    uniform float uAdaptiveOpacity;
+
+    out vec4 fragColor;
+    '''
+
+    fragment_glsl = '''
+    float distanceToAntiAliasing(float distance)
+    {
+        float low = -uLineWidth * 0.5;
+        float high = uLineWidth * 1.5;
+        float t = clamp((distance - low) / (high - low), 0.0, 1.0);
+        return clamp(1.0 - t * t * (3.0 - 2.0 * t), 0.0, 1.0);
+    }
+
+    vec3 evaluatePointLight(vec3 color, vec3 normal, vec3 lightPos, vec3 fragPos)
+    {
+        vec3 lightDir = normalize(lightPos - fragPos);
+        float diffuseIntensity = max(dot(normal, lightDir), 0.0);
+        return color * diffuseIntensity;
+    }
+
+    vec3 to_srgb_gamma_vec3(vec3 col)
+    {
+        vec3 c = max(col, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        return mix(c1, c2, step(vec3(0.04045), c));
+    }
+
+    void main()
+    {
+        float distance = distance(vLineCenter, gl_FragCoord.xy);
+        float antiAliasing = distanceToAntiAliasing(distance);
+
+        if (uBackFaceCullingEnabled && dot(normalize(vPos), vNormal) > 0.0) discard;
+
+        vec4 color = uHasColorAttribute         ? vColor
+                   : uTexturedAndHasUVAttribute ? uColor * texture(uTexture, vUV)
+                   :                              uColor;
+
+        if (uLightingEnabled) {
+            color.rgb = to_srgb_gamma_vec3(evaluatePointLight(color.rgb, vNormal, uLightPos0, vPos)
+                      + evaluatePointLight(color.rgb, vNormal, uLightPos1, vPos)
+                      + evaluatePointLight(color.rgb, vNormal, uLightPos2, vPos));
+        }
+
+        fragColor = vec4(color.rgb, color.a * antiAliasing * uAdaptiveOpacity);
+    }
+    '''
+
+    if use_old:
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
+        _log.magenta(f'{shader_name}: Old Shader')
+        return shader
+
+    vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
+    vert_out.smooth('VEC2', 'vLineCenter')
+    vert_out.smooth('VEC2', 'vUV')
+    vert_out.smooth('VEC3', 'vNormal')
+    vert_out.smooth('VEC4', 'vColor')
+    vert_out.smooth('VEC3', 'vPos')
+    vert_out.smooth('FLOAT', 'vDistance')
+
+    shader_info = gpu.types.GPUShaderCreateInfo()
+    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
+    shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.push_constant('MAT4', 'uMV')
+    # Normal matrix has shape 4x4 instead of 3x3 to avoid bad aligning in UBO
+    shader_info.push_constant('MAT4', 'uNormalTransform')
+
+    shader_info.push_constant('VEC2', 'uScreenSize')
+    shader_info.push_constant('FLOAT', 'uLineWidth')
+
+    shader_info.push_constant('VEC4', 'uColor')
+    shader_info.sampler(0, 'FLOAT_2D', 'uTexture')
+
+    shader_info.push_constant('BOOL', 'uHasColorAttribute')
+    shader_info.push_constant('BOOL', 'uTexturedAndHasUVAttribute')
+    shader_info.push_constant('BOOL', 'uBackFaceCullingEnabled')
+    shader_info.push_constant('BOOL', 'uLightingEnabled')
+
+    shader_info.push_constant('VEC3', 'uLightPos0')
+    shader_info.push_constant('VEC3', 'uLightPos1')
+    shader_info.push_constant('VEC3', 'uLightPos2')
+
+    shader_info.push_constant('FLOAT', 'uAdaptiveOpacity')
+
+    shader_info.vertex_in(0, 'VEC3', 'aPos')
+    shader_info.vertex_in(1, 'VEC3', 'aDir')
+    shader_info.vertex_in(2, 'VEC2', 'aUV')
+    shader_info.vertex_in(3, 'VEC3', 'aNormal')
+    shader_info.vertex_in(4, 'VEC4', 'aColor')
+    shader_info.vertex_out(vert_out)
+
+    shader_info.fragment_out(0, 'VEC4', 'fragColor')
+
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
+
+    shader = gpu.shader.create_from_info(shader_info)
+    _log.output(f'{shader_name}: GPU Shader')
+    return shader

@@ -537,27 +537,32 @@ class Loader:
         return True
 
     @classmethod
-    def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
+    def get_scale_matrices(
+            cls, matrix_world: Matrix) -> Tuple[Any, Any]:
         scale_vec = matrix_world.to_scale()
-        scale_inv = np.array(InvScaleMatrix(3, scale_vec), dtype=np.float32)
-        scale = np.array(ScaleMatrix(3, scale_vec), dtype=np.float32)
-        rotate = xy_to_xz_rotation_matrix_3x3()
-        mat = rotate @ scale_inv
+        scale_mat = np.array(ScaleMatrix(3, scale_vec), dtype=np.float32)
+        scale_inv_mat = np.array(InvScaleMatrix(3, scale_vec), dtype=np.float32)
+        return  scale_mat, scale_inv_mat
+
+    @classmethod
+    def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
+        scale_mat, scale_inv_mat = cls.get_scale_matrices(matrix_world)
+        xy_to_xz_mat = xy_to_xz_rotation_matrix_3x3()
 
         _log.output('get edge_vertices')
         edge_vertices = np.array(pkt_module().utils.get_lines(geo),
-                                 dtype=np.float32) @ mat
+                                 dtype=np.float32) @ (xy_to_xz_mat @ scale_inv_mat)
 
         _log.output('get triangle_vertices')
         triangle_vertices = np.array(
             pkt_module().utils.get_independent_triangles(geo),
-            dtype=np.float32) @ mat
+            dtype=np.float32) @ (xy_to_xz_mat @ scale_inv_mat)
 
         _log.output('get edge_vertex_normals')
         # Warning! Normals can be not normalized!
         edge_vertex_normals = np.array(
             pkt_module().utils.get_normals_for_lines(geo),
-            dtype=np.float32) @ rotate @ scale
+            dtype=np.float32) @ (xy_to_xz_mat @ scale_mat)
 
         return edge_vertices, edge_vertex_normals, triangle_vertices
 
@@ -577,14 +582,44 @@ class Loader:
         if wireframe_data:
             _log.green('wireframe_data')
             geo = cls.get_geo()
-            wf.init_geom_data_from_core(*cls.get_geo_shader_data(
-                geo, geotracker.geomobj.matrix_world))
 
-            if (geotracker.mask_3d != '' and
-                    settings.product_type() == ProductType.FACETRACKER):
-                gt = settings.loader().kt_geotracker()
-                wf.vertices = gt.applied_args_model_vertices_at(
-                    bpy_current_frame()) @ xy_to_xz_rotation_matrix_3x3()
+            # TODO: Shader refactoring for FaceTracker
+            if settings.product_type() == ProductType.FACETRACKER:
+                wf.init_geom_data_from_core(*cls.get_geo_shader_data(
+                    geo, geotracker.geomobj.matrix_world))
+
+                if geotracker.mask_3d != '':
+                    gt = settings.loader().kt_geotracker()
+                    wf.vertices = gt.applied_args_model_vertices_at(
+                        bpy_current_frame()) @ xy_to_xz_rotation_matrix_3x3()
+            else:
+                scale_mat, scale_inv_mat = cls.get_scale_matrices(
+                    geotracker.geomobj.matrix_world)
+                xy_to_xz_mat = xy_to_xz_rotation_matrix_3x3()
+                vert_mat = xy_to_xz_mat @ scale_inv_mat
+                norm_mat = xy_to_xz_mat @ scale_mat
+
+                _log.red('* GeoRenderData *')
+                geo_render_data = pkt_module().utils.GeoRenderData(geo)
+
+                triangle_data = geo_render_data.triangle_pass
+                wf.fill_triangle_vertices = (triangle_data.aPos.reshape((-1, 3)) @
+                                             vert_mat)
+                wf.fill_triangle_indices = triangle_data.elements
+
+                edge_data = geo_render_data.edge_pass
+                wf.sh_elements = edge_data.elements
+                wf.sh_pos = edge_data.aPos.reshape((-1, 3)) @ vert_mat
+                element_count = wf.sh_pos.shape[0]
+
+                wf.sh_color = edge_data.aColor if len(edge_data.aColor) > 0 else (
+                    np.ones((element_count, 4), dtype=np.float32))
+                wf.sh_dir = edge_data.aDir.reshape((-1, 3)) @ vert_mat
+                wf.sh_normal = edge_data.aNormal.reshape((-1, 3)) @ norm_mat
+                wf.sh_uv = edge_data.aUV if len(edge_data.aUV) > 0 else (
+                    np.zeros((element_count, 2), dtype=np.float32))
+
+                _log.red(f'element_count: {element_count}')
 
         _log.output('wf.create_batches')
         wf.create_batches()
