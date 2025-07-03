@@ -1127,6 +1127,11 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
         return clamp(1.0 - t * t * (3.0 - 2.0 * t), 0.0, 1.0);
     }
 
+    float calcAntialiasing(float d, float width, float filterRad)
+    {
+        return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
+    }
+
     vec3 evaluatePointLight(vec3 color, vec3 normal, vec3 lightPos, vec3 fragPos)
     {
         vec3 lightDir = normalize(lightPos - fragPos);
@@ -1145,7 +1150,9 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
     void main()
     {
         float distance = distance(vLineCenter, gl_FragCoord.xy);
-        float antiAliasing = distanceToAntiAliasing(distance);
+        float antiAliasing = uLineWidth > 1.49 ?
+                    calcAntialiasing(distance, uLineWidth, 0.5)
+                    : distanceToAntiAliasing(distance);
 
         if (uBackFaceCullingEnabled && dot(normalize(vPos), vNormal) > 0.0) discard;
 
