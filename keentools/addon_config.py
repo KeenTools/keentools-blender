@@ -226,7 +226,7 @@ class Config:
         'gt_mask_2d_opacity': {'value': gt_mask_2d_opacity, 'type': 'float'},
     }
 
-    supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
+    supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL', 'VULKAN'}
     strict_shader_check: bool = False
     wireframe_offset_constant: float = 0.004
 
@@ -243,6 +243,9 @@ class Config:
 
     show_ft_licensing: bool = True
     show_trial_warnings: bool = True
+
+    draw_empty_fill: bool = True
+    draw_empty_fill_with_color: bool = False
 
     # Colors
     pin_color: Tuple = (1.0, 0.0, 0.0, 1.0)

@@ -80,9 +80,11 @@ class KTIcons:
     def layout_icons(cls, layout: Any, icons: Optional[List] = None):
         icon_list = icons if icons is not None else _ICONS
         col = layout.column()
-        for i in icon_list:
-            col.label(text=i[0], icon_value=KTIcons.get_id(i[0]))
-            col.label(text=i[2], icon=i[2])
+        for name in icon_list:
+            value = KTIcons.get_id(name)
+            col.label(text=f'{icon_list[name][0]} ({value})',
+                      icon_value=value)
+            col.label(text=icon_list[name][1], icon=icon_list[name][1])
 
     @classmethod
     def get_id(cls, name: str) -> int:

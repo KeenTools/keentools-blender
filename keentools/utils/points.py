@@ -235,9 +235,11 @@ class KTShaderPoints(KTShaderBase):
         return True
 
     def draw_main(self) -> None:
-        set_point_size(self.get_point_size())
+        point_size = self.get_point_size()
+        set_point_size(point_size)
         set_blend_alpha()
         self.shader.bind()
+        self.shader.uniform_float('pointSize', point_size)
         self.batch.draw(self.shader)
 
 
