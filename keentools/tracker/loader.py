@@ -603,19 +603,26 @@ class Loader:
                 geo_render_data = pkt_module().utils.GeoRenderData(geo)
 
                 triangle_data = geo_render_data.triangle_pass
-                wf.fill_triangle_vertices = (triangle_data.aPos.reshape((-1, 3)) @
-                                             vert_mat)
+                wf.fill_triangle_vertices = triangle_data.aPos @ vert_mat
                 wf.fill_triangle_indices = triangle_data.elements
 
                 edge_data = geo_render_data.edge_pass
+                _log.red('* GeoRenderData 4*')
+                _log.magenta(f'\naPos: {edge_data.aPos.shape}\n'
+                             f'aColor: {edge_data.aColor.shape}\n'
+                             f'aDir: {edge_data.aDir.shape}\n'
+                             f'aNormal: {edge_data.aNormal.shape}\n'
+                             f'aUV: {edge_data.aUV.shape}\n'
+                             f'elements: {edge_data.elements.shape}\n')
+
                 wf.sh_elements = edge_data.elements
-                wf.sh_pos = edge_data.aPos.reshape((-1, 3)) @ vert_mat
+                wf.sh_pos = edge_data.aPos @ vert_mat
                 element_count = wf.sh_pos.shape[0]
 
                 wf.sh_color = edge_data.aColor if len(edge_data.aColor) > 0 else (
                     np.ones((element_count, 4), dtype=np.float32))
-                wf.sh_dir = edge_data.aDir.reshape((-1, 3)) @ vert_mat
-                wf.sh_normal = edge_data.aNormal.reshape((-1, 3)) @ norm_mat
+                wf.sh_dir = edge_data.aDir @ vert_mat
+                wf.sh_normal = edge_data.aNormal @ norm_mat
                 wf.sh_uv = edge_data.aUV if len(edge_data.aUV) > 0 else (
                     np.zeros((element_count, 2), dtype=np.float32))
 
