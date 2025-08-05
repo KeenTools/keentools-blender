@@ -570,7 +570,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
             _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
 
         if self.lit_shader is None:
-            self.lit_shader = core_lit_aa_local_shader()
+            self.lit_shader = lit_aa_local_shader()
             res[3] = self.lit_shader is not None
             _log.output(f'{self.__class__.__name__}.lit_shader: {res[3]}')
             changes = True
@@ -766,6 +766,46 @@ class KTCoreLitEdgeShaderLocal3D(KTLitEdgeShaderLocal3D):
         self.sh_color: Any = np.empty((0, 4), dtype=np.float32)
 
         self.sh_elements: Any = np.empty((0,), dtype=np.int32)
+
+    def init_shaders(self) -> Optional[bool]:
+        changes = False
+        res = [True] * 4
+
+        if self.fill_shader is None:
+            self.fill_shader = black_offset_fill_local_shader()
+            res[0] = self.fill_shader is not None
+            _log.output(f'fill_shader (offset): {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
+
+        if self.line_shader is None:
+            self.line_shader = line_3d_local_shader()
+            res[1] = self.line_shader is not None
+            _log.output(f'line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+
+        if self.selection_fill_shader is None:
+            self.selection_fill_shader = line_3d_local_shader()
+            res[2] = self.selection_fill_shader is not None
+            _log.output(f'selection_fill_shader: {res[2]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
+
+        if self.lit_shader is None:
+            self.lit_shader = core_lit_aa_local_shader()
+            res[3] = self.lit_shader is not None
+            _log.output(f'{self.__class__.__name__}.lit_shader: {res[3]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.lit_shader: skip')
+
+        if changes:
+            return res[0] and res[1] and res[2] and res[3]
+        return None
 
     def create_batches(self) -> None:
         _log.yellow(f'{self.__class__.__name__}.create_batches start')
