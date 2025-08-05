@@ -437,14 +437,17 @@ class Loader:
         return geotracker.calc_model_matrix()
 
     @classmethod
-    def safe_keyframe_add(cls, keyframe: int, update: bool=False) -> None:
+    def safe_keyframe_add(cls, keyframe: int, update: bool=False) -> bool:
         gt = cls.kt_geotracker()
         if not gt.is_key_at(keyframe):
             mat = cls.calc_model_matrix()
             gt.set_keyframe(keyframe, mat)
+            return True
         elif update:
             mat = cls.calc_model_matrix()
             gt.update_model_mat(keyframe, mat)
+            return True
+        return False
 
     @classmethod
     def solve(cls) -> bool:
