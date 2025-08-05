@@ -1119,11 +1119,11 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
     '''
 
     fragment_glsl = '''
-    float distanceToAntiAliasing(float distance)
+    float distanceToAntiAliasing(float dist)
     {
         float low = -uLineWidth * 0.5;
         float high = uLineWidth * 1.5;
-        float t = clamp((distance - low) / (high - low), 0.0, 1.0);
+        float t = clamp((dist - low) / (high - low), 0.0, 1.0);
         return clamp(1.0 - t * t * (3.0 - 2.0 * t), 0.0, 1.0);
     }
 
@@ -1149,10 +1149,10 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
 
     void main()
     {
-        float distance = distance(vLineCenter, gl_FragCoord.xy);
+        float dist = distance(vLineCenter, gl_FragCoord.xy);
         float antiAliasing = uLineWidth > 1.49 ?
-                    calcAntialiasing(distance, uLineWidth, 0.5)
-                    : distanceToAntiAliasing(distance);
+                    calcAntialiasing(dist, uLineWidth, 0.5)
+                    : distanceToAntiAliasing(dist);
 
         if (uBackFaceCullingEnabled && dot(normalize(vPos), vNormal) > 0.0) discard;
 
