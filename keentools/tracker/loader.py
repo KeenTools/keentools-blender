@@ -234,7 +234,7 @@ class Loader:
     @classmethod
     def force_stop_shaders(cls) -> None:
         _log.output(_log.color('red', 'force_stop_shaders'))
-        cls.stop_viewport_shaders()
+        cls.stop_viewport_shaders(redraw_area=False)  # In a new scene non-existing area redraw attempt causes to crash
         force_ui_redraw('VIEW_3D')
 
     @classmethod
@@ -798,13 +798,13 @@ class Loader:
         return vp.get_work_area()
 
     @classmethod
-    def stop_viewport_shaders(cls) -> None:
+    def stop_viewport_shaders(cls, redraw_area: bool = True) -> None:
         _log.yellow(f'{cls.__name__} stop_viewport_shaders start')
         cls.check_shader_timer.stop()
         vp = cls.viewport()
         area = vp.get_work_area()
         vp.unregister_handlers()
-        if area:
+        if redraw_area and area:
             area.tag_redraw()
         _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 
