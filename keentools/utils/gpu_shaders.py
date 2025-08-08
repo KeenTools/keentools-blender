@@ -1081,7 +1081,7 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
         vec3 cPos = localToClipPoint(aPos);
         vec3 cEnd = localToClipPoint(aPos + aDir);
         vec2 edgeNormal = normalize(vec2(cEnd.y - cPos.y, cPos.x - cEnd.x));
-        vec2 cOffset = screenToClipVec(edgeNormal) * (uLineWidth + 1.5);  // 1.5 for diagonal lines
+        vec2 cOffset = screenToClipVec(edgeNormal) * (uLineWidth + 1.0);
 
         vLineCenter = clipToScreenPoint(cPos.xy);
         vUV = aUV;
