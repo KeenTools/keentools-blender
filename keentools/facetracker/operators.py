@@ -685,9 +685,10 @@ class FT_OT_SplitVideoExec(Operator):
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
+        from_frame = bpy_start_frame()
         op = get_operator(GTConfig.gt_split_video_to_frames_idname)
-        op('INVOKE_DEFAULT', from_frame=1,
-           to_frame=get_movieclip_duration(geotracker.movie_clip),
+        op('INVOKE_DEFAULT', from_frame=from_frame,
+           to_frame=from_frame - 1 + get_movieclip_duration(geotracker.movie_clip),
            filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath), ''),
            product=ProductType.FACETRACKER)
         _log.output(f'{self.__class__.__name__} execute end >>>')
