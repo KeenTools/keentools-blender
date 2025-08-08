@@ -1081,7 +1081,7 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
         vec3 cPos = localToClipPoint(aPos);
         vec3 cEnd = localToClipPoint(aPos + aDir);
         vec2 edgeNormal = normalize(vec2(cEnd.y - cPos.y, cPos.x - cEnd.x));
-        vec2 cOffset = screenToClipVec(edgeNormal) * (uLineWidth * 1.5);
+        vec2 cOffset = screenToClipVec(edgeNormal) * (uLineWidth + 1.5);  // 1.5 for diagonal lines
 
         vLineCenter = clipToScreenPoint(cPos.xy);
         vUV = aUV;
@@ -1121,10 +1121,8 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
     fragment_glsl = '''
     float distanceToAntiAliasing(float dist)
     {
-        float low = -uLineWidth * 0.5;
-        float high = uLineWidth * 1.5;
-        float t = clamp((dist - low) / (high - low), 0.0, 1.0);
-        return clamp(1.0 - t * t * (3.0 - 2.0 * t), 0.0, 1.0);
+        float featherWidth = min(uLineWidth * 0.8, 2.0);
+        return clamp((uLineWidth - dist) / featherWidth, 0.0, 1.0);
     }
 
     float calcAntialiasing(float d, float width, float filterRad)
