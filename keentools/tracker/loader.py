@@ -127,6 +127,9 @@ def undo_redo_handler_wrapper(settings_func: Callable) -> Callable:
                 loader.unregister_undo_redo_handlers()
                 return
 
+            if settings.is_calculating():
+                settings.stop_calculating()
+
             loader.load_geotracker()
             loader.update_viewport_shaders(area, wireframe=True,
                                            geomobj_matrix=True,

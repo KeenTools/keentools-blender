@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 import time
 import numpy as np
 
@@ -63,7 +63,8 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_progress_end,
                                  bpy_progress_update)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from ...utils.manipulate import (select_object_only,
+from ...utils.manipulate import (force_undo_push,
+                                 select_object_only,
                                  select_objects_only,
                                  center_viewport,
                                  switch_to_mode)
@@ -101,9 +102,7 @@ from ...tracker.calc_timer import (TrackTimer,
                                    FTRefineTimerFast)
 from ...utils.unbreak import (mark_object_keyframes,
                               unbreak_after,
-                              unbreak_after_facetracker,
                               unbreak_after_reversed,
-                              unbreak_after_reversed_facetracker,
                               unbreak_object_rotation_act,
                               unbreak_rotation_act,
                               unbreak_rotation_with_status)
@@ -355,6 +354,24 @@ def toggle_lock_view_action(*, product: int) -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
+def unbreak_after_and_push_undo(
+        undo_message: str, *,
+        product: int = ProductType.GEOTRACKER) -> Callable:
+    def _fn(frame_list: List):
+        unbreak_after(frame_list, product=product)
+        force_undo_push(undo_message)
+    return _fn
+
+
+def unbreak_after_reversed_and_push_undo(
+        undo_message: str, *,
+        product: int = ProductType.GEOTRACKER) -> Callable:
+    def _fn(frame_list: List):
+        unbreak_after_reversed(frame_list, product=product)
+        force_undo_push(undo_message)
+    return _fn
+
+
 def track_to(forward: bool, *, product: int) -> ActionStatus:
     _log.yellow(f'track_to: forward={forward} [{product_name(product)}]')
     check_status = track_checks(product=product)
@@ -377,21 +394,22 @@ def track_to(forward: bool, *, product: int) -> ActionStatus:
         _log.output(f'gt.track_async({current_frame}, {forward}, {precalc_path})')
         tracking_computation = gt.track_async(current_frame, forward, precalc_path)
 
-        if product == ProductType.GEOTRACKER:
-            tracking_timer = TrackTimer(
-                tracking_computation, current_frame,
-                success_callback=unbreak_after if forward else unbreak_after_reversed,
-                error_callback=unbreak_after if forward else unbreak_after_reversed,
-                product=product)
-        elif product == ProductType.FACETRACKER:
-            tracking_timer = FTTrackTimer(
-                tracking_computation, current_frame,
-                success_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
-                error_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
-                product=product
-            )
-        else:
-            assert False, f'Wrong product type [{product}]'
+        assert product in (ProductType.GEOTRACKER, ProductType.FACETRACKER), f'Wrong product type [{product}]'
+
+        _timer_class = FTTrackTimer if product == ProductType.FACETRACKER else TrackTimer
+
+        tracking_timer = _timer_class(
+            tracking_computation, current_frame,
+            success_callback=unbreak_after_and_push_undo(
+                'Tracking >>', product=product) if forward
+                else unbreak_after_reversed_and_push_undo(
+                'Tracking <<', product=product),
+            error_callback=unbreak_after_and_push_undo(
+                'Interrupted Tracking >>', product=product) if forward
+            else unbreak_after_reversed_and_push_undo(
+                'Interrupted Tracking <<', product=product),
+            product=product
+        )
 
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
