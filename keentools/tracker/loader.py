@@ -127,6 +127,9 @@ def undo_redo_handler_wrapper(settings_func: Callable) -> Callable:
                 loader.unregister_undo_redo_handlers()
                 return
 
+            if settings.is_calculating():
+                settings.stop_calculating()
+
             loader.load_geotracker()
             loader.update_viewport_shaders(area, wireframe=True,
                                            geomobj_matrix=True,
@@ -234,7 +237,7 @@ class Loader:
     @classmethod
     def force_stop_shaders(cls) -> None:
         _log.output(_log.color('red', 'force_stop_shaders'))
-        cls.stop_viewport_shaders()
+        cls.stop_viewport_shaders(redraw_area=False)  # In a new scene non-existing area redraw attempt causes to crash
         force_ui_redraw('VIEW_3D')
 
     @classmethod
@@ -437,14 +440,17 @@ class Loader:
         return geotracker.calc_model_matrix()
 
     @classmethod
-    def safe_keyframe_add(cls, keyframe: int, update: bool=False) -> None:
+    def safe_keyframe_add(cls, keyframe: int, update: bool=False) -> bool:
         gt = cls.kt_geotracker()
         if not gt.is_key_at(keyframe):
             mat = cls.calc_model_matrix()
             gt.set_keyframe(keyframe, mat)
+            return True
         elif update:
             mat = cls.calc_model_matrix()
             gt.update_model_mat(keyframe, mat)
+            return True
+        return False
 
     @classmethod
     def solve(cls) -> bool:
@@ -537,27 +543,32 @@ class Loader:
         return True
 
     @classmethod
-    def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
+    def get_scale_matrices(
+            cls, matrix_world: Matrix) -> Tuple[Any, Any]:
         scale_vec = matrix_world.to_scale()
-        scale_inv = np.array(InvScaleMatrix(3, scale_vec), dtype=np.float32)
-        scale = np.array(ScaleMatrix(3, scale_vec), dtype=np.float32)
-        rotate = xy_to_xz_rotation_matrix_3x3()
-        mat = rotate @ scale_inv
+        scale_mat = np.array(ScaleMatrix(3, scale_vec), dtype=np.float32)
+        scale_inv_mat = np.array(InvScaleMatrix(3, scale_vec), dtype=np.float32)
+        return  scale_mat, scale_inv_mat
+
+    @classmethod
+    def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
+        scale_mat, scale_inv_mat = cls.get_scale_matrices(matrix_world)
+        xy_to_xz_mat = xy_to_xz_rotation_matrix_3x3()
 
         _log.output('get edge_vertices')
         edge_vertices = np.array(pkt_module().utils.get_lines(geo),
-                                 dtype=np.float32) @ mat
+                                 dtype=np.float32) @ (xy_to_xz_mat @ scale_inv_mat)
 
         _log.output('get triangle_vertices')
         triangle_vertices = np.array(
             pkt_module().utils.get_independent_triangles(geo),
-            dtype=np.float32) @ mat
+            dtype=np.float32) @ (xy_to_xz_mat @ scale_inv_mat)
 
         _log.output('get edge_vertex_normals')
         # Warning! Normals can be not normalized!
         edge_vertex_normals = np.array(
             pkt_module().utils.get_normals_for_lines(geo),
-            dtype=np.float32) @ rotate @ scale
+            dtype=np.float32) @ (xy_to_xz_mat @ scale_mat)
 
         return edge_vertices, edge_vertex_normals, triangle_vertices
 
@@ -577,14 +588,51 @@ class Loader:
         if wireframe_data:
             _log.green('wireframe_data')
             geo = cls.get_geo()
-            wf.init_geom_data_from_core(*cls.get_geo_shader_data(
-                geo, geotracker.geomobj.matrix_world))
 
-            if (geotracker.mask_3d != '' and
-                    settings.product_type() == ProductType.FACETRACKER):
-                gt = settings.loader().kt_geotracker()
-                wf.vertices = gt.applied_args_model_vertices_at(
-                    bpy_current_frame()) @ xy_to_xz_rotation_matrix_3x3()
+            # TODO: Shader refactoring for FaceTracker
+            if settings.product_type() == ProductType.FACETRACKER:
+                wf.init_geom_data_from_core(*cls.get_geo_shader_data(
+                    geo, geotracker.geomobj.matrix_world))
+
+                if geotracker.mask_3d != '':
+                    gt = settings.loader().kt_geotracker()
+                    wf.vertices = gt.applied_args_model_vertices_at(
+                        bpy_current_frame()) @ xy_to_xz_rotation_matrix_3x3()
+            else:
+                scale_mat, scale_inv_mat = cls.get_scale_matrices(
+                    geotracker.geomobj.matrix_world)
+                xy_to_xz_mat = xy_to_xz_rotation_matrix_3x3()
+                vert_mat = xy_to_xz_mat @ scale_inv_mat
+                norm_mat = xy_to_xz_mat @ scale_mat
+
+                _log.red('* GeoRenderData *')
+                geo_render_data = pkt_module().utils.GeoRenderData(geo)
+
+                triangle_data = geo_render_data.triangle_pass
+                wf.fill_triangle_vertices = triangle_data.aPos @ vert_mat
+                wf.fill_triangle_indices = triangle_data.elements
+
+                edge_data = geo_render_data.edge_pass
+                _log.red('* GeoRenderData 4*')
+                _log.magenta(f'\naPos: {edge_data.aPos.shape}\n'
+                             f'aColor: {edge_data.aColor.shape}\n'
+                             f'aDir: {edge_data.aDir.shape}\n'
+                             f'aNormal: {edge_data.aNormal.shape}\n'
+                             f'aUV: {edge_data.aUV.shape}\n'
+                             f'elements: {edge_data.elements.shape}\n')
+
+                wf.sh_elements = edge_data.elements
+                wf.sh_pos = edge_data.aPos @ vert_mat
+                element_count = wf.sh_pos.shape[0]
+
+                wf.sh_color = edge_data.aColor if len(edge_data.aColor) > 0 else (
+                    np.ones((element_count, 4), dtype=np.float32))
+                wf.sh_dir = edge_data.aDir @ vert_mat
+                wf.sh_normal = edge_data.aNormal @ norm_mat
+                wf.sh_uv = edge_data.aUV if len(edge_data.aUV) > 0 else (
+                    np.zeros((element_count, 2), dtype=np.float32))
+
+                _log.red(f'element_count: {element_count}')
 
         _log.output('wf.create_batches')
         wf.create_batches()
@@ -753,13 +801,13 @@ class Loader:
         return vp.get_work_area()
 
     @classmethod
-    def stop_viewport_shaders(cls) -> None:
+    def stop_viewport_shaders(cls, redraw_area: bool = True) -> None:
         _log.yellow(f'{cls.__name__} stop_viewport_shaders start')
         cls.check_shader_timer.stop()
         vp = cls.viewport()
         area = vp.get_work_area()
         vp.unregister_handlers()
-        if area:
+        if redraw_area and area:
             area.tag_redraw()
         _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 

@@ -60,6 +60,7 @@ from ..utils.bpy_common import (bpy_call_menu,
                                 bpy_context)
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.video import get_movieclip_duration
+from ..utils.images import get_sequence_file_number
 from ..geotracker.utils.precalc import PrecalcTimer
 from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 delete_tracker_action,
@@ -684,9 +685,10 @@ class FT_OT_SplitVideoExec(Operator):
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
+        from_frame = bpy_start_frame()
         op = get_operator(GTConfig.gt_split_video_to_frames_idname)
-        op('INVOKE_DEFAULT', from_frame=1,
-           to_frame=get_movieclip_duration(geotracker.movie_clip),
+        op('INVOKE_DEFAULT', from_frame=from_frame,
+           to_frame=from_frame - 1 + get_movieclip_duration(geotracker.movie_clip),
            filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath), ''),
            product=ProductType.FACETRACKER)
         _log.output(f'{self.__class__.__name__} execute end >>>')
@@ -1303,7 +1305,14 @@ class FT_OT_AddChosenFrame(ButtonOperator, Operator):
 
         img.filepath = movie_clip.filepath
 
-        loader_fb.add_new_camera(headnum, img, frame - movie_clip.frame_start + 1)
+        if img.source == 'SEQUENCE':
+            file_number = max(0, get_sequence_file_number(movie_clip.filepath))
+        else:
+            file_number = 1
+
+        frame_number = frame - movie_clip.frame_start + file_number
+
+        loader_fb.add_new_camera(headnum, img, frame_number)
         loader_fb.save_fb_serial_str(headnum)
 
         settings_fb.current_camnum = settings_fb.get_last_camnum(headnum)

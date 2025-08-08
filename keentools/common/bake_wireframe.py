@@ -157,6 +157,8 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
 
     single_line_screen_message('Wireframe baking… Please wait',
                                product=product)
+    # TODO: Replace KTLitEdgeShaderLocal3D with KTCoreLitEdgeShaderLocal3D
+    _log.cyan('WIREFRAME_BAKING_START')
 
     tex = None
     total_frames = len(frames)
@@ -185,6 +187,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             settings = get_settings(product)
             loader = settings.loader()
 
+            _log.cyan('GET_WIREFRAMER')
             wireframer = get_wireframer(product)
             wireframer.viewport_size = (rx, ry)
             wireframer.init_geom_data_from_mesh(geomobj)
@@ -194,13 +197,18 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             geo = loader.get_geo()
             if product == ProductType.FACETRACKER:
                 wireframer.init_edge_indices()
+
+            _log.cyan('init_geom_data_from_core')
             wireframer.init_geom_data_from_core(
                 *loader.get_geo_shader_data(geo, geomobj.matrix_world))
 
+            _log.cyan('wireframer.create_batches1')
             wireframer.create_batches()
+            _log.cyan('wireframer.create_batches2')
             wireframer.background.image = (None if not use_background else
                                            get_background_image_strict(camobj,
-                                                                       index=0))
+                                                                   index=0))
+            _log.cyan('offscreen.bind')
             with offscreen.bind():
                 set_depth_mask(True)
                 set_depth_test('LESS')
@@ -211,6 +219,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                     gpu.matrix.load_matrix(view_matrix)
                     gpu.matrix.load_projection_matrix(projection_matrix)
 
+                    _log.cyan('wireframer.draw_main')
                     wireframer.draw_main()
                     buffer = framebuffer.read_color(0, 0, rx, ry, 4, 0, 'UBYTE')
                     built_texture = np.array(buffer, dtype=np.float32)
@@ -228,7 +237,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             _log.info(f'TEXTURE SAVED: {tex.filepath}')
 
         except Exception as err:
-            _log.error(f'bake_wireframe Exception:\n{str(err)}')
+            _log.error(f'bake_wireframe Exception:\n{err}')
             _finish()
             return None
 

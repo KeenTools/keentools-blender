@@ -90,17 +90,7 @@ def unbreak_after(frame_list: List, *,
     _log.output('unbreak_after end >>>')
 
 
-def unbreak_after_facetracker(frame_list: List) -> None:
-    _log.yellow('unbreak_after_facetracker call')
-    return unbreak_after(frame_list, product=ProductType.FACETRACKER)
-
-
 def unbreak_after_reversed(frame_list: List, *,
                            product: int = ProductType.GEOTRACKER) -> None:
     _log.yellow('unbreak_after_reversed call')
     return unbreak_after(list(reversed(frame_list)), product=product)
-
-
-def unbreak_after_reversed_facetracker(frame_list: List) -> None:
-    _log.yellow('unbreak_after_reversed_facetracker call')
-    return unbreak_after_reversed(frame_list, product=ProductType.FACETRACKER)

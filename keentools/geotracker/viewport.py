@@ -50,7 +50,7 @@ from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
 from ..utils.edges import (KTEdgeShader2D,
                            KTRectangleShader2D,
-                           KTLitEdgeShaderLocal3D,
+                           KTCoreLitEdgeShaderLocal3D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
@@ -67,7 +67,7 @@ class GTViewport(KTViewport):
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
         self._texter = KTScreenText(SpaceView3D, 'GeoTracker')
-        self._wireframer = KTLitEdgeShaderLocal3D(
+        self._wireframer = KTCoreLitEdgeShaderLocal3D(
             SpaceView3D, mask_color=(*Config.gt_mask_3d_color,
                                      Config.gt_mask_3d_opacity))
         self._rectangler: Any = KTRectangleShader2D(SpaceView3D)

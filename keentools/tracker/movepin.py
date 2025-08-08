@@ -239,7 +239,9 @@ class MovePin(bpy.types.Operator):
         pins.arr()[pin_index] = (x, y)
         selected_pins = pins.get_selected_pins()
 
-        loader.safe_keyframe_add(kid)
+        if loader.safe_keyframe_add(kid):
+            gt = loader.kt_geotracker()
+            gt.fixate_pins(kid)
 
         if len(selected_pins) == 1:
             loader.move_pin(kid, pin_index, (x, y), shift_x, shift_y)

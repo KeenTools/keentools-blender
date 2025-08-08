@@ -668,12 +668,14 @@ def make_indices_for_wide_edges(numb: int) -> Tuple[Any, Any]:
            np.flip(arr, 1).reshape((-1, 3)).ravel()
 
 
+def bound_box_verts(obj: Object) -> Any:
+    verts = np.empty((8, 3), dtype=np.float32)
+    obj.bound_box.foreach_get(verts.ravel())  # just verts for some Blender versions
+    return verts
+
+
 def bound_box_center(obj: Object) -> Vector:
-    if BVersion.bound_box_has_foreach_get:
-        verts = np.empty((8, 3), dtype=np.float32)
-        obj.bound_box.foreach_get(verts.ravel())
-    else:
-        verts = np.array([obj.bound_box[i] for i in range(8)], dtype=np.float32)
+    verts = np.array([obj.bound_box[i] for i in range(8)], dtype=np.float32)
     return Vector(np.mean(verts, axis=0))
 
 
