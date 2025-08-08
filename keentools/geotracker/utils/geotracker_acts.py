@@ -464,6 +464,10 @@ def track_next_frame_action(forward: bool=True, *,
     if bpy_current_frame() != next_frame:
         bpy_set_current_frame(next_frame)
 
+    if settings.stabilize_viewport_enabled:
+        loader.load_pins_into_viewport()
+        loader.viewport().stabilize(geotracker.geomobj)
+
     _log.output('track_next_frame_action end >>>')
     return ActionStatus(True, 'Ok')
 
