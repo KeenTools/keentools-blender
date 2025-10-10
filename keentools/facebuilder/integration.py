@@ -24,7 +24,7 @@ from uuid import uuid4
 from datetime import datetime
 
 from bpy.types import Operator, Object, Material, Image, ShaderNode
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, StringProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, fb_settings, ActionStatus
@@ -46,15 +46,21 @@ from ..utils.materials import (new_material,
 
 
 _log = KTLogger(__name__)
+
 _integration_subfolder_name: str = 'keentools_integration'
 _cc_headobj_name: str = 'headshot_head'
 _cc_headobj_mesh_name: str = 'headshot_mesh'
-_cc_registry_path: str = r'SOFTWARE\Reallusion\Character Creator'
-_cc_versioned_registry_path: str = _cc_registry_path + r'\4.0'
-_cc_registry_subkey: str = 'Main Program'
-_headshot_registry_path: str = r'SOFTWARE\Reallusion\Headshot Plug-in for Character Creator 4'
-_headshot_versioned_registry_path: str = _headshot_registry_path + r'\2.0'
-_headshot_subkey: str = 'Version Code'
+
+_CC_REGISTRY_PATH: str = r'SOFTWARE\Reallusion\Character Creator'
+_CC4_VERSION_REGISTRY_PATH: str = _CC_REGISTRY_PATH + r'\4.0'
+_CC5_VERSION_REGISTRY_PATH: str = _CC_REGISTRY_PATH + r'\5.0'
+_CC_REGISTRY_SUBKEY: str = 'Main Program'
+_HEADSHOT_FOR_CC4_REGISTRY_PATH: str = r'SOFTWARE\Reallusion\Headshot Plug-in for Character Creator 4'
+_HEADSHOT2_FOR_CC4_VERSION_REGISTRY_PATH: str = _HEADSHOT_FOR_CC4_REGISTRY_PATH + r'\2.0'
+_HEADSHOT_FOR_CC5_REGISTRY_PATH: str = r'SOFTWARE\Reallusion\Headshot Plug-in for Character Creator 5'
+_HEADSHOT2_FOR_CC5_VERSION_REGISTRY_PATH: str = _HEADSHOT_FOR_CC5_REGISTRY_PATH + r'\2.0'
+_HEADSHOT_SUBKEY: str = 'Version Code'
+
 _headshot_minimal_supported_version: int = 200
 
 
@@ -125,6 +131,7 @@ def _create_head() -> Optional[Object]:
 
 
 def _check_hklm_registry_key(reg_path: str) -> bool:
+    _log.output(f'_check_hklm_registry_key: {reg_path}')
     try:
         from winreg import (ConnectRegistry, HKEY_LOCAL_MACHINE, OpenKeyEx,
                             QueryValueEx, CloseKey)
@@ -134,7 +141,7 @@ def _check_hklm_registry_key(reg_path: str) -> bool:
         _log.output(f'_check_hklm_registry_key_unsafe reg_path: {reg_path}')
         CloseKey(reg_key)
     except Exception as err:
-        _log.error(f'_check_hklm_registry_key_unsafe Exception:\n{str(err)}')
+        _log.red(f'_check_hklm_registry_key_unsafe Exception:\n{str(err)}')
         return False
     return True
 
@@ -234,7 +241,7 @@ def _find_base_texture(obj: Object) -> Optional[ShaderNode]:
         return None
 
     node_list = [node]
-    _log.output(_log.color('magenta', 'start material tree walking'))
+    _log.magenta('start material tree walking')
     base_color_input_index = 0
     while len(node_list) > 0:
         node = node_list.pop(0)
@@ -259,6 +266,131 @@ def _find_base_texture(obj: Object) -> Optional[ShaderNode]:
     return None
 
 
+class CheckCCStatus:
+    def __init__(self, mode: str = 'all'):
+        self.cc5_path: Optional[str] = None
+        self.cc4_path: Optional[str] = None
+        self.headshot_for_cc5_version: Optional[str] = None
+        self.headshot_for_cc4_version: Optional[str] = None
+
+        if mode == 'cc5':
+            self.ignore_cc5 = False
+            self.ignore_cc4 = True
+        elif mode == 'cc4':
+            self.ignore_cc5 = True
+            self.ignore_cc4 = False
+        else:
+            self.ignore_cc5 = False
+            self.ignore_cc4 = False
+
+    def check_cc5_installed(self) -> bool:
+        if self.ignore_cc5:
+            return False
+        try:
+            cc_path = _get_hklm_registry_value_unsafe(
+                _CC5_VERSION_REGISTRY_PATH, _CC_REGISTRY_SUBKEY)
+            _log.info(f'Character Creator 5 found:\n{cc_path}')
+            self.cc5_path = cc_path
+            return True
+        except Exception as err:
+            _log.info('No Character Creator 5 found')
+            _log.output(f'key: {_CC5_VERSION_REGISTRY_PATH}\n'
+                        f'subkey: {_CC_REGISTRY_SUBKEY}\n')
+            _log.output(f'CC5 Exception: {err}')
+            return False
+
+    def check_cc4_installed(self) -> bool:
+        if self.ignore_cc4:
+            return False
+        try:
+            cc_path = _get_hklm_registry_value_unsafe(
+                _CC4_VERSION_REGISTRY_PATH, _CC_REGISTRY_SUBKEY)
+            _log.info(f'\nCharacter Creator 4 found:\n{cc_path}')
+            self.cc4_path = cc_path
+            return True
+        except Exception as err:
+            _log.info('No Character Creator 4 found')
+            _log.output(f'key: {_CC5_VERSION_REGISTRY_PATH}\n'
+                        f'subkey: {_CC_REGISTRY_SUBKEY}\n')
+            _log.output(f'CC4 Exception: {err}')
+            return False
+
+    def check_cc4_headshot(self) -> bool:
+        if self.ignore_cc4:
+            return False
+
+        if not _check_hklm_registry_key(_HEADSHOT_FOR_CC4_REGISTRY_PATH):
+            return False
+        try:
+            headshot_version = _get_hklm_registry_value_unsafe(
+                _HEADSHOT2_FOR_CC4_VERSION_REGISTRY_PATH, _HEADSHOT_SUBKEY)
+            if not _proper_headshot_version(headshot_version):
+                msg = f'You have Headshot [{headshot_version}] for CC4. ' \
+                      f'Need Headshot 2 or higher'
+                _log.error(f'{msg}')
+                return False
+            self.headshot_for_cc4_version = headshot_version
+            return True
+        except Exception as err:
+            msg = 'Failed to identify Headshot version'
+            _log.output(f'key: {_HEADSHOT2_FOR_CC4_VERSION_REGISTRY_PATH}\n'
+                        f'subkey: {_HEADSHOT_SUBKEY}\n')
+            _log.error(f'{msg}\n{str(err)}')
+            return False
+
+    def check_cc5_headshot(self) -> bool:
+        if self.ignore_cc5:
+            return False
+
+        if not _check_hklm_registry_key(_HEADSHOT_FOR_CC5_REGISTRY_PATH):
+            return False
+        try:
+            headshot_version = _get_hklm_registry_value_unsafe(
+                _HEADSHOT2_FOR_CC5_VERSION_REGISTRY_PATH, _HEADSHOT_SUBKEY)
+            if not _proper_headshot_version(headshot_version):
+                msg = f'You have Headshot [{headshot_version}] for CC5. ' \
+                      f'Need Headshot 2 or higher'
+                _log.error(f'{msg}')
+                return False
+            self.headshot_for_cc5_version = headshot_version
+            return True
+        except Exception as err:
+            msg = 'Failed to identify Headshot version'
+            _log.output(f'key: {_HEADSHOT2_FOR_CC4_VERSION_REGISTRY_PATH}\n'
+                        f'subkey: {_HEADSHOT_SUBKEY}\n')
+            _log.error(f'{msg}\n{str(err)}')
+            return False
+
+    def cc5_found(self) -> bool:
+        if self.ignore_cc5:
+            return False
+        return not self.cc5_path is None
+
+    def cc4_found(self) -> bool:
+        if self.ignore_cc4:
+            return False
+        return not self.cc4_path is None
+
+    def cc_found(self) -> bool:
+        return self.cc5_found() or self.cc4_found()
+
+    def get_cc5_path(self) -> Optional[str]:
+        if self.cc5_path and self.headshot_for_cc5_version:
+            return self.cc5_path
+        return None
+
+    def get_cc4_path(self) -> Optional[str]:
+        if self.cc4_path and self.headshot_for_cc4_version:
+            return self.cc4_path
+        return None
+
+    def get_cc_path(self) -> Optional[str]:
+        cc5_path = self.get_cc5_path()
+        if cc5_path is not None:
+            return cc5_path
+        return self.get_cc4_path()
+
+
 class FB_OT_ExportToCC(Operator):
     bl_idname = FBConfig.fb_export_to_cc_idname
     bl_label = buttons[bl_idname].label
@@ -266,6 +398,7 @@ class FB_OT_ExportToCC(Operator):
     bl_options = {'REGISTER'}
 
     done: BoolProperty(default=False)
+    mode: StringProperty(default='all')  # 'cc5', 'cc4'
     test_mode: BoolProperty(default=False)
 
     def cancel(self, context):
@@ -307,65 +440,32 @@ class FB_OT_ExportToCC(Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        if not _check_hklm_registry_key(_cc_registry_path):
-            msg = 'Character Creator 4 not found'
+        if not _check_hklm_registry_key(_CC_REGISTRY_PATH):
+            msg = 'Character Creator 4 or 5 not found'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
-            _log.output(f'key: {_cc_registry_path}\n')
+            _log.output(f'key: {_CC_REGISTRY_PATH}\n')
 
             if not self.test_mode:
                 return {'CANCELLED'}
 
-        try:
-            cc_path = _get_hklm_registry_value_unsafe(
-                _cc_versioned_registry_path, _cc_registry_subkey)
-        except Exception as err:
+        check_status = CheckCCStatus(self.mode)
+
+        check_status.check_cc5_installed()
+        check_status.check_cc4_installed()
+        if not check_status.cc_found():
             msg = 'Need Character Creator 4 or higher'
             self.report({'ERROR'}, msg)
-            _log.error(f'{msg}\n{str(err)}')
-            _log.output(f'key: {_cc_versioned_registry_path}\n'
-                        f'subkey: {_cc_registry_subkey}\n')
-
-            if not self.test_mode:
-                return {'CANCELLED'}
-            else:
-                cc_path = r'C:\Program Files\Reallusion\Character Creator 4' \
-                          r'\Bin64\CharacterCreator.exe'
-
-        _log.output(f'Character Creator path: {cc_path}')
-
-        if not _check_hklm_registry_key(_headshot_registry_path):
-            msg = 'Headshot add-on not found'
-            self.report({'ERROR'}, msg)
-            _log.error(f'{msg}')
-            _log.output(f'key: {_headshot_registry_path}\n')
 
             if not self.test_mode:
                 return {'CANCELLED'}
 
-        try:
-            headshot_version = _get_hklm_registry_value_unsafe(
-                _headshot_versioned_registry_path, _headshot_subkey)
-        except Exception as err:
-            msg = 'Failed to identify Headshot version'
+        check_status.check_cc5_headshot()
+        check_status.check_cc4_headshot()
+        if check_status.get_cc_path() is None:
+            msg = 'Need Character Creator 4 or higher with Headshot 2'
             self.report({'ERROR'}, msg)
-            _log.error(f'{msg}\n{str(err)}')
-            _log.output(f'key: {_headshot_versioned_registry_path}\n'
-                        f'subkey: {_headshot_subkey}\n')
 
-            if not self.test_mode:
-                return {'CANCELLED'}
-            else:
-                headshot_version = '200'
-
-        _log.output(f'Headshot version: {headshot_version} '
-                    f'[{type(headshot_version)}]')
-
-        if not _proper_headshot_version(headshot_version):
-            msg = f'You have Headshot [{headshot_version}]. ' \
-                  f'Need Headshot 2 or higher'
-            self.report({'ERROR'}, msg)
-            _log.error(f'{msg}')
             if not self.test_mode:
                 return {'CANCELLED'}
 
@@ -419,7 +519,7 @@ class FB_OT_ExportToCC(Operator):
         bpy_remove_material(mat)
         bpy_remove_object(head_obj)
 
-        act_status = _call_cc(cc_path, f'{export_path}.fbx')
+        act_status = _call_cc(check_status.get_cc_path(), f'{export_path}.fbx')
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
