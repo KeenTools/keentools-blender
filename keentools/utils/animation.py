@@ -62,10 +62,15 @@ def remove_fcurve_point(obj: Object, frame: int, data_path: str,
     points = [p for p in fcurve.keyframe_points if p.co[0] == frame]
     for p in reversed(points):
         fcurve.keyframe_points.remove(p)
+    act_fcurves = None
     if remove_empty_curve and fcurve.is_empty:
-        action.fcurves.remove(fcurve)
-    if remove_empty_action and len(action.fcurves) == 0:
-        bpy_remove_action(action)
+        act_fcurves = action_fcurves()
+        act_fcurves.remove(fcurve)
+    if remove_empty_action:
+        if act_fcurves is None:
+            act_fcurves = action_fcurves()
+        if len(act_fcurves) == 0:
+            bpy_remove_action(action)
 
 
 def get_evaluated_fcurve(obj: Object, frame: int, data_path: str,
@@ -249,10 +254,15 @@ def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
 def remove_fcurve_from_action(action: Action, data_path: str, index: int = 0,
                               remove_empty_action=True) -> None:
     fcurve = get_action_fcurve(action, data_path, index)
+    act_fcurves = None
     if fcurve:
-        action.fcurves.remove(fcurve)
-    if remove_empty_action and len(action.fcurves) == 0:
-        bpy_remove_action(action)
+        act_fcurves = action_fcurves()
+        act_fcurves.remove(fcurve)
+    if remove_empty_action:
+        if act_fcurves is None:
+            act_fcurves = action_fcurves()
+        if len(act_fcurves) == 0:
+            bpy_remove_action(action)
 
 
 def remove_fcurve_from_object(obj: Object, data_path: str, index: int = 0,

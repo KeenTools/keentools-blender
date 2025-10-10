@@ -18,8 +18,6 @@
 
 from typing import Any
 
-from bpy.types import Panel, TIME_MT_editor_menus
-
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              gt_pinmode,
@@ -39,11 +37,15 @@ _log = KTLogger(__name__)
 
 
 def add_timeline_panel() -> None:
-    TIME_MT_editor_menus.append(tracker_timeline_panel)
+    return
+    # TODO: Research how to add our buttons to the Timeline Menu
+    # TIME_MT_editor_menus.append(tracker_timeline_panel)
 
 
 def remove_timeline_panel() -> None:
-    TIME_MT_editor_menus.remove(tracker_timeline_panel)
+    return
+    # TODO: Backward operation for buttons in the Timeline Menu
+    # TIME_MT_editor_menus.remove(tracker_timeline_panel)
 
 
 def tracker_timeline_panel(self, context: Any) -> None:

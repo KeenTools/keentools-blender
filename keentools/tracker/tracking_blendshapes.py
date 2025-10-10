@@ -34,7 +34,8 @@ from ..utils.coords import xy_to_xz_rotation_matrix_3x3, InvScaleFromMatrix
 from ..utils.blendshapes import get_blendshape
 from ..utils.fcurve_operations import (get_safe_action_fcurve,
                                        get_action_fcurve,
-                                       clear_fcurve)
+                                       clear_fcurve,
+                                       action_fcurves)
 
 
 _log = KTLogger(__name__)
@@ -326,6 +327,6 @@ def remove_relative_shape_keyframe(frame: int) -> None:
                                        [prev_frame1, next_frame1, next_frame2],
                                        keyframe_set)
 
-    action.fcurves.remove(main_fcurve)
+    action_fcurves().remove(main_fcurve)
     geomobj.shape_key_remove(shape)
     _log.output(f'remove_relative_shape_keyframe end >>>')
