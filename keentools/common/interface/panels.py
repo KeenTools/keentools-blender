@@ -38,11 +38,13 @@ _log = KTLogger(__name__)
 
 def add_timeline_panel() -> None:
     return
+    # TODO: Research how to add our buttons to the Timeline Menu
     # TIME_MT_editor_menus.append(tracker_timeline_panel)
 
 
 def remove_timeline_panel() -> None:
     return
+    # TODO: Backward operation for buttons in the Timeline Menu
     # TIME_MT_editor_menus.remove(tracker_timeline_panel)
 
 
