@@ -525,7 +525,7 @@ class FB_OT_ExportToCC4(FB_OT_ExportToCC, Operator):
     bl_description = buttons[bl_idname].description
 
     done: BoolProperty(default=False)
-    mode: StringProperty(default='all')  # 'cc5', 'cc4'
+    mode: StringProperty(default='cc4')
     test_mode: BoolProperty(default=False)
 
 
@@ -536,5 +536,5 @@ class FB_OT_ExportToCC5(FB_OT_ExportToCC, Operator):
     bl_options = {'REGISTER'}
 
     done: BoolProperty(default=False)
-    mode: StringProperty(default='all')  # 'cc5', 'cc4'
+    mode: StringProperty(default='cc5')
     test_mode: BoolProperty(default=False)
