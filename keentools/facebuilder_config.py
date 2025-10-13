@@ -128,6 +128,8 @@ class FBConfig:
     fb_appearance_preset_add_idname = operators + '.appearance_preset_add'
 
     # Integration
+    fb_export_to_cc_idname = operators + '.export_to_cc'
+    fb_export_to_cc_exec_idname = operators + '.export_to_cc_exec'
     fb_export_to_cc4_idname = operators + '.export_to_cc4'
     fb_export_to_cc5_idname = operators + '.export_to_cc5'
 

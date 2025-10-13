@@ -24,10 +24,10 @@ from uuid import uuid4
 from datetime import datetime
 
 from bpy.types import Operator, Object, Material, Image, ShaderNode
-from bpy.props import BoolProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, fb_settings, ActionStatus
+from ..addon_config import Config, get_operator, fb_settings, ActionStatus
 from ..facebuilder_config import FBConfig
 from .ui_strings import buttons
 from .fbloader import FBLoader
@@ -267,16 +267,18 @@ def _find_base_texture(obj: Object) -> Optional[ShaderNode]:
 
 
 class CheckCCStatus:
-    def __init__(self, mode: str = 'all'):
+    def __init__(self, mode: str = 'AUTO'):
         self.cc5_path: Optional[str] = None
         self.cc4_path: Optional[str] = None
         self.headshot_for_cc5_version: Optional[str] = None
         self.headshot_for_cc4_version: Optional[str] = None
+        self.set_mode(mode)
 
-        if mode == 'cc5':
+    def set_mode(self, mode: str):
+        if mode == 'CC5':
             self.ignore_cc5 = False
             self.ignore_cc4 = True
-        elif mode == 'cc4':
+        elif mode == 'CC4':
             self.ignore_cc5 = True
             self.ignore_cc4 = False
         else:
@@ -375,11 +377,15 @@ class CheckCCStatus:
         return self.cc5_found() or self.cc4_found()
 
     def get_cc5_path(self) -> Optional[str]:
+        if self.ignore_cc5:
+            return None
         if self.cc5_path and self.headshot_for_cc5_version:
             return self.cc5_path
         return None
 
     def get_cc4_path(self) -> Optional[str]:
+        if self.ignore_cc4:
+            return None
         if self.cc4_path and self.headshot_for_cc4_version:
             return self.cc4_path
         return None
@@ -390,8 +396,16 @@ class CheckCCStatus:
             return cc5_path
         return self.get_cc4_path()
 
+    def multiple_version_available(self) -> bool:
+        return self.get_cc5_path() is not None and self.get_cc4_path() is not None
 
-class FB_OT_ExportToCC:
+
+class FB_OT_ExportToCCExec(Operator):
+    bl_idname = FBConfig.fb_export_to_cc_exec_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    done: BoolProperty(default=False)
 
     def cancel(self, context):
         _log.output(f'{self.__class__.__name__} cancel')
@@ -426,6 +440,54 @@ class FB_OT_ExportToCC:
 
     def execute(self, context):
         self.done = True
+        op = get_operator(FBConfig.fb_export_to_cc_idname)
+        op('INVOKE_DEFAULT')
+        return {'FINISHED'}
+
+
+_check_cc_status: Optional[CheckCCStatus] = None
+def _get_check_cc_status() -> Optional[CheckCCStatus]:
+    global _check_cc_status
+    return _check_cc_status
+
+
+def _set_check_cc_status(value: Optional[CheckCCStatus]) -> None:
+    global _check_cc_status
+    _check_cc_status = value
+
+
+class FB_OT_ExportToCC(Operator):
+    bl_idname = FBConfig.fb_export_to_cc_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    done: BoolProperty(default=False)
+    version: EnumProperty(name='Choose Version', items=[
+        ('CC5', 'Character Creator 5',
+         'Execute Character Creator 5', 0),
+        ('CC4', 'Character Creator 4',
+         'Execute Character Creator 4', 1),
+    ], default='CC5')
+
+    test_mode: BoolProperty(default=False)
+
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+        self.done = True
+
+    def draw(self, context):
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
+        col = layout.column(align=True)
+        col.prop(self, 'version')
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} execute')
+        self.done = False
+
         if not FBLoader.reload_current_model():
             msg = 'Cannot reload current model before start'
             self.report({'ERROR'}, msg)
@@ -441,7 +503,8 @@ class FB_OT_ExportToCC:
             if not self.test_mode:
                 return {'CANCELLED'}
 
-        check_status = CheckCCStatus(self.mode)
+        check_status = CheckCCStatus()
+        _set_check_cc_status(check_status)
 
         check_status.check_cc5_installed()
         check_status.check_cc4_installed()
@@ -460,6 +523,14 @@ class FB_OT_ExportToCC:
 
             if not self.test_mode:
                 return {'CANCELLED'}
+
+        if check_status.multiple_version_available():
+            return context.window_manager.invoke_props_dialog(self, width=400)
+
+        return self.execute(context)
+
+    def execute(self, context):
+        self.done = True
 
         export_path = _get_export_path()
         _log.info(f'Export path: {export_path}')
@@ -511,30 +582,13 @@ class FB_OT_ExportToCC:
         bpy_remove_material(mat)
         bpy_remove_object(head_obj)
 
+        check_status = _get_check_cc_status()
+        if check_status.multiple_version_available():
+            check_status.set_mode(self.version)
+        _log.red(f'SELECTED VERSION: {self.version}')
         act_status = _call_cc(check_status.get_cc_path(), f'{export_path}.fbx')
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         self.report({'INFO'}, 'Launching Character Creator. Please wait...')
         return {'FINISHED'}
-
-
-class FB_OT_ExportToCC4(FB_OT_ExportToCC, Operator):
-    bl_idname = FBConfig.fb_export_to_cc4_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    done: BoolProperty(default=False)
-    mode: StringProperty(default='cc4')
-    test_mode: BoolProperty(default=False)
-
-
-class FB_OT_ExportToCC5(FB_OT_ExportToCC, Operator):
-    bl_idname = FBConfig.fb_export_to_cc5_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER'}
-
-    done: BoolProperty(default=False)
-    mode: StringProperty(default='cc5')
-    test_mode: BoolProperty(default=False)
