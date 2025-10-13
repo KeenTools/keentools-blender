@@ -31,21 +31,26 @@ from ...facetracker_config import FTConfig
 from ...utils.icons import KTIcons
 from ...facebuilder.utils.manipulate import what_is_state
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.version import BVersion
 
 
 _log = KTLogger(__name__)
 
 
+def get_timeline_menu_class() -> Any:
+    if BVersion.timeline_dopesheet_menu:
+        from bpy.types import DOPESHEET_MT_editor_menus as _timeline_menu_class
+    else:
+        from bpy.types import TIME_MT_editor_menus as _timeline_menu_class
+    return _timeline_menu_class
+
+
 def add_timeline_panel() -> None:
-    return
-    # TODO: Research how to add our buttons to the Timeline Menu
-    # TIME_MT_editor_menus.append(tracker_timeline_panel)
+    get_timeline_menu_class().append(tracker_timeline_panel)
 
 
 def remove_timeline_panel() -> None:
-    return
-    # TODO: Backward operation for buttons in the Timeline Menu
-    # TIME_MT_editor_menus.remove(tracker_timeline_panel)
+    get_timeline_menu_class().remove(tracker_timeline_panel)
 
 
 def tracker_timeline_panel(self, context: Any) -> None:

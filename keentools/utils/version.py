@@ -69,6 +69,7 @@ class BVersion:
     action_slots_exist: bool = ver >= (4, 4, 0)
     action_layers_slots_channelbags_exist: bool = ver >= (4, 4, 0)
     vulkan_is_available: bool = ver >= (4, 5, 0)
+    timeline_dopesheet_menu: bool = ver >= (5, 0, 0)
 
     pack_uv_problem_exists: bool = ver == (3, 6, 0)
 
