@@ -260,10 +260,15 @@ buttons = {
         'Reset',
         'Reset all to default values'
     ),
-    FBConfig.fb_export_to_cc_idname: Button(
-        'Character Creator',
+    FBConfig.fb_export_to_cc4_idname: Button(
+        'Character Creator 4',
         'Export to Character Creator. '
         'Requirements: Character Creator 4.0, Headshot 2.0'
+    ),
+    FBConfig.fb_export_to_cc5_idname: Button(
+        'Character Creator 5',
+        'Export to Character Creator. '
+        'Requirements: Character Creator 5.0, Headshot 2.0'
     ),
     FBConfig.fb_rotate_head_forward_idname: Button(
         'Rotate right',

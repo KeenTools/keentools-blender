@@ -505,10 +505,9 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         col.operator(FBConfig.fb_export_head_to_fbx_idname)
 
         if BVersion.demo_mode or (Config.integration_enabled and BVersion.os_name == 'windows'):
-            row = col.row(align=True)
-            op = row.operator(FBConfig.fb_export_to_cc_idname, text='CC4')
+            op = col.operator(FBConfig.fb_export_to_cc4_idname)
             op.mode = 'cc4'
-            op = row.operator(FBConfig.fb_export_to_cc_idname, text='CC5')
+            op = col.operator(FBConfig.fb_export_to_cc5_idname)
             op.mode = 'cc5'
 
 

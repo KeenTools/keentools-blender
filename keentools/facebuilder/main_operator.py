@@ -70,7 +70,7 @@ from .facebuilder_acts import (remove_pins_act,
                                reset_expression_act,
                                center_geo_act)
 from .prechecks import common_fb_checks
-from .integration import FB_OT_ExportToCC
+from .integration import FB_OT_ExportToCC4, FB_OT_ExportToCC5
 from ..preferences.hotkeys import viewport_native_pan_operator_activate
 
 
@@ -1214,7 +1214,8 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ResetBlendshapeValues,
                        FB_OT_ClearAnimation,
                        FB_OT_ExportHeadToFBX,
-                       FB_OT_ExportToCC,  # Integration
+                       FB_OT_ExportToCC4,  # Integration CC4
+                       FB_OT_ExportToCC5,  # Integration CC5
                        FB_OT_UpdateBlendshapes,
                        FB_OT_UnhideHead,
                        FB_OT_ReconstructHead,

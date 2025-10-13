@@ -391,15 +391,7 @@ class CheckCCStatus:
         return self.get_cc4_path()
 
 
-class FB_OT_ExportToCC(Operator):
-    bl_idname = FBConfig.fb_export_to_cc_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER'}
-
-    done: BoolProperty(default=False)
-    mode: StringProperty(default='all')  # 'cc5', 'cc4'
-    test_mode: BoolProperty(default=False)
+class FB_OT_ExportToCC:
 
     def cancel(self, context):
         _log.output(f'{self.__class__.__name__} cancel')
@@ -525,3 +517,24 @@ class FB_OT_ExportToCC(Operator):
             return {'CANCELLED'}
         self.report({'INFO'}, 'Launching Character Creator. Please wait...')
         return {'FINISHED'}
+
+
+class FB_OT_ExportToCC4(FB_OT_ExportToCC, Operator):
+    bl_idname = FBConfig.fb_export_to_cc4_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    done: BoolProperty(default=False)
+    mode: StringProperty(default='all')  # 'cc5', 'cc4'
+    test_mode: BoolProperty(default=False)
+
+
+class FB_OT_ExportToCC5(FB_OT_ExportToCC, Operator):
+    bl_idname = FBConfig.fb_export_to_cc5_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
+
+    done: BoolProperty(default=False)
+    mode: StringProperty(default='all')  # 'cc5', 'cc4'
+    test_mode: BoolProperty(default=False)
