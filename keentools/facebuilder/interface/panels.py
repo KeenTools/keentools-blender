@@ -501,11 +501,13 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         layout = self.layout
 
         col = layout.column(align=True)
+        col.label(text='File')
         col.scale_y = Config.btn_scale_y
         col.operator(FBConfig.fb_export_head_to_fbx_idname)
 
         if BVersion.demo_mode or (Config.integration_enabled and BVersion.os_name == 'windows'):
-            col.operator(FBConfig.fb_export_to_cc_idname)
+            col.label(text='Reallusion')
+            col.operator(FBConfig.fb_export_to_cc_exec_idname)
 
 
 class FB_PT_SupportPanel(AllVisible, Panel):
