@@ -106,7 +106,8 @@ from ...utils.unbreak import (mark_object_keyframes,
                               unbreak_object_rotation_act,
                               unbreak_rotation_act,
                               unbreak_rotation_with_status)
-from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ...tracker.tracking_blendshapes import (create_relative_shape_keyframe,
+                                             remove_relative_shape_keyframe)
 from ...utils.blendshapes import create_basis_blendshape
 from ...utils.fcurve_operations import (get_safe_action_fcurve,
                                         put_anim_data_in_fcurve,
@@ -290,6 +291,9 @@ def remove_keyframe_action(*, product: int) -> ActionStatus:
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     delete_locrot_keyframe(obj)
+
+    if product == ProductType.FACETRACKER:
+        remove_relative_shape_keyframe(current_frame)
 
     _log.output('remove_keyframe_action end >>>')
     return ActionStatus(True, f'No {product_name(product)} '

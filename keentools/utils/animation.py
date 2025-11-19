@@ -64,11 +64,11 @@ def remove_fcurve_point(obj: Object, frame: int, data_path: str,
         fcurve.keyframe_points.remove(p)
     act_fcurves = None
     if remove_empty_curve and fcurve.is_empty:
-        act_fcurves = action_fcurves()
+        act_fcurves = action_fcurves(action)
         act_fcurves.remove(fcurve)
     if remove_empty_action:
         if act_fcurves is None:
-            act_fcurves = action_fcurves()
+            act_fcurves = action_fcurves(action)
         if len(act_fcurves) == 0:
             bpy_remove_action(action)
 
@@ -256,11 +256,11 @@ def remove_fcurve_from_action(action: Action, data_path: str, index: int = 0,
     fcurve = get_action_fcurve(action, data_path, index)
     act_fcurves = None
     if fcurve:
-        act_fcurves = action_fcurves()
+        act_fcurves = action_fcurves(action)
         act_fcurves.remove(fcurve)
     if remove_empty_action:
         if act_fcurves is None:
-            act_fcurves = action_fcurves()
+            act_fcurves = action_fcurves(action)
         if len(act_fcurves) == 0:
             bpy_remove_action(action)
 

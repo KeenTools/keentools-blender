@@ -327,6 +327,6 @@ def remove_relative_shape_keyframe(frame: int) -> None:
                                        [prev_frame1, next_frame1, next_frame2],
                                        keyframe_set)
 
-    action_fcurves().remove(main_fcurve)
+    action_fcurves(action).remove(main_fcurve)
     geomobj.shape_key_remove(shape)
     _log.output(f'remove_relative_shape_keyframe end >>>')
