@@ -68,6 +68,7 @@ def get_blendshape(obj: Object, name: str = '', *,
         if not create:
             return -1, None, False
         shape = obj.shape_key_add(name=name)
+        shape.value = 0.0
         index = obj.data.shape_keys.key_blocks.find(name)
         return index, shape, True
     else:
@@ -180,6 +181,7 @@ def create_facs_blendshapes(obj: Object, scale: float) -> int:
     for i, name in enumerate(facs_executor.facs_names):
         if obj.data.shape_keys.key_blocks.find(name) < 0:
             shape = obj.shape_key_add(name=name)
+            shape.value = 0.0
             verts = facs_executor.get_facs_blendshape(i)
             _update_blendshape_verts(shape, verts)
             counter += 1
@@ -216,6 +218,7 @@ def restore_facs_blendshapes(obj: Object, scale: float,
         if obj.data.shape_keys.key_blocks.find(name) < 0 \
                 and (name in restore_names):
             shape = obj.shape_key_add(name=name)
+            shape.value = 0.0
             verts = facs_executor.get_facs_blendshape(i)
             _update_blendshape_verts(shape, verts)
             counter += 1
