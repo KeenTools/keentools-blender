@@ -544,7 +544,7 @@ def camera_projection(camobj: Object, frame: Optional[int]=None,
         image_width, image_height = bpy_render_frame()
     if frame is None:
         frame =bpy_current_frame()
-    lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
+    lens = get_safe_evaluated_fcurve(cam_data, frame, 'CAMERA', 'lens')
     proj_mat = custom_projection_matrix(image_width, image_height, lens,
                                         cam_data.sensor_width, near, far,
                                         cam_data.shift_x, cam_data.shift_y)

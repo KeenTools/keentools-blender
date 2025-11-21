@@ -68,6 +68,7 @@ class BVersion:
     principled_shader_has_specular: bool = ver < (4, 0, 0)
     action_slots_exist: bool = ver >= (4, 4, 0)
     action_layers_slots_channelbags_exist: bool = ver >= (4, 4, 0)
+    fcurve_insert_point_needed_bug: bool = ver >= (4, 4, 0)
     vulkan_is_available: bool = ver >= (4, 5, 0)
     timeline_dopesheet_menu: bool = ver >= (5, 0, 0)
 

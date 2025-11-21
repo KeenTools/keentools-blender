@@ -32,7 +32,8 @@ from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
                                get_object_keyframe_numbers,
                                delete_animation_between_frames,
-                               insert_keyframe_in_fcurve,
+                               delete_focal_animation_between_frames,
+                               insert_data_keyframe_in_fcurve,
                                remove_fcurve_from_object)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
@@ -300,7 +301,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return
         cam_data = geotracker.camobj.data
         _log.output(f'remove_fcurve_from_object: lens={cam_data.lens}')
-        remove_fcurve_from_object(cam_data, 'lens')
+        remove_fcurve_from_object(cam_data, 'CAMERA', 'lens')
         value = focal_px_to_mm(static_fl, *bpy_render_frame(),
                                cam_data.sensor_width)
         cam_data.lens = value
@@ -357,8 +358,17 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             geotracker.geomobj.matrix_world = mat
 
         gt = settings.loader().kt_geotracker()
-        keyframe_type = 'KEYFRAME' if gt.is_key_at(frame) else 'JITTER'
+        gt_has_key_at_frame = gt.is_key_at(frame)
+        keyframe_type = 'KEYFRAME' if gt_has_key_at_frame else 'JITTER'
         create_locrot_keyframe(geotracker.animatable_object(), keyframe_type)
+
+        geotracker = settings.get_current_geotracker_item()
+        if gt_has_key_at_frame and geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
+            insert_data_keyframe_in_fcurve(geotracker.camobj, current_frame,
+                                           geotracker.camobj.data.lens, 'KEYFRAME',
+                                           'CAMERA', 'lens')
+            _log.output('FOCAL KEYFRAME')
+
         if (current_frame != frame) and not settings.is_calculating():
             bpy_set_current_frame(current_frame)
 
@@ -374,14 +384,20 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return
         from_frame = args[0]
         to_frame = from_frame if len(args) == 1 else args[1]
+
         delete_animation_between_frames(geotracker.animatable_object(),
                                         from_frame, to_frame)
+
         if settings.product_type() == ProductType.FACETRACKER:
             from_frame = max(1, from_frame)
             to_frame = min(bpy_end_frame(), to_frame)
             _log.output(f'remove_track_data: from: {from_frame} to: {to_frame} ')
             for frame in range(from_frame, to_frame + 1):
                 remove_relative_shape_keyframe(frame)
+
+        if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
+            delete_focal_animation_between_frames(geotracker.camobj,
+                                                  from_frame, to_frame)
 
     def trackframes(self) -> List[int]:
         _log.cyan('trackframes start')
@@ -402,7 +418,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
                         f'{geotracker.default_zoom_focal_length}')
             return geotracker.default_zoom_focal_length
         return focal_mm_to_px(
-            get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'),
+            get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'CAMERA', 'lens'),
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
     def get_default_zoom_focal_length(self) -> float:
@@ -464,13 +480,17 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return
         cam_data = geotracker.camobj.data
         if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
-            insert_keyframe_in_fcurve(cam_data, frame,
-                                      focal_px_to_mm(fl, *bpy_render_frame(),
-                                                     cam_data.sensor_width),
-                                      'KEYFRAME', 'lens')
+            try:
+                insert_data_keyframe_in_fcurve(
+                    geotracker.camobj, frame,
+                    focal_px_to_mm(fl, *bpy_render_frame(), cam_data.sensor_width),
+                    'KEYFRAME', 'CAMERA', 'lens')
+            except Exception as err:
+                _log.cyan(f'Exception:\n{err}')
         else:
             cam_data.lens = focal_px_to_mm(fl, *bpy_render_frame(),
                                            cam_data.sensor_width)
+        _log.cyan('set_zoom_focal_length_at end >>>')
 
     def reset(self) -> None:
         _log.cyan('tracker reset call')

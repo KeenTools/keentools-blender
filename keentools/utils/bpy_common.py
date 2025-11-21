@@ -466,12 +466,19 @@ def bpy_new_action(name: str) -> Any:
     return bpy.data.actions.new(name)
 
 
-def bpy_init_action_slot(animation_data: Any, slot_type: str,
-                         slot_name: str = 'kt_slot') -> bool:
+def _get_slot_by_type(action: Any, slot_type: str = 'OBJECT',
+                      new_slot_name: str = 'some_slot') -> Any:
+    for slot in action.slots:
+        if slot.target_id_type == slot_type:
+            return slot
+    return action.slots.new(slot_type, new_slot_name)
+
+
+def bpy_init_action_slot(animation_data: Any, slot_type: str = 'OBJECT',
+                         new_slot_name: str = 'kt_slot') -> bool:
     if BVersion.action_slots_exist and not animation_data.action_slot:
-        if len(animation_data.action.slots) == 0:
-            animation_data.action.slots.new(slot_type, slot_name)
-        animation_data.action_slot = animation_data.action.slots[0]
+        slot = _get_slot_by_type(animation_data.action, slot_type, new_slot_name)
+        animation_data.action_slot = slot
         return True
     return False
 

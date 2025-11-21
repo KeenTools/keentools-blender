@@ -145,14 +145,14 @@ def unbreak_rotation(obj: Object, frame_list: List[int]) -> bool:
 
     euler_list = list()
     for frame in frame_list:
-        x_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 0)
-        y_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 1)
-        z_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 2)
+        x_rot = get_safe_evaluated_fcurve(obj, frame, 'OBJECT', 'rotation_euler', 0)
+        y_rot = get_safe_evaluated_fcurve(obj, frame, 'OBJECT', 'rotation_euler', 1)
+        z_rot = get_safe_evaluated_fcurve(obj, frame, 'OBJECT', 'rotation_euler', 2)
         euler_list.append((x_rot, y_rot, z_rot))
 
-    x_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 0)
-    y_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 1)
-    z_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 2)
+    x_rot_fcurve = get_safe_action_fcurve(action, 'OBJECT', 'rotation_euler', 0)
+    y_rot_fcurve = get_safe_action_fcurve(action, 'OBJECT', 'rotation_euler', 1)
+    z_rot_fcurve = get_safe_action_fcurve(action, 'OBJECT', 'rotation_euler', 2)
 
     euler_prev = euler_list[0]
     for frame, euler_current in zip(frame_list[1:], euler_list[1:]):
@@ -186,7 +186,7 @@ def check_unbreak_rotaion_is_needed(obj: Object) -> bool:
     rot_dict = get_rot_dict()
 
     for name in rot_dict:
-        fcurve = get_action_fcurve(action, rot_dict[name]['data_path'],
+        fcurve = get_action_fcurve(action, 'OBJECT', rot_dict[name]['data_path'],
                                    index=rot_dict[name]['index'])
         if not fcurve:
             continue
