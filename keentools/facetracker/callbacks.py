@@ -492,7 +492,6 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
                                                current_focal, 'KEYFRAME',
                                                'CAMERA', 'lens')
         geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
-        geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
     else:
         if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH' and geotracker.camobj:
             count = count_fcurve_points(geotracker.camobj.data, 'CAMERA', 'lens')
