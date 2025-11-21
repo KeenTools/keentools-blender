@@ -44,7 +44,7 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_object_name,
                                 bpy_object_is_in_scene)
 
-from ..utils.animation import count_fcurve_points
+from ..utils.animation import count_fcurve_points, insert_data_keyframe_in_fcurve
 from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui, timeline_view_all
 from ..geotracker.utils.tracking import check_unbreak_rotaion_is_needed
@@ -484,10 +484,18 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
         return
 
     if geotracker.lens_mode == 'ZOOM':
+        if geotracker.focal_length_mode != 'ZOOM_FOCAL_LENGTH':
+            current_focal = geotracker.camobj.data.lens
+            gt = settings.loader().kt_geotracker()
+            for frame in gt.keyframes():
+                insert_data_keyframe_in_fcurve(geotracker.camobj, frame,
+                                               current_focal, 'KEYFRAME',
+                                               'CAMERA', 'lens')
+        geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
         geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
     else:
         if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH' and geotracker.camobj:
-            count = count_fcurve_points(geotracker.camobj.data, 'lens')
+            count = count_fcurve_points(geotracker.camobj.data, 'CAMERA', 'lens')
             if count > 0:
                 warn = get_operator(FTConfig.ft_switch_camera_to_fixed_warning_idname)
                 warn('INVOKE_DEFAULT')
@@ -496,7 +504,7 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
         if geotracker.focal_length_estimation:
             geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
         else:
-            count = count_fcurve_points(geotracker.camobj.data, 'lens')
+            count = count_fcurve_points(geotracker.camobj.data, 'CAMERA', 'lens')
             if count > 0:
                 geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
             else:

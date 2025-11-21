@@ -2011,12 +2011,12 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
         settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if geotracker.camobj:
-            remove_fcurve_from_object(geotracker.camobj.data, 'lens')
+            remove_fcurve_from_object(geotracker.camobj.data, 'CAMERA', 'lens')
 
             if geotracker.focal_length_estimation:
                 geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
             else:
-                count = count_fcurve_points(geotracker.camobj.data, 'lens')
+                count = count_fcurve_points(geotracker.camobj.data, 'CAMERA', 'lens')
                 if count > 0:
                     geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
                 else:

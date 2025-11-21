@@ -28,6 +28,7 @@ from .bpy_common import (bpy_current_frame,
                          bpy_set_current_frame,
                          operator_with_context,
                          update_depsgraph,
+                         bpy_new_action,
                          bpy_new_action_with_slot,
                          bpy_remove_action,
                          bpy_ops,
@@ -40,23 +41,23 @@ from .fcurve_operations import *
 _log = KTLogger(__name__)
 
 
-def count_fcurve_points(obj: Object, data_path: str, index: int = 0) -> int:
+def count_fcurve_points(obj: Object, slot_type: str, data_path: str, index: int = 0) -> int:
     action = get_object_action(obj)
     if action is None:
         return -1
-    fcurve = get_action_fcurve(action, data_path, index=index)
+    fcurve = get_action_fcurve(action, slot_type, data_path, index=index)
     if not fcurve:
         return -1
     return len(fcurve.keyframe_points)
 
 
-def remove_fcurve_point(obj: Object, frame: int, data_path: str,
+def remove_fcurve_point(obj: Object, frame: int, slot_type: str, data_path: str,
                         index: int = 0, remove_empty_curve: bool = True,
                         remove_empty_action: bool = True) -> None:
     action = get_object_action(obj)
     if action is None:
         return
-    fcurve = get_action_fcurve(action, data_path, index=index)
+    fcurve = get_action_fcurve(action, slot_type, data_path, index=index)
     if not fcurve:
         return
     points = [p for p in fcurve.keyframe_points if p.co[0] == frame]
@@ -64,21 +65,21 @@ def remove_fcurve_point(obj: Object, frame: int, data_path: str,
         fcurve.keyframe_points.remove(p)
     act_fcurves = None
     if remove_empty_curve and fcurve.is_empty:
-        act_fcurves = action_fcurves(action)
+        act_fcurves = action_fcurves(action, slot_type)
         act_fcurves.remove(fcurve)
     if remove_empty_action:
         if act_fcurves is None:
-            act_fcurves = action_fcurves(action)
+            act_fcurves = action_fcurves(action, slot_type)
         if len(act_fcurves) == 0:
             bpy_remove_action(action)
 
 
-def get_evaluated_fcurve(obj: Object, frame: int, data_path: str,
+def get_evaluated_fcurve(obj: Object, frame: int, slot_type: str, data_path: str,
                          index: int = 0) -> Optional[float]:
     action = get_object_action(obj)
     if not action:
         return None
-    fcurve = get_action_fcurve(action, data_path, index=index)
+    fcurve = get_action_fcurve(action, slot_type, data_path, index=index)
     if not fcurve:
         return None
     if fcurve.is_empty:
@@ -86,9 +87,9 @@ def get_evaluated_fcurve(obj: Object, frame: int, data_path: str,
     return fcurve.evaluate(frame)
 
 
-def get_safe_evaluated_fcurve(obj: Object, frame: int, data_path: str,
+def get_safe_evaluated_fcurve(obj: Object, frame: int, slot_type: str, data_path: str,
                               index: int = 0) -> float:
-    value = get_evaluated_fcurve(obj, frame, data_path, index=index)
+    value = get_evaluated_fcurve(obj, frame, slot_type, data_path, index=index)
     if value is not None:
         return value
     return getattr(obj, data_path)
@@ -105,42 +106,32 @@ def get_object_action(obj: Object) -> Optional[Action]:
 
 
 def _get_safe_object_animation_data_with_action(
-        obj: Object, action_name: str) -> Optional[Any]:
+        obj: Object, new_action_name: str) -> Optional[Any]:
     anim_data = obj.animation_data
     if not anim_data:
         anim_data = obj.animation_data_create()
         if not anim_data:
             return None
     if not anim_data.action:
-        _ = bpy_new_action_with_slot(anim_data, action_name, 'OBJECT')
+        anim_data.action = bpy_new_action_with_slot(anim_data, new_action_name)
     return anim_data
 
 
-def _get_safe_object_action(obj: Object, action_name: str) -> Optional[Action]:
-    anim_data = _get_safe_object_animation_data_with_action(obj, action_name)
+def _get_safe_object_action(obj: Object, new_action_name: str) -> Optional[Action]:
+    anim_data = _get_safe_object_animation_data_with_action(obj, new_action_name)
     if not anim_data:
         return None
     return anim_data.action
 
 
-def create_animation_on_object(obj: Object, anim_dict: Dict,
-                               action_name: str = 'gtAction') -> None:
-    action = _get_safe_object_action(obj, action_name)
-    locrot_dict = get_locrot_dict()
-
-    fcurves = {name: get_safe_action_fcurve(action,
-                                            locrot_dict[name]['data_path'],
-                                            index=locrot_dict[name]['index'])
-               for name in locrot_dict.keys()}
-
-    for name in fcurves.keys():
-        clear_fcurve(fcurves[name])
-        put_anim_data_in_fcurve(fcurves[name], anim_dict[name])
-
-
 def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
                            keyframe_type: Optional[str] = None) -> Keyframe:
-    k = fcurve.keyframe_points.insert(frame, value, options={'NEEDED'})
+    if BVersion.fcurve_insert_point_needed_bug:
+        k = fcurve.keyframe_points.insert(frame, value, options={'FAST'})
+        fcurve.keyframe_points.sort()
+    else:
+        k = fcurve.keyframe_points.insert(frame, value, options={'NEEDED'})
+
     if keyframe_type is not None and k:
         k.type = keyframe_type
     return k
@@ -179,19 +170,6 @@ def get_locrot_dict() -> Dict:
     return d
 
 
-def mark_all_points_in_locrot(obj: Object,
-                              keyframe_type: str = 'JITTER') -> None:
-    action = get_object_action(obj)
-    if not action:
-        return None
-    locrot_dict = get_locrot_dict()
-    for name in locrot_dict.keys():
-        fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                   index=locrot_dict[name]['index'])
-        if fcurve is not None:
-            mark_all_points_in_fcurve(fcurve, keyframe_type)
-
-
 def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
                                    keyframe_type: str = 'KEYFRAME') -> None:
     action = get_object_action(obj)
@@ -199,40 +177,10 @@ def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
         return None
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
-        fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
+        fcurve = get_action_fcurve(action, 'OBJECT', locrot_dict[name]['data_path'],
                                    index=locrot_dict[name]['index'])
         if fcurve is not None:
             mark_selected_points_in_fcurve(fcurve, selected_frames, keyframe_type)
-
-
-def get_locrot_keys_in_frame(obj: Object, frame: int) -> Dict:
-    res = dict()
-    action = get_object_action(obj)
-    if not action:
-        return res
-    locrot_dict = get_locrot_dict()
-    for name in locrot_dict.keys():
-        fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                   index=locrot_dict[name]['index'])
-        if fcurve is None:
-            continue
-        points = [p.co[1] for p in fcurve.keyframe_points if p.co[0] == frame]
-        if len(points) != 0:
-            res[name] = {'data_path': locrot_dict[name]['data_path'],
-                         'index': locrot_dict[name]['index'],
-                         'value': points[0]}
-    return res
-
-
-def put_keys_in_frame(obj: Object, frame: int, anim_dict: Dict) -> None:
-    if len(anim_dict.keys()) == 0:
-        return
-    for name in anim_dict.keys():
-        row = anim_dict[name]
-        insert_keyframe_in_fcurve(obj, frame, row['value'],
-                                  keyframe_type='KEYFRAME',
-                                  data_path=row['data_path'],
-                                  index=row['index'])
 
 
 def create_animation_locrot_keyframe_force(obj: Object) -> None:
@@ -241,40 +189,80 @@ def create_animation_locrot_keyframe_force(obj: Object) -> None:
                           type='BUILTIN_KSI_LocRot')
 
 
-def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
-                              keyframe_type: str, data_path: str,
-                              index: int = 0, act_name: str = 'GTAct') -> None:
-    action = _get_safe_object_action(obj, act_name)
+def insert_data_keyframe_in_fcurve(
+        obj: Object, frame: int, value: float,
+        keyframe_type: str, slot_type: str, data_path: str,
+        index: int = 0, new_action_name: str = 'GTAct') -> None:
+
+    if not BVersion.action_layers_slots_channelbags_exist:
+        if not obj.data.animation_data:
+            obj.data.animation_data_create()
+        anim_data = obj.data.animation_data
+        if not anim_data.action:
+            anim_data.action = bpy_new_action(new_action_name)
+        action = anim_data.action
+
+        fcurve = get_safe_action_fcurve(action, slot_type, data_path, index=index)
+        insert_point_in_fcurve(fcurve, frame, value, keyframe_type)
+        return
+
+    action = _get_safe_object_action(obj, new_action_name)
     if action is None:
         return
-    fcurve = get_safe_action_fcurve(action, data_path, index=index)
+    if not obj.data.animation_data:
+        anim_data = obj.data.animation_data_create()
+    else:
+        anim_data = obj.data.animation_data
+    if not anim_data:
+        return
+    anim_data.action = action
+    slot = get_slot_by_type(action, slot_type)
+    anim_data.action_slot = slot
+
+    try:
+        layer = action.layers[0]
+    except IndexError:
+        layer = action.layers.new('Layer')
+
+    try:
+        strip = layer.strips[0]
+    except IndexError:
+        strip = layer.strips.new(type='KEYFRAME')
+
+    channelbag = strip.channelbag(slot, ensure=True)
+
+    fcurve = channelbag.fcurves.find(data_path, index=index)
+    if not fcurve:
+        fcurve = channelbag.fcurves.new(data_path, index=index)
+
     insert_point_in_fcurve(fcurve, frame, value, keyframe_type)
 
 
-def remove_fcurve_from_action(action: Action, data_path: str, index: int = 0,
+def remove_fcurve_from_action(action: Action, slot_type: str, data_path: str, index: int = 0,
                               remove_empty_action=True) -> None:
-    fcurve = get_action_fcurve(action, data_path, index)
+    fcurve = get_action_fcurve(action, slot_type, data_path, index)
     act_fcurves = None
     if fcurve:
-        act_fcurves = action_fcurves(action)
+        act_fcurves = action_fcurves(action, slot_type)
         act_fcurves.remove(fcurve)
     if remove_empty_action:
         if act_fcurves is None:
-            act_fcurves = action_fcurves(action)
+            act_fcurves = action_fcurves(action, slot_type)
         if len(act_fcurves) == 0:
             bpy_remove_action(action)
 
 
-def remove_fcurve_from_object(obj: Object, data_path: str, index: int = 0,
+def remove_fcurve_from_object(obj: Object, slot_type: str, data_path: str, index: int = 0,
                               remove_empty_action=True) -> None:
     action = get_object_action(obj)
     if action is None:
         return
-    remove_fcurve_from_action(action, data_path, index, remove_empty_action)
+    remove_fcurve_from_action(action, slot_type, data_path, index, remove_empty_action)
 
 
-def create_locrot_keyframe(obj: Object, keyframe_type: str = 'KEYFRAME') -> None:
-    action = _get_safe_object_action(obj, 'GTAct')
+def create_locrot_keyframe(obj: Object, keyframe_type: str = 'KEYFRAME',
+                           new_action_name: str = 'GTAct') -> None:
+    action = _get_safe_object_action(obj, new_action_name)
     if action is None:
         return
     locrot_dict = get_locrot_dict()
@@ -286,7 +274,7 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str = 'KEYFRAME') -> None
 
     _log.output(f'{keyframe_type} at {current_frame}')
     for name, value in zip(locrot_dict.keys(), [*loc, *rot]):
-        fcurve = get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
+        fcurve = get_safe_action_fcurve(action, 'OBJECT', locrot_dict[name]['data_path'],
                                         index=locrot_dict[name]['index'])
         insert_point_in_fcurve(fcurve, current_frame, value, keyframe_type)
 
@@ -304,14 +292,28 @@ def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int)
 
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
-        fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+        fcurve = get_action_fcurve(action, 'OBJECT', locrot_dict[name]['data_path'],
+                                   index=locrot_dict[name]['index'])
         if fcurve is None:
             continue
         points = [p for p in fcurve.keyframe_points
                   if from_frame <= p.co[0] <= to_frame]
         for p in reversed(points):
             fcurve.keyframe_points.remove(p)
+
+
+def delete_focal_animation_between_frames(obj: Object, from_frame: int, to_frame: int) -> None:
+    action = get_object_action(obj.data)
+    if action is None:
+        return
+
+    fcurve = get_action_fcurve(action, 'CAMERA', 'lens', index=0)
+    if fcurve is None:
+        return
+    points = [p for p in fcurve.keyframe_points
+              if from_frame <= p.co[0] <= to_frame]
+    for p in reversed(points):
+        fcurve.keyframe_points.remove(p)
 
 
 def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
@@ -331,7 +333,7 @@ def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
     else:
         assert False, 'Improper flag usage'
 
-    fcurves: Dict = {name: get_safe_action_fcurve(action,
+    fcurves: Dict = {name: get_safe_action_fcurve(action, 'OBJECT',
                                                   fcurve_dict[name]['data_path'],
                                                   index=fcurve_dict[name]['index'])
                      for name in fcurve_dict.keys()}

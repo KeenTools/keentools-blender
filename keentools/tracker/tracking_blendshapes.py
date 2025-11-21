@@ -231,19 +231,19 @@ def create_relative_shape_keyframe(frame: int, *,
         action = bpy_new_action_with_slot(anim_data, action_name, 'KEY')
 
     keyframe_set = set(gt.keyframes())
-    main_fcurve = get_safe_action_fcurve(action,
+    main_fcurve = get_safe_action_fcurve(action, 'KEY',
                                          f'key_blocks["{shape_name}"].value')
     make_fcurve_pile_animation(main_fcurve, [prev_frame1, frame, next_frame1],
                                keyframe_set)
     if prev_index1 != -1:
-        prev_fcurve = get_safe_action_fcurve(
-            action, f'key_blocks["{key_blocks[prev_index1].name}"].value')
+        prev_fcurve = get_safe_action_fcurve(action, 'KEY',
+                                             f'key_blocks["{key_blocks[prev_index1].name}"].value')
         make_fcurve_pile_animation(prev_fcurve,
                                    [prev_frame2, prev_frame1, frame],
                                    keyframe_set)
     if next_frame1 != -1:
-        next_fcurve = get_safe_action_fcurve(
-            action, f'key_blocks["{key_blocks[next_index1].name}"].value')
+        next_fcurve = get_safe_action_fcurve(action, 'KEY',
+                                             f'key_blocks["{key_blocks[next_index1].name}"].value')
         make_fcurve_pile_animation(next_fcurve,
                                    [frame, next_frame1, next_frame2],
                                    keyframe_set)
@@ -305,7 +305,8 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     if not action:
         return
 
-    main_fcurve = get_action_fcurve(action, f'key_blocks["{shape_name}"].value')
+    main_fcurve = get_action_fcurve(action, 'KEY',
+                                    f'key_blocks["{shape_name}"].value')
     if not main_fcurve:
         _log.red('no main_fcurve')
         return
@@ -313,20 +314,20 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     gt = settings.loader().kt_geotracker()
     keyframe_set = set(gt.keyframes())
     if prev_index1 != -1:
-        prev_fcurve = get_action_fcurve(
-            action, f'key_blocks["{key_blocks[prev_index1].name}"].value')
+        prev_fcurve = get_action_fcurve(action, 'KEY',
+                                        f'key_blocks["{key_blocks[prev_index1].name}"].value')
         if prev_fcurve:
             make_fcurve_pile_animation(prev_fcurve,
                                        [prev_frame2, prev_frame1, next_frame1],
                                        keyframe_set)
     if next_frame1 != -1:
-        next_fcurve = get_action_fcurve(
-            action, f'key_blocks["{key_blocks[next_index1].name}"].value')
+        next_fcurve = get_action_fcurve(action, 'KEY',
+                                        f'key_blocks["{key_blocks[next_index1].name}"].value')
         if next_fcurve:
             make_fcurve_pile_animation(next_fcurve,
                                        [prev_frame1, next_frame1, next_frame2],
                                        keyframe_set)
 
-    action_fcurves(action).remove(main_fcurve)
+    action_fcurves(action, 'KEY').remove(main_fcurve)
     geomobj.shape_key_remove(shape)
     _log.output(f'remove_relative_shape_keyframe end >>>')

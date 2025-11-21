@@ -39,15 +39,12 @@ from ...utils.animation import (get_object_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
                                 delete_locrot_keyframe,
-                                mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
                                 bake_locrot_to_world,
                                 scene_frame_list)
 from .tracking import (get_next_tracking_keyframe,
-                       get_previous_tracking_keyframe,
-                       unbreak_rotation,
-                       check_unbreak_rotaion_is_needed)
+                       get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
                                  bpy_set_current_frame,
@@ -735,7 +732,8 @@ def remove_focal_keyframe_action(*, product: int) -> ActionStatus:
 
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
-    remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(), 'lens')
+    remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(),
+                        'CAMERA', 'lens')
     _log.output('remove_focal_keyframe_action end >>>')
     return ActionStatus(True, 'ok')
 
@@ -751,7 +749,7 @@ def remove_focal_keyframes_action(*, product: int) -> ActionStatus:
 
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
-    remove_fcurve_from_object(geotracker.camobj.data, 'lens')
+    remove_fcurve_from_object(geotracker.camobj.data, 'CAMERA', 'lens')
     _log.output('remove_focal_keyframes_action end >>>')
     return ActionStatus(True, 'ok')
 
@@ -1526,7 +1524,7 @@ def save_facs_as_csv_action(*, filepath: Optional[str] = None,
 def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
                                   use_tracked_only: bool = False,
                                   obj: Object,
-                                  action_name: str = 'ktARKit_anim') -> ActionStatus:
+                                  new_action_name: str = 'ktARKit_anim') -> ActionStatus:
     _log.yellow(f'save_facs_as_csv_action start')
     facs_animation = pkt_module().FacsAnimation()
     save_status = save_facs_as_csv_action(filepath=None,
@@ -1539,11 +1537,10 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
 
     facs_names = pkt_module().FacsExecutor.facs_names
 
-    blendshape_action = bpy_new_action(action_name)
+    blendshape_action = bpy_new_action(new_action_name)
 
     for name in facs_names:
-        blendshape_fcurve = get_safe_action_fcurve(
-            blendshape_action, 'key_blocks["{}"].value'.format(name), index=0)
+        blendshape_fcurve = get_safe_action_fcurve(blendshape_action, 'KEY', 'key_blocks["{}"].value'.format(name), index=0)
 
         keyframes = [x for x in facs_animation.keyframes()]
         if len(keyframes) > 0:
