@@ -127,8 +127,7 @@ def _get_safe_object_action(obj: Object, new_action_name: str) -> Optional[Actio
 def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
                            keyframe_type: Optional[str] = None) -> Keyframe:
     if BVersion.fcurve_insert_point_needed_bug:
-        k = fcurve.keyframe_points.insert(frame, value, options={'FAST'})
-        fcurve.keyframe_points.sort()
+        k = fcurve.keyframe_points.insert(frame, value)
     else:
         k = fcurve.keyframe_points.insert(frame, value, options={'NEEDED'})
 
