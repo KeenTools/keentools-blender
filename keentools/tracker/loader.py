@@ -464,6 +464,7 @@ class Loader:
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().STATIC_FOCAL_LENGTH)
             elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().ZOOM_FOCAL_LENGTH)
+                gt.set_track_focal_length(geotracker.track_focal_length)
             else:
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().CAMERA_FOCAL_LENGTH)
                 geotracker.focal_length_estimation = False
