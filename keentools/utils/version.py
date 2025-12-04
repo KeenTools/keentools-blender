@@ -71,6 +71,8 @@ class BVersion:
     fcurve_insert_point_needed_bug: bool = ver >= (4, 4, 0)
     vulkan_is_available: bool = ver >= (4, 5, 0)
     timeline_dopesheet_menu: bool = ver >= (5, 0, 0)
+    no_deselect_in_shape_keys: bool = ver >= (5, 0, 0)
+    node_tree_api_changes: bool = ver >= (5, 0, 0)
 
     pack_uv_problem_exists: bool = ver == (3, 6, 0)
 
