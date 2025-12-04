@@ -86,6 +86,9 @@ def depsgraph_update_handler_wrapper(settings_func: Callable) -> Callable:
                 loader.unregister_undo_redo_handlers()
                 _log.output('depsgraph_update_handler: unregister')
             return
+        if settings.is_calculating():
+            _log.output('depsgraph_update_handler: IS_CALCULATING')
+            return
         if loader.viewport().pins().move_pin_mode():
             return
         geotracker = settings.get_current_geotracker_item()
