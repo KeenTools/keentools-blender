@@ -18,7 +18,6 @@
 
 from typing import Optional, List, Any
 
-import bpy
 from bpy.types import Image, Scene, Mask
 
 from ..utils.version import BVersion
@@ -27,6 +26,7 @@ from .bpy_common import (bpy_new_scene,
                          bpy_new_image,
                          bpy_render_frame,
                          bpy_scene,
+                         bpy_data,
                          get_scene_by_name)
 from .images import copy_pixels_data, find_bpy_image_by_name, remove_bpy_image
 
@@ -35,16 +35,16 @@ _log = KTLogger(__name__)
 
 
 def get_viewer_node_image() -> Optional[Image]:
-    for img in bpy.data.images:
+    for img in bpy_data().images:
         if img.type == 'COMPOSITING':
             return img  # Blender uses the first one available
     return None
 
 
 def get_mask_by_name(mask_name: str) -> Optional[Mask]:
-    mask_num = bpy.data.masks.find(mask_name)
+    mask_num = bpy_data().masks.find(mask_name)
     if mask_num >= 0:
-        return bpy.data.masks[mask_num]
+        return bpy_data().masks[mask_num]
     return None
 
 
@@ -52,6 +52,10 @@ def create_compositing_shadow_scene(src_scene: Scene, scene_name: str,
                                     mask_name: str) -> Scene:
     shadow_scene = bpy_new_scene(scene_name)
     shadow_scene.use_nodes = True
+
+    if BVersion.node_tree_api_changes:
+        scene_node_tree(shadow_scene)
+
     shadow_scene.render.use_compositing = True
     w = src_scene.render.resolution_x
     h = src_scene.render.resolution_y
@@ -74,9 +78,13 @@ def get_compositing_shadow_scene(scene_name: str) -> Scene:
 
 
 def scene_node_tree(scene: Scene) -> Any:
-    return scene.compositing_node_group \
-        if BVersion.node_tree_api_changes \
-        else scene.node_tree
+    if not BVersion.node_tree_api_changes:
+        return scene.node_tree
+
+    if not scene.compositing_node_group:
+        scene.compositing_node_group = bpy_data().node_groups.new(
+            'gtSceneNodeTree', 'CompositorNodeTree')
+    return scene.compositing_node_group
 
 
 def create_mask_compositing_node_tree(scene: Scene, mask_name: str,
@@ -85,7 +93,14 @@ def create_mask_compositing_node_tree(scene: Scene, mask_name: str,
     node_tree = scene_node_tree(scene)
     if clear_nodes:
         node_tree.nodes.clear()
-    comp_node = node_tree.nodes.new(type='CompositorNodeComposite')
+
+    if not BVersion.node_tree_api_changes:
+        comp_node = node_tree.nodes.new(type='CompositorNodeComposite')
+    else:
+        comp_node = node_tree.nodes.new(type='NodeGroupOutput')
+        node_tree.interface.new_socket('Socket', in_out='OUTPUT',
+                                       socket_type='NodeSocketColor')
+
     mask_node = node_tree.nodes.new(type='CompositorNodeMask')
     viewer_node = node_tree.nodes.new(type='CompositorNodeViewer')
     mask_node.mask = mask
