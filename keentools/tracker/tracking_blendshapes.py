@@ -350,9 +350,6 @@ def deselect_all_shape_keys(obj: Object) -> bool:
     Function replaces all key_blocks except Basis
     """
     _log.yellow('deselect_all_shape_keys')
-    if not BVersion.no_deselect_in_shape_keys:
-        return True
-
     if not obj or not obj.type == 'MESH' or not obj.data.shape_keys:
         return False
 
