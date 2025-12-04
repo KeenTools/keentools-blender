@@ -21,6 +21,7 @@ from typing import Optional, List, Any
 import bpy
 from bpy.types import Image, Scene, Mask
 
+from ..utils.version import BVersion
 from .kt_logging import KTLogger
 from .bpy_common import (bpy_new_scene,
                          bpy_new_image,
@@ -72,10 +73,16 @@ def get_compositing_shadow_scene(scene_name: str) -> Scene:
     return shadow_scene
 
 
+def scene_node_tree(scene: Scene) -> Any:
+    return scene.compositing_node_group \
+        if BVersion.node_tree_api_changes \
+        else scene.node_tree
+
+
 def create_mask_compositing_node_tree(scene: Scene, mask_name: str,
                                       clear_nodes: bool=True) -> None:
     mask = get_mask_by_name(mask_name)
-    node_tree = scene.node_tree
+    node_tree = scene_node_tree(scene)
     if clear_nodes:
         node_tree.nodes.clear()
     comp_node = node_tree.nodes.new(type='CompositorNodeComposite')
@@ -149,7 +156,7 @@ def _get_node_by_name_or_create(node_tree: Any, name: str, node_type: str,
 
 
 def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
-    node_tree = scene.node_tree
+    node_tree = scene_node_tree(scene)
     node_rlayers = _get_node_by_type_or_by_name(node_tree,
                                                 'Render Layers',
                                                 'R_LAYERS',
@@ -178,7 +185,7 @@ def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
 
 
 def revert_default_compositing(scene: Scene) -> bool:
-    node_tree = scene.node_tree
+    node_tree = scene_node_tree(scene)
     name = 'Render Layers'
     node_type = 'R_LAYERS'
     nodes = get_nodes_by_type(node_tree.nodes, node_type)
