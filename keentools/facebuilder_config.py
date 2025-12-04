@@ -129,6 +129,9 @@ class FBConfig:
 
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'
+    fb_export_to_cc_exec_idname = operators + '.export_to_cc_exec'
+    fb_export_to_cc4_idname = operators + '.export_to_cc4'
+    fb_export_to_cc5_idname = operators + '.export_to_cc5'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'

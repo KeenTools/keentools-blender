@@ -136,8 +136,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if image is None:
             return False
 
-        if image.bindcode == 0:
-            self._activate_coloring_image(image)
+        self._activate_coloring_image(image)
         return True
 
     def draw_empty_fill(self) -> None:

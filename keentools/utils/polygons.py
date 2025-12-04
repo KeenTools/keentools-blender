@@ -23,7 +23,7 @@ from gpu_extras.batch import batch_for_shader
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig
-from .images import check_gl_image
+from .images import activate_gl_image
 from .base_shaders import KTShaderBase
 from .gpu_shaders import raster_image_mask_shader, raster_image_background_shader
 from .gpu_control import (set_blend_alpha, set_shader_sampler)
@@ -83,7 +83,7 @@ class KTRasterMask(KTShaderBase):
         if not self.image:
             return False
 
-        if not check_gl_image(self.image):
+        if not activate_gl_image(self.image):
             _log.error(f'{self.__class__.__name__}.draw_checks '
                        f'check_gl_image failed: {self.image}')
             return False
@@ -159,7 +159,7 @@ class KTRasterImage(KTShaderBase):
         if not self.image:
             return False
 
-        if not check_gl_image(self.image):
+        if not activate_gl_image(self.image):
             _log.error(f'{self.__class__.__name__}.draw_checks '
                        f'check_gl_image failed: {self.image}')
             return False

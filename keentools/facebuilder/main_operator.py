@@ -44,7 +44,6 @@ from ..utils.coords import update_head_mesh_non_neutral
 from ..utils.attrs import get_obj_collection, safe_delete_collection
 from ..facebuilder.utils.exif_reader import (update_exif_sizes_message,
                                              copy_exif_parameters_from_camera_to_head)
-from .utils.manipulate import check_settings, push_head_in_undo_history
 from ..utils.manipulate import center_viewports_on_object
 from ..utils.materials import (bake_tex,
                                show_texture_in_mat,
@@ -70,8 +69,7 @@ from .facebuilder_acts import (remove_pins_act,
                                reset_expression_act,
                                center_geo_act)
 from .prechecks import common_fb_checks
-from .integration import FB_OT_ExportToCC
-from ..preferences.hotkeys import viewport_native_pan_operator_activate
+from .integration import FB_OT_ExportToCC, FB_OT_ExportToCCExec
 
 
 _log = KTLogger(__name__)
@@ -1215,6 +1213,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ClearAnimation,
                        FB_OT_ExportHeadToFBX,
                        FB_OT_ExportToCC,  # Integration
+                       FB_OT_ExportToCCExec,  # Integration
                        FB_OT_UpdateBlendshapes,
                        FB_OT_UnhideHead,
                        FB_OT_ReconstructHead,

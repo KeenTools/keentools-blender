@@ -86,6 +86,9 @@ def depsgraph_update_handler_wrapper(settings_func: Callable) -> Callable:
                 loader.unregister_undo_redo_handlers()
                 _log.output('depsgraph_update_handler: unregister')
             return
+        if settings.is_calculating():
+            _log.output('depsgraph_update_handler: IS_CALCULATING')
+            return
         if loader.viewport().pins().move_pin_mode():
             return
         geotracker = settings.get_current_geotracker_item()
@@ -464,6 +467,7 @@ class Loader:
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().STATIC_FOCAL_LENGTH)
             elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().ZOOM_FOCAL_LENGTH)
+                gt.set_track_focal_length(geotracker.track_focal_length)
             else:
                 gt.set_focal_length_mode(KTClassLoader.TrackerFocalLengthMode_class().CAMERA_FOCAL_LENGTH)
                 geotracker.focal_length_estimation = False

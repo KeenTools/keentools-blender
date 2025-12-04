@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import math
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Any
 
 from bpy.types import Action, FCurve
 from mathutils import Vector, Matrix
@@ -25,14 +25,51 @@ from mathutils import Vector, Matrix
 from ..utils.version import BVersion
 
 
-def get_action_fcurve(action: Action, data_path: str, index: int = 0) -> Optional[FCurve]:
-    return action.fcurves.find(data_path, index=index)
+def action_fcurves_without_slots(
+        action: Action, slot_type: str = 'OBJECT') -> Optional[List[FCurve]]:
+    return action.fcurves
 
 
-def get_safe_action_fcurve(action: Action, data_path: str, index: int = 0) -> FCurve:
-    fcurve = get_action_fcurve(action, data_path, index=index)
+def get_slot_by_type(action: Any, slot_type: str,
+                     new_slot_name: str = 'some_slot') -> Any:
+    for slot in action.slots:
+        if slot.target_id_type == slot_type:
+            return slot
+    return action.slots.new(slot_type, new_slot_name)
+
+
+def action_fcurves_with_slots(
+        action: Action, slot_type: str = 'OBJECT') -> Optional[List[FCurve]]:
+    slot = get_slot_by_type(action, slot_type)
+    try:
+        layer = action.layers[0]
+    except IndexError:
+        layer = action.layers.new('Layer')
+
+    try:
+        strip = layer.strips[0]
+    except IndexError:
+        strip = layer.strips.new(type='KEYFRAME')
+
+    channelbag = strip.channelbag(slot, ensure=True)
+    return channelbag.fcurves
+
+
+action_fcurves = action_fcurves_with_slots \
+    if BVersion.action_layers_slots_channelbags_exist \
+    else action_fcurves_without_slots
+
+
+def get_action_fcurve(action: Action, slot_type:str,
+                      data_path: str, index: int = 0) -> Optional[FCurve]:
+    return action_fcurves(action, slot_type).find(data_path, index=index)
+
+
+def get_safe_action_fcurve(action: Action, slot_type: str,
+                           data_path: str, index: int = 0) -> FCurve:
+    fcurve = get_action_fcurve(action, slot_type, data_path, index=index)
     if not fcurve:
-        fcurve = action.fcurves.new(data_path, index=index)
+        fcurve = action_fcurves(action, slot_type).new(data_path, index=index)
     return fcurve
 
 

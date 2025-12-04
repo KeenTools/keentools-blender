@@ -383,15 +383,6 @@ def deactivate_gl_image(image: Optional[Image]) -> None:
         image.gl_free()
 
 
-def check_gl_image(image: Optional[Image]) -> bool:
-    if image is None:
-        return False
-
-    if image.bindcode == 0:
-        return activate_gl_image(image)
-    return True
-
-
 def gamma_color(col: List[float], power: float=2.2) -> List[float]:
     return [x ** power for x in col]
 

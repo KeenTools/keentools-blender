@@ -18,6 +18,7 @@
 
 import numpy as np
 import re
+import time
 from typing import Any, Set, Tuple, List, Optional
 
 from bpy.types import Area, Object
@@ -34,7 +35,8 @@ from ..utils.coords import xy_to_xz_rotation_matrix_3x3, InvScaleFromMatrix
 from ..utils.blendshapes import get_blendshape
 from ..utils.fcurve_operations import (get_safe_action_fcurve,
                                        get_action_fcurve,
-                                       clear_fcurve)
+                                       clear_fcurve,
+                                       action_fcurves)
 
 
 _log = KTLogger(__name__)
@@ -108,8 +110,15 @@ def reorder_tracking_frames(obj: Object) -> None:
     key_blocks = obj.data.shape_keys.key_blocks
     check_status, arr = check_tracking_frames(key_blocks)
     if check_status:
-        _log.output(f'reorder_tracking_frames [no need]')
+        _log.green(f'reorder_tracking_frames [no need]')
         return
+
+    _log.red(f'reorder_tracking_frames [CALCULATING...]')
+    if BVersion.no_deselect_in_shape_keys:
+        deselect_all_shape_keys(obj)
+        key_blocks = obj.data.shape_keys.key_blocks
+        check_status, arr = check_tracking_frames(key_blocks)
+
     pairs = arr[arr[:, 1] >= 0]
     res = pairs[pairs[:, 1].argsort()]
     indices = res[:, 0]
@@ -205,6 +214,10 @@ def create_relative_shape_keyframe(frame: int, *,
         shape_index = bubble_frame_shape(geomobj, shape_index, frame)
         _log.red(f'bubble_shape: {shape_index}')
 
+    if BVersion.no_deselect_in_shape_keys:
+        reorder_tracking_frames(geomobj)
+        shape_index, _, _ = get_blendshape(geomobj, name=shape_name)
+
     prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
     next_index1, next_frame1 = get_next_frame_shape(key_blocks, shape_index)
     prev_index2, prev_frame2 = get_prev_frame_shape(key_blocks, prev_index1)
@@ -213,7 +226,7 @@ def create_relative_shape_keyframe(frame: int, *,
     if not check_nearest_frame_sequence([prev_frame2, prev_frame1, frame,
                                          next_frame1, next_frame2],
                                         len(key_blocks)):
-        _log.red('check_nearest_frame_sequence is not passed!')
+        _log.red('check_nearest_frame_sequence is not passed! (1)')
         reorder_tracking_frames(geomobj)
         shape_index, _, _ = get_blendshape(geomobj, name=shape_name)
         prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
@@ -230,19 +243,19 @@ def create_relative_shape_keyframe(frame: int, *,
         action = bpy_new_action_with_slot(anim_data, action_name, 'KEY')
 
     keyframe_set = set(gt.keyframes())
-    main_fcurve = get_safe_action_fcurve(action,
+    main_fcurve = get_safe_action_fcurve(action, 'KEY',
                                          f'key_blocks["{shape_name}"].value')
     make_fcurve_pile_animation(main_fcurve, [prev_frame1, frame, next_frame1],
                                keyframe_set)
     if prev_index1 != -1:
-        prev_fcurve = get_safe_action_fcurve(
-            action, f'key_blocks["{key_blocks[prev_index1].name}"].value')
+        prev_fcurve = get_safe_action_fcurve(action, 'KEY',
+                                             f'key_blocks["{key_blocks[prev_index1].name}"].value')
         make_fcurve_pile_animation(prev_fcurve,
                                    [prev_frame2, prev_frame1, frame],
                                    keyframe_set)
     if next_frame1 != -1:
-        next_fcurve = get_safe_action_fcurve(
-            action, f'key_blocks["{key_blocks[next_index1].name}"].value')
+        next_fcurve = get_safe_action_fcurve(action, 'KEY',
+                                             f'key_blocks["{key_blocks[next_index1].name}"].value')
         make_fcurve_pile_animation(next_fcurve,
                                    [frame, next_frame1, next_frame2],
                                    keyframe_set)
@@ -289,7 +302,7 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     if not check_nearest_frame_sequence([prev_frame2, prev_frame1, frame,
                                          next_frame1, next_frame2],
                                         len(key_blocks)):
-        _log.red('check_nearest_frame_sequence is not passed!')
+        _log.red('check_nearest_frame_sequence is not passed! (2)')
         reorder_tracking_frames(geomobj)
         shape_index, _, _ = get_blendshape(geomobj, name=shape_name)
         prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
@@ -304,7 +317,8 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     if not action:
         return
 
-    main_fcurve = get_action_fcurve(action, f'key_blocks["{shape_name}"].value')
+    main_fcurve = get_action_fcurve(action, 'KEY',
+                                    f'key_blocks["{shape_name}"].value')
     if not main_fcurve:
         _log.red('no main_fcurve')
         return
@@ -312,20 +326,56 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     gt = settings.loader().kt_geotracker()
     keyframe_set = set(gt.keyframes())
     if prev_index1 != -1:
-        prev_fcurve = get_action_fcurve(
-            action, f'key_blocks["{key_blocks[prev_index1].name}"].value')
+        prev_fcurve = get_action_fcurve(action, 'KEY',
+                                        f'key_blocks["{key_blocks[prev_index1].name}"].value')
         if prev_fcurve:
             make_fcurve_pile_animation(prev_fcurve,
                                        [prev_frame2, prev_frame1, next_frame1],
                                        keyframe_set)
     if next_frame1 != -1:
-        next_fcurve = get_action_fcurve(
-            action, f'key_blocks["{key_blocks[next_index1].name}"].value')
+        next_fcurve = get_action_fcurve(action, 'KEY',
+                                        f'key_blocks["{key_blocks[next_index1].name}"].value')
         if next_fcurve:
             make_fcurve_pile_animation(next_fcurve,
                                        [prev_frame1, next_frame1, next_frame2],
                                        keyframe_set)
 
-    action.fcurves.remove(main_fcurve)
+    action_fcurves(action, 'KEY').remove(main_fcurve)
     geomobj.shape_key_remove(shape)
     _log.output(f'remove_relative_shape_keyframe end >>>')
+
+
+def deselect_all_shape_keys(obj: Object) -> bool:
+    """
+    Function replaces all key_blocks except Basis
+    """
+    _log.yellow('deselect_all_shape_keys')
+    if not obj or not obj.type == 'MESH' or not obj.data.shape_keys:
+        return False
+
+    start_time = time.time()
+    if len(obj.data.shape_keys.key_blocks) <= 1:
+        obj.active_shape_key_index = -1
+        return True
+
+    key_blocks = obj.data.shape_keys.key_blocks[1:]
+    obj.active_shape_key_index = 0
+    shape_size = len(obj.data.vertices) * 3
+    shapes = []
+    for kb in key_blocks:
+        verts = np.empty((shape_size,), dtype=np.float32)
+        kb.data.foreach_get('co', verts)
+        shapes.append((kb.name, kb.value, verts))
+
+    for blendshape in reversed(key_blocks):
+        obj.shape_key_remove(blendshape)
+
+    for shape_data in shapes:
+        shape = obj.shape_key_add(name=shape_data[0])
+        shape.value = shape_data[1]
+        shape.data.foreach_set('co', shape_data[2])
+
+    obj.active_shape_key_index = -1
+    calc_time = time.time() - start_time
+    _log.output(f'deselect_all_shape_keys time: {calc_time:.2f} sec')
+    return True
