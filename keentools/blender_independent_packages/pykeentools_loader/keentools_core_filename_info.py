@@ -19,8 +19,8 @@ CoreFilenameInfo = collections.namedtuple(
 
 
 def _parse_installation_filename(filename):
-    m = re.match('keentools-core-(?P<version>\d+\.\d+\.\d+)' + \
-                 '(?:\.(?P<nightly_version>\d+))?-(?P<os>[^-]+)\.zip',
+    m = re.match(r'keentools-core-(?P<version>\d+\.\d+\.\d+)'
+                 r'(?:\.(?P<nightly_version>\d+))?-(?P<os>[^-]+)\.zip',
                  filename)
     if not m:
         return None
