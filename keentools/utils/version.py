@@ -73,6 +73,7 @@ class BVersion:
     timeline_dopesheet_menu: bool = ver >= (5, 0, 0)
     no_deselect_in_shape_keys: bool = ver >= (5, 0, 0)
     node_tree_api_changes: bool = ver >= (5, 0, 0)
+    uv_data_select_deprecated: bool = ver >= (5, 0, 0)
 
     pack_uv_problem_exists: bool = ver == (3, 6, 0)
 

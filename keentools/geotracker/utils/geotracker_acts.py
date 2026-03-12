@@ -1151,9 +1151,14 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     bpy.ops.uv.select_overlap()
     switch_to_mode('OBJECT')
 
-    uvmap = obj.data.uv_layers.active.data
-    selected = np.empty((len(uvmap),), dtype=np.bool_)
-    uvmap.foreach_get('select', selected.ravel())
+    if not BVersion.uv_data_select_deprecated:
+        uvmap = obj.data.uv_layers.active.data
+        selected = np.empty((len(uvmap),), dtype=np.bool_)
+        uvmap.foreach_get('select', selected.ravel())
+    else:
+        uv_select_attr = obj.data.attributes.get('.uv_select_vert')
+        selected = np.empty(len(obj.data.loops), dtype=np.bool_)
+        uv_select_attr.data.foreach_get('value', selected)
 
     switch_to_mode(old_mode)
     if np.any(selected):
