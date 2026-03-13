@@ -66,7 +66,7 @@ ERROR_MESSAGES = {
 
     'OLD_ADDON': [
         'Error (1050): you have most likely installed an outdated ',
-        'version of FaceBuilder add-on. Please download the latest one ',
+        'version of KeenTools add-on. Please download the latest one ',
         'from our web site: https://keentools.io '],
 
     'NUMPY_PROBLEM': [
