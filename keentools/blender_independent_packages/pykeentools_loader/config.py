@@ -36,7 +36,7 @@ log_output = logger.debug
 
 
 MINIMUM_VERSION_REQUIRED: Tuple = (2025, 3, 0)  # 2025.3.0 (4/6)
-_SUPPORTED_PYTHON_VERSIONS: Tuple = ((3, 7), (3, 9), (3, 10), (3, 11))
+_SUPPORTED_PYTHON_VERSIONS: Tuple = ((3, 7), (3, 9), (3, 10), (3, 11), (3, 13))
 
 _this_file_path: str = inspect.getfile(inspect.currentframe())
 SHADOW_COPIES_DIRECTORY: str = os.path.join(tempfile.gettempdir(),
