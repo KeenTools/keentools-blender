@@ -159,7 +159,11 @@ def convert_movieclip_to_frames(
     scene_name = scene.name
     sequence_editor = scene.sequence_editor_create()
     sequence_editor.use_cache_final = False
-    strip = sequence_editor.sequences.new_clip('video', movie_clip, 2, 1)
+    if BVersion.sequences_renamed_to_strips:
+        strips = sequence_editor.strips
+    else:
+        strips = sequence_editor.sequences
+    strip = strips.new_clip('video', movie_clip, 2, 1)
     strip.frame_start = movie_clip.frame_start
 
     rotate_flag = BVersion.video_strip_has_transform
@@ -190,8 +194,11 @@ def convert_movieclip_to_frames(
         if not single_frame else filepath
     try:
         if opengl_render:
+            context_dict = {'scene': scene}
+            if BVersion.separate_sequencer_scene:
+                context_dict['sequencer_scene'] = scene
             operator_with_context(bpy_ops().render.opengl,
-                                  {'scene': scene}, animation=not single_frame,
+                                  context_dict, animation=not single_frame,
                                   write_still=single_frame,
                                   sequencer=True, view_context=False)
         else:
