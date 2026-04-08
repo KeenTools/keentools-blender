@@ -360,8 +360,8 @@ class FBLoader:
         uvmap = uvtex.data
         # Fill uvs in uvmap
         uvs_count = me.uvs_count()
-        for i in range(uvs_count):
-            uvmap[i].uv = me.uv(i)
+        uvs = np.array([me.uv(i) for i in range(uvs_count)], dtype=np.float32)
+        uvmap.foreach_set("uv", uvs.ravel())
 
         mesh.update()
 
