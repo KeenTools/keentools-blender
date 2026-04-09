@@ -361,7 +361,7 @@ class FBLoader:
         # Fill uvs in uvmap
         uvs_count = me.uvs_count()
         uvs = np.array([me.uv(i) for i in range(uvs_count)], dtype=np.float32)
-        uvmap.foreach_set("uv", uvs.ravel())
+        uvmap.foreach_set('uv', uvs.ravel())
 
         mesh.update()
 
