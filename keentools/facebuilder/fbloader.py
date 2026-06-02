@@ -103,7 +103,7 @@ class FBLoader:
         _log.yellow(f'{cls.__name__} new_builder start')
         from .camera_input import FaceBuilderCameraInput
         cls._camera_input = FaceBuilderCameraInput()
-        cls._builder_instance = pkt_module().FaceBuilder(cls._camera_input)
+        cls._builder_instance = pkt_module().FaceBuilder(cls._camera_input, 'Blender')
         _log.output(f'{cls.__name__} new_builder end >>>')
         return cls._builder_instance
 

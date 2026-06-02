@@ -135,7 +135,7 @@ def _run_test():
     frame_from = 5
     frame_to = 8
     runner = PrecalcRunner(
-        'tmp.precalc', test_w, test_h, frame_from, frame_to, pkt_module().GeoTracker.license_manager(), True)
+        'tmp.precalc', test_w, test_h, frame_from, frame_to, pkt_module().GeoTracker.license_manager('Blender'), True)
 
     while not runner.is_finished():
         print(runner.current_progress())

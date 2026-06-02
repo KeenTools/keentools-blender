@@ -48,11 +48,11 @@ _please_accept_eula = 'You need to accept our EULA before installation'
 
 def get_product_license_manager(product: int) -> Any:
     if product == ProductType.FACEBUILDER:
-        return pkt_module().FaceBuilder.license_manager()
+        return pkt_module().FaceBuilder.license_manager('Blender')
     elif product == ProductType.GEOTRACKER:
-        return pkt_module().GeoTracker.license_manager()
+        return pkt_module().GeoTracker.license_manager('Blender')
     elif product == ProductType.FACETRACKER:
-        return pkt_module().FaceTracker.license_manager()
+        return pkt_module().FaceTracker.license_manager('Blender')
     assert False, 'get_product_license_manager Wrong product ID'
 
 

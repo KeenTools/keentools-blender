@@ -57,7 +57,7 @@ def _FBCameraInput_class() -> Any:
 def get_shadow_fb() -> Any:
     global _shadow_fb
     if _shadow_fb is None:
-        _shadow_fb = pkt_module().FaceBuilder(_FBCameraInput_class()())
+        _shadow_fb = pkt_module().FaceBuilder(_FBCameraInput_class()(), 'Blender')
     return _shadow_fb
 
 

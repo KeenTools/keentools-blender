@@ -229,7 +229,7 @@ def restore_facs_blendshapes(obj: Object, scale: float,
 def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
     try:
         _log.info(f'LOADING CSV FILE: {filepath}')
-        fan = pkt_module().FacsAnimation()
+        fan = pkt_module().FacsAnimation('Blender')
         read_facs, ignored_columns = fan.load_from_csv_file(filepath)
         facs_names = pkt_module().FacsExecutor.facs_names
     except pkt_module().FacsLoadingException as err:

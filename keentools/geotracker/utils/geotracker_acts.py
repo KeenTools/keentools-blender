@@ -1492,7 +1492,7 @@ def save_facs_as_csv_action(*, filepath: Optional[str] = None,
         facs_executor = pkt_module().FacsExecutor(neutral_geo, face_model_scale)
         facs_animation = facs_animation_object \
             if facs_animation_object is not None \
-            else pkt_module().FacsAnimation()
+            else pkt_module().FacsAnimation('Blender')
 
         if not use_tracked_only:
             frames = [x for x in range(from_frame, to_frame + 1)]
@@ -1531,7 +1531,7 @@ def save_facs_as_animation_action(*, from_frame: int = 1, to_frame: int = 1,
                                   obj: Object,
                                   new_action_name: str = 'ktARKit_anim') -> ActionStatus:
     _log.yellow(f'save_facs_as_csv_action start')
-    facs_animation = pkt_module().FacsAnimation()
+    facs_animation = pkt_module().FacsAnimation('Blender')
     save_status = save_facs_as_csv_action(filepath=None,
                                           from_frame=from_frame,
                                           to_frame=to_frame,
