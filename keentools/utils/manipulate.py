@@ -16,7 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional, Dict, List
+import numpy as np
+from typing import Optional, Dict, List, Any
 
 import bpy
 from bpy.types import Object, Area
@@ -28,6 +29,7 @@ from .localview import (enter_area_localview,
                         check_area_active_problem)
 from .ui_redraw import get_areas_by_type
 from .bpy_common import operator_with_context, bpy_background_mode
+from .version import BVersion
 
 
 _log = KTLogger(__name__)
@@ -169,3 +171,37 @@ def select_objects_only(obj_list: List[Object]) -> None:
     if len(obj_list) > 0 and selected >=0:
         bpy.context.view_layer.objects.active = obj_list[selected]
     _log.output('select_objects_only end >>>')
+
+
+def get_selected_uvmap_vertices(obj: Object) -> Any:
+    mesh = obj.data
+    if not BVersion.uv_data_select_deprecated:
+        uvmap = mesh.uv_layers.active.data
+        selected = np.empty(len(uvmap), dtype=np.bool_)
+        uvmap.foreach_get('select', selected)
+        return selected
+
+    # With UV Sync on the selection lives in the mesh, not in .uv_select_vert.
+    if bpy.context.scene.tool_settings.use_uv_select_sync:
+        selected = np.empty(len(mesh.vertices), dtype=np.bool_)
+        mesh.vertices.foreach_get('select', selected)
+    else:
+        selected = np.zeros(len(mesh.loops), dtype=np.bool_)
+        uv_select_attr = mesh.attributes.get('.uv_select_vert')
+        if uv_select_attr is not None:
+            uv_select_attr.data.foreach_get('value', selected)
+    return selected
+
+
+def select_all_uvmap_vertices(obj: Object) -> None:
+    if not BVersion.uv_data_select_deprecated:
+        uvmap = obj.data.uv_layers.active.data
+        uvmap.foreach_set('select', [True] * len(uvmap))
+    else:
+        mesh = obj.data
+        uv_select_attr = mesh.attributes.get('.uv_select_vert')
+        if uv_select_attr is None:
+            uv_select_attr = mesh.attributes.new('.uv_select_vert',
+                                                 'BOOLEAN', 'CORNER')
+        selected = np.ones(len(uv_select_attr.data), dtype=np.bool_)
+        uv_select_attr.data.foreach_set('value', selected)
