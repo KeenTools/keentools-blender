@@ -63,6 +63,8 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from ...utils.manipulate import (force_undo_push,
                                  select_object_only,
                                  select_objects_only,
+                                 select_all_uvmap_vertices,
+                                 get_selected_uvmap_vertices,
                                  center_viewport,
                                  switch_to_mode)
 from .prechecks import (common_checks,
@@ -1150,16 +1152,7 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     switch_to_mode('EDIT')
     bpy.ops.uv.select_overlap()
     switch_to_mode('OBJECT')
-
-    if not BVersion.uv_data_select_deprecated:
-        uvmap = obj.data.uv_layers.active.data
-        selected = np.empty((len(uvmap),), dtype=np.bool_)
-        uvmap.foreach_get('select', selected.ravel())
-    else:
-        uv_select_attr = obj.data.attributes.get('.uv_select_vert')
-        selected = np.empty(len(obj.data.loops), dtype=np.bool_)
-        uv_select_attr.data.foreach_get('value', selected)
-
+    selected = get_selected_uvmap_vertices(obj)
     switch_to_mode(old_mode)
     if np.any(selected):
         return ActionStatus(False, 'Overlapping UVs detected')
@@ -1207,13 +1200,11 @@ def repack_uv_action(*, product: int) -> ActionStatus:
     select_object_only(geomobj)
 
     mesh = geomobj.data
-    uv_layer = mesh.uv_layers.active
-    if not uv_layer :
-        uv_layer = mesh.uv_layers.new()
-    uvmap = uv_layer.data
+    if not mesh.uv_layers.active:
+        mesh.uv_layers.new()
 
     mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
-    uvmap.foreach_set('select', [True] * len(uvmap))
+    select_all_uvmap_vertices(geomobj)
     _log.output('repack_uv_action all polygons are selected')
 
     _log.output(f'repack_uv_action mode: {old_mode}')
