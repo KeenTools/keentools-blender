@@ -1127,7 +1127,7 @@ def core_lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
 
     float calcAntialiasing(float d, float width, float filterRad)
     {
-        return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
+        return clamp(0.5 + (width * 0.5 - d) / (2.0 * filterRad), 0.0, 1.0);
     }
 
     vec3 evaluatePointLight(vec3 color, vec3 normal, vec3 lightPos, vec3 fragPos)
