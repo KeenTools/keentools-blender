@@ -291,13 +291,14 @@ def bake_wireframe_sequence(area: Area, geotracker: Any, filepath_pattern: str,
     wireframer = get_wireframer(product)
     wireframer.set_line_width(line_width)
     wireframer.init_shaders()
+    opacity = line_color[3] if len(line_color) > 3 else 1.0
     if product == ProductType.GEOTRACKER:
         wireframer.init_color_data(inverse_gamma_color(list(line_color)))
     elif product == ProductType.FACETRACKER:
         wireframer.init_colors([inverse_gamma_color(list(line_color)),
                                 inverse_gamma_color(list(special_color)),
                                 inverse_gamma_color(list(midline_color))],
-                               settings.wireframe_opacity)
+                               opacity)
         wireframer.init_wireframe_image(show_specials)
     wireframer.set_lit_wireframe(lit_wireframe)
     wireframer.set_backface_culling(backface_culling)
