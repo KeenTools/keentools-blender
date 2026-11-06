@@ -174,11 +174,10 @@ def setup_mask_file_output(scene: Scene) -> bool:
     file_node.file_output_items[0].name = \
         GTConfig.gt_rendered_mask_file_item_name
 
-    # Linear float data like in Viewer node, no view transform
     file_format = file_node.format
     file_format.media_type = 'IMAGE'
     file_format.file_format = 'OPEN_EXR'
-    file_format.color_mode = 'RGB'
+    file_format.color_mode = 'BW'
     file_format.color_depth = '32'
     file_format.exr_codec = 'ZIP'
     file_node.save_as_render = False
