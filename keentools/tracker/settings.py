@@ -46,8 +46,7 @@ from ..utils.version import BVersion
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  setup_mask_file_output,
-                                 rendered_mask_to_image,
-                                 get_rendered_mask_bpy_image)
+                                 get_rendered_mask_image)
 from ..geotracker.ui_strings import PrecalcStatusMessage
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -88,7 +87,7 @@ class TrackerItem(PropertyGroup):
         return 'NONE'
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
-                                recreate_nodes: bool=False) -> Image:
+                                recreate_nodes: bool=False) -> Optional[Image]:
         _log.output(f'update_compositing_mask enter. '
                     f'recreate_nodes={recreate_nodes}')
         shadow_scene = get_compositing_shadow_scene(
@@ -102,9 +101,7 @@ class TrackerItem(PropertyGroup):
             if BVersion.viewer_node_not_updated_on_render:
                 setup_mask_file_output(shadow_scene)
             bpy_render_single_frame(shadow_scene, frame_at)
-        mask_image = get_rendered_mask_bpy_image(
-            GTConfig.gt_rendered_mask_image_name)
-        rendered_mask_to_image(mask_image)
+        mask_image = get_rendered_mask_image()
         _log.output('update_compositing_mask exit')
         return mask_image
 

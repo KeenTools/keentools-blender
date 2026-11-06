@@ -208,24 +208,21 @@ def _load_rendered_mask_file_image(file_path: str) -> Optional[Image]:
     return img
 
 
-def file_output_to_image(img: Image) -> bool:
-    file_img = _load_rendered_mask_file_image(rendered_mask_file_path())
-    _log.output(f'file_output_to_image: {file_img}')
-    if file_img is None:
-        return False
-    fw, fh = file_img.size[:]
-    rw, rh = bpy_render_frame()
-    if fw != rw or fh != rh or file_img.channels != img.channels:
-        _log.output(f'file_output_to_image sizes: {fw, fh, rw, rh} '
-                    f'channels: {file_img.channels, img.channels}')
-        return False
-    copy_pixels_data(file_img.pixels, img.pixels)
-    return True
+def _get_rendered_mask_image_old() -> Image:
+    mask_image = get_rendered_mask_bpy_image(
+        GTConfig.gt_rendered_mask_image_name)
+    viewer_node_to_image(mask_image)
+    return mask_image
 
 
-rendered_mask_to_image: Callable[[Image], bool] = (
-    file_output_to_image if BVersion.viewer_node_not_updated_on_render
-    else viewer_node_to_image)
+def _get_rendered_mask_image_new() -> Optional[Image]:
+    return _load_rendered_mask_file_image(rendered_mask_file_path())
+
+
+get_rendered_mask_image: Callable[[], Optional[Image]] = (
+    _get_rendered_mask_image_new
+    if BVersion.viewer_node_not_updated_on_render
+    else _get_rendered_mask_image_old)
 
 
 def get_rendered_mask_bpy_image(img_name: str) -> Image:
