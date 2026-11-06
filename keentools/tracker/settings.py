@@ -42,9 +42,11 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_render_single_frame,
                                 get_scene_camera_shift,
                                 bpy_object_is_in_scene)
+from ..utils.version import BVersion
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
-                                 viewer_node_to_image,
+                                 setup_mask_file_output,
+                                 rendered_mask_to_image,
                                  get_rendered_mask_bpy_image)
 from ..geotracker.ui_strings import PrecalcStatusMessage
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -97,10 +99,12 @@ class TrackerItem(PropertyGroup):
                                               clear_nodes=True)
         frame_at = frame if frame is not None else bpy_current_frame()
         if recreate_nodes or self.compositing_mask != '':
+            if BVersion.viewer_node_not_updated_on_render:
+                setup_mask_file_output(shadow_scene)
             bpy_render_single_frame(shadow_scene, frame_at)
         mask_image = get_rendered_mask_bpy_image(
             GTConfig.gt_rendered_mask_image_name)
-        viewer_node_to_image(mask_image)
+        rendered_mask_to_image(mask_image)
         _log.output('update_compositing_mask exit')
         return mask_image
 

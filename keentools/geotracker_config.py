@@ -200,6 +200,12 @@ class GTConfig:
     gt_background_mask_name = 'geotracker_mask'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
+
+    gt_mask_file_output_node_name = 'gt_mask_file_output'
+    gt_rendered_mask_file_prefix = 'gt_rendered_'
+    gt_rendered_mask_file_item_name = 'mask'
+    gt_rendered_mask_file_image_name = 'gt_rendered_mask_file'
+
     gt_precalc_folder = f'/tmp{os.path.sep}kt_analysis{os.path.sep}'
 
     tex_builder_filename_template = '{}_baked_tex'
