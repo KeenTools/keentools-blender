@@ -232,7 +232,8 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                 tex = create_compatible_bpy_image(built_texture)
             tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
             tex.file_format = file_format
-            assign_pixels_data(tex.pixels, built_texture.T.ravel() / 255)
+            assign_pixels_data(tex.pixels,
+                               built_texture.ravel(order='K') / 255)
             tex.save()
             _log.info(f'TEXTURE SAVED: {tex.filepath}')
 
