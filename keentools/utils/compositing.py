@@ -307,10 +307,14 @@ def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
                                                 'gt_background_image',
                                                 'IMAGE',
                                                 'CompositorNodeImage')
-    node_tree.links.new(node_bg_image.outputs['Image'],
-                        node_alpha_over.inputs[1])  # Image1 socket
-    node_tree.links.new(node_rlayers.outputs['Image'],
-                        node_alpha_over.inputs[2])  # Image2 socket
+    inputs = node_alpha_over.inputs
+    # Image1 and Image2 sockets are renamed and moved in new Blender versions
+    background_input = inputs['Background'] \
+        if 'Background' in inputs else inputs[1]
+    foreground_input = inputs['Foreground'] \
+        if 'Foreground' in inputs else inputs[2]
+    node_tree.links.new(node_bg_image.outputs['Image'], background_input)
+    node_tree.links.new(node_rlayers.outputs['Image'], foreground_input)
     node_tree.links.new(node_alpha_over.outputs['Image'], composite_input)
     if node_alpha_over.location[0] == node_bg_image.location[0]:
         node_alpha_over.location[0] += 200  # offset to avoid overlapping
