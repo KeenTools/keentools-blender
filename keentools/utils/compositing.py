@@ -102,6 +102,14 @@ def _ensure_single_output_socket(node_tree: Any) -> None:
         node_tree.interface.remove(item)
 
 
+def _ensure_output_socket(node_tree: Any) -> None:
+    outputs = [item for item in node_tree.interface.items_tree
+               if item.item_type == 'SOCKET' and item.in_out == 'OUTPUT']
+    if len(outputs) == 0:
+        node_tree.interface.new_socket('Image', in_out='OUTPUT',
+                                       socket_type='NodeSocketColor')
+
+
 def create_mask_compositing_node_tree(scene: Scene, mask_name: str,
                                       clear_nodes: bool=True) -> None:
     mask = get_mask_by_name(mask_name)
@@ -282,10 +290,15 @@ def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
                                                 'Render Layers',
                                                 'R_LAYERS',
                                                 'CompositorNodeRLayers')
-    node_composite = _get_node_by_type_or_by_name(node_tree,
-                                                  'Composite',
-                                                  'COMPOSITE',
-                                                  'CompositorNodeComposite')
+    if not BVersion.node_tree_api_changes:
+        node_composite = _get_node_by_type_or_by_name(
+            node_tree, 'Composite', 'COMPOSITE', 'CompositorNodeComposite')
+        composite_input = node_composite.inputs['Image']
+    else:
+        _ensure_output_socket(node_tree)
+        node_composite = _get_node_by_type_or_by_name(
+            node_tree, 'Group Output', 'GROUP_OUTPUT', 'NodeGroupOutput')
+        composite_input = node_composite.inputs[0]
     node_alpha_over = _get_node_by_name_or_create(node_tree,
                                                   'gt_alpha_over',
                                                   'ALPHAOVER',
@@ -298,8 +311,7 @@ def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
                         node_alpha_over.inputs[1])  # Image1 socket
     node_tree.links.new(node_rlayers.outputs['Image'],
                         node_alpha_over.inputs[2])  # Image2 socket
-    node_tree.links.new(node_alpha_over.outputs['Image'],
-                        node_composite.inputs['Image'])
+    node_tree.links.new(node_alpha_over.outputs['Image'], composite_input)
     if node_alpha_over.location[0] == node_bg_image.location[0]:
         node_alpha_over.location[0] += 200  # offset to avoid overlapping
     return node_bg_image
@@ -317,8 +329,12 @@ def revert_default_compositing(scene: Scene) -> bool:
     else:
         node_rlayers = get_node_by_name(nodes, name)
 
-    name = 'Composite'
-    node_type = 'COMPOSITE'
+    if not BVersion.node_tree_api_changes:
+        name = 'Composite'
+        node_type = 'COMPOSITE'
+    else:
+        name = 'Group Output'
+        node_type = 'GROUP_OUTPUT'
     nodes = get_nodes_by_type(node_tree.nodes, node_type)
     if len(nodes) == 0:
         node_composite = None
@@ -330,13 +346,18 @@ def revert_default_compositing(scene: Scene) -> bool:
     if node_composite is None:
         return False
 
+    if not BVersion.node_tree_api_changes:
+        composite_input = node_composite.inputs['Image']
+    else:
+        _ensure_output_socket(node_tree)
+        composite_input = node_composite.inputs[0]
+
     if node_rlayers is not None:
-        node_tree.links.new(node_rlayers.outputs['Image'],
-                            node_composite.inputs['Image'])
+        node_tree.links.new(node_rlayers.outputs['Image'], composite_input)
     else:
         for link in node_tree.links:
             if link.to_node == node_composite \
-                    and link.to_socket == node_composite.inputs['Image']:
+                    and link.to_socket == composite_input:
                 node_tree.links.remove(link)
         return False
     return True
