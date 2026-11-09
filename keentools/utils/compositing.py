@@ -72,12 +72,21 @@ def create_compositing_shadow_scene(src_scene: Scene, scene_name: str,
     return shadow_scene
 
 
+def _set_cpu_compositor_device(scene: Scene) -> None:
+    # Mask is rendered faster by CPU compositor than by GPU one
+    render = scene.render
+    if hasattr(render, 'compositor_device') \
+            and render.compositor_device != 'CPU':
+        render.compositor_device = 'CPU'
+
+
 def get_compositing_shadow_scene(scene_name: str) -> Scene:
     shadow_scene = get_scene_by_name(scene_name)
     if shadow_scene is None:
         _log.output(_log.color('cyan', 'get_compositing_shadow_scene create!'))
         shadow_scene = create_compositing_shadow_scene(
             bpy_scene(), scene_name, mask_name='')  # Scene with empty mask
+    _set_cpu_compositor_device(shadow_scene)
     return shadow_scene
 
 
