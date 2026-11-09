@@ -224,6 +224,13 @@ get_rendered_mask_image: Callable[[], Optional[Image]] = (
     else _get_rendered_mask_image_old)
 
 
+def find_rendered_mask_image() -> Optional[Image]:
+    return find_bpy_image_by_name(
+        GTConfig.gt_rendered_mask_file_image_name
+        if BVersion.viewer_node_not_updated_on_render
+        else GTConfig.gt_rendered_mask_image_name)
+
+
 def get_rendered_mask_bpy_image(img_name: str) -> Image:
     _log.output(f'get_rendered_mask_bpy_image: {img_name}')
     rw, rh = bpy_render_frame()
