@@ -38,7 +38,8 @@ from ...utils.bpy_common import (bpy_render_frame,
                                  bpy_current_frame,
                                  update_depsgraph,
                                  bpy_background_mode,
-                                 bpy_timer_register)
+                                 bpy_timer_register,
+                                 evaluated_object)
 from ...tracker.class_loader import KTClassLoader
 from ...utils.timer import RepeatTimer
 from .prechecks import common_checks, prepare_camera
@@ -50,6 +51,12 @@ from ...preferences.operators import get_product_license_manager
 
 
 _log = KTLogger(__name__)
+
+
+def _background_frame_is_drawn(camobj: Any) -> bool:
+    image_user = camobj.data.background_images[0].image_user
+    drawn_user = evaluated_object(camobj).data.background_images[0].image_user
+    return drawn_user.frame_current == image_user.frame_current
 
 
 class PrecalcTimer(CalcTimer):
@@ -146,6 +153,16 @@ class PrecalcTimer(CalcTimer):
 
             np_img = np_array_from_bpy_image(img)
             bpy.data.images.remove(img)
+
+        elif not bpy_background_mode() \
+                and not _background_frame_is_drawn(geotracker.camobj):
+            msg = f'Cannot load image at frame: {current_frame}' \
+                  f'\nPlease do not minimize or switch away' \
+                  f'\nfrom Blender window during clip analysis.'
+            show_warning_dialog(msg)
+            self.set_error_message(msg)
+            self.set_current_state(self.finish_error_state)
+            return self.current_state()
 
         self._runner.fulfill_loading_request(np_img[:, :, :3])
         return self._interval
