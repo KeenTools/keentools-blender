@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Any, List, Optional, Tuple
 
-from bpy.types import Object, Area, SpaceView3D
+from bpy.types import Object, Area, SpaceView3D, Image
 import gpu
 
 from ..utils.kt_logging import KTLogger
@@ -10,7 +10,8 @@ from ..utils.version import BVersion
 from ..utils.bpy_common import (bpy_context,
                                 bpy_set_current_frame,
                                 bpy_render_frame,
-                                bpy_timer_register)
+                                bpy_timer_register,
+                                bpy_load_image)
 from ..utils.mesh_builder import build_geo
 from ..utils.images import (create_compatible_bpy_image,
                             assign_pixels_data,
@@ -136,6 +137,23 @@ def get_background_shader() -> Any:
     return _background_shader
 
 
+def _sequence_gpu_texture_is_empty(image: Optional[Image]) -> bool:
+    ''' Blender 5.3 creates 1x1 GPU texture for image sequence '''
+    if not BVersion.image_sequence_gpu_texture_bug or image is None \
+            or image.source != 'SEQUENCE':
+        return False
+    texture = gpu.texture.from_image(image)
+    return texture.width == 1 and texture.height == 1
+
+
+def _load_sequence_frame_image(camobj: Object, image: Image) -> Image:
+    image_user = camobj.data.background_images[0].image_user
+    frame_image = bpy_load_image(
+        image.filepath_from_user(image_user=image_user))
+    frame_image.colorspace_settings.name = image.colorspace_settings.name
+    return frame_image
+
+
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                    *, file_format: str = 'PNG', frames: List[int],
                    digits: int = 4, product: int, use_background: bool) -> Any:
@@ -145,6 +163,9 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                                       product=product)
         if tex is not None:
             remove_bpy_image(tex)
+        if frame_image is not None:
+            get_wireframer(product).background.image = None
+            remove_bpy_image(frame_image)
         if not settings.pinmode:
             settings.viewport_state.show_ui_elements(area)
             exit_area_localview(area)
@@ -161,6 +182,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     _log.cyan('WIREFRAME_BAKING_START')
 
     tex = None
+    frame_image = None
     total_frames = len(frames)
     for num, frame in enumerate(frames):
         if settings.user_interrupts:
@@ -205,9 +227,15 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             _log.cyan('wireframer.create_batches1')
             wireframer.create_batches()
             _log.cyan('wireframer.create_batches2')
-            wireframer.background.image = (None if not use_background else
-                                           get_background_image_strict(camobj,
-                                                                   index=0))
+            if frame_image is not None:
+                remove_bpy_image(frame_image)
+                frame_image = None
+            background = (None if not use_background else
+                          get_background_image_strict(camobj, index=0))
+            if _sequence_gpu_texture_is_empty(background):
+                frame_image = _load_sequence_frame_image(camobj, background)
+                background = frame_image
+            wireframer.background.image = background
             _log.cyan('offscreen.bind')
             with offscreen.bind():
                 set_depth_mask(True)
