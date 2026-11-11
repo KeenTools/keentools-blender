@@ -152,6 +152,19 @@ class FB_OT_PinMode(Operator):
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
+    def _warn_non_default_sensor(self, camobj: Any) -> None:
+        sensor_width = camobj.data.sensor_width
+        if abs(sensor_width - FBConfig.default_sensor_width) < 0.001:
+            return
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=f'Camera "{camobj.name}" has Sensor Width '
+                         f'{sensor_width:g} mm.\n'
+                         f'FaceBuilder expects '
+                         f'{FBConfig.default_sensor_width:g} mm, '
+                         f'otherwise pins\n'
+                         f'do not match the image.')
+
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
         settings = fb_settings()
@@ -509,6 +522,8 @@ class FB_OT_PinMode(Operator):
 
         if settings.preferences().prevent_view_rotation:
             facebuilder_keymaps_register()
+
+        self._warn_non_default_sensor(camera.camobj)
 
         if first_start:
             if (len(head.cameras) == 1 and not camera.has_pins()) or self.detect_face:
