@@ -41,7 +41,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 bpy_render_single_frame,
                                 get_scene_camera_shift,
-                                bpy_object_is_in_scene)
+                                bpy_object_is_in_scene,
+                                evaluated_mesh)
 from ..utils.version import BVersion
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
@@ -228,7 +229,8 @@ class TrackerItem(PropertyGroup):
             _log.output('check_pins_on_geometry 1 end >>>')
             return False
 
-        verts_count = len(geomobj.data.vertices)
+        mesh = evaluated_mesh(geomobj)
+        verts_count = len(mesh.vertices)
 
         keyframes = gt.keyframes()
         if len(keyframes) == 0:
@@ -236,7 +238,6 @@ class TrackerItem(PropertyGroup):
             _log.output('check_pins_on_geometry 2 end >>>')
             return False
 
-        mesh = geomobj.data
         poly_set_list: List[Set] = []
 
         if deep_analyze:
