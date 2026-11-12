@@ -152,6 +152,10 @@ def bpy_abspath(file_path: str) -> str:
     return bpy.path.abspath(file_path)
 
 
+def bpy_tempdir() -> str:
+    return bpy.app.tempdir
+
+
 def bpy_set_render_frame(rx: int, ry: int) -> None:
     scene = bpy.context.scene
     scene.render.resolution_x = rx

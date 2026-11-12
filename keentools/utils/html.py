@@ -72,6 +72,10 @@ def parse_html(html: str) -> Any:
 
 
 def split_long_string(txt: str, limit: int) -> List[str]:
+    lines = txt.split('\n')
+    if len(lines) > 1:
+        return [part for line in lines
+                for part in split_long_string(line, limit)]
     if len(txt) < limit:
         return [txt]
     start = 0

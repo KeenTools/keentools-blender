@@ -44,7 +44,7 @@ from ..utils.bpy_common import (bpy_current_frame,
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
-                            np_threshold_image,
+                            np_threshold_single_channel_image,
                             np_threshold_image_with_channels,
                             np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
@@ -246,8 +246,8 @@ class Mask2DInput(pkt_module().Mask2DInputI):
         if np_img is None:
             _log.output('NO COMP MASK IMAGE')
             return None
-        grayscale = np_threshold_image(np_img,
-                                       geotracker.compositing_mask_threshold)
+        grayscale = np_threshold_single_channel_image(
+            np_img[:, :, 0], geotracker.compositing_mask_threshold)
         _log.output(f'COMP MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
         return pkt_module().LoadedMask(grayscale,
                                        geotracker.compositing_mask_inverted)

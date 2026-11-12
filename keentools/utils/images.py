@@ -62,7 +62,9 @@ get_pixels_data: Callable = _get_pixels_data_new \
 
 
 def _copy_pixels_data_new(src_pixels: Any, dst_pixels: Any) -> None:
-    dst_pixels.foreach_set(src_pixels[:])
+    data = np.empty(len(src_pixels), dtype=np.float32)
+    src_pixels.foreach_get(data)
+    dst_pixels.foreach_set(data)
 
 
 def _copy_pixels_data_old(src_pixels: Any, dst_pixels: Any) -> None:
