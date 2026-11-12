@@ -294,6 +294,8 @@ class FB_OT_PinMode(Operator):
             return {'PASS_THROUGH'}
 
         pins = vp.pins()
+        self._set_shift_pressed(event.shift)
+        pins.set_add_selection_mode(event.shift)
         if not pins.get_add_selection_mode():
             op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
