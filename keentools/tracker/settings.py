@@ -41,16 +41,37 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 bpy_render_single_frame,
                                 get_scene_camera_shift,
-                                bpy_object_is_in_scene)
+                                bpy_object_is_in_scene,
+                                evaluated_mesh)
+from ..utils.version import BVersion
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
-                                 viewer_node_to_image,
-                                 get_rendered_mask_bpy_image)
+                                 setup_mask_file_output,
+                                 get_rendered_mask_image,
+                                 find_rendered_mask_image)
 from ..geotracker.ui_strings import PrecalcStatusMessage
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 _log = KTLogger(__name__)
+
+
+class _RenderedMaskCache:
+    _enabled: bool = False
+    _key: Optional[Tuple[str, int]] = None
+
+    @classmethod
+    def reset(cls, *, enabled: bool) -> None:
+        cls._enabled = enabled
+        cls._key = None
+
+    @classmethod
+    def has(cls, mask_name: str, frame: int) -> bool:
+        return cls._enabled and cls._key == (mask_name, frame)
+
+    @classmethod
+    def store(cls, mask_name: str, frame: int, *, valid: bool) -> None:
+        cls._key = (mask_name, frame) if cls._enabled and valid else None
 
 
 class FrameListItem(PropertyGroup):
@@ -86,21 +107,33 @@ class TrackerItem(PropertyGroup):
         return 'NONE'
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
-                                recreate_nodes: bool=False) -> Image:
+                                recreate_nodes: bool=False) -> Optional[Image]:
         _log.output(f'update_compositing_mask enter. '
                     f'recreate_nodes={recreate_nodes}')
+        frame_at = frame if frame is not None else bpy_current_frame()
+        if not recreate_nodes and self.compositing_mask != '' \
+                and _RenderedMaskCache.has(self.compositing_mask, frame_at):
+            mask_image = find_rendered_mask_image()
+            if mask_image is not None:
+                _log.output(f'update_compositing_mask cached: {frame_at}')
+                return mask_image
+
         shadow_scene = get_compositing_shadow_scene(
             GTConfig.gt_shadow_compositing_scene_name)
         if recreate_nodes:
             create_mask_compositing_node_tree(shadow_scene,
                                               self.compositing_mask,
                                               clear_nodes=True)
-        frame_at = frame if frame is not None else bpy_current_frame()
+        rendered = False
         if recreate_nodes or self.compositing_mask != '':
+            if BVersion.viewer_node_not_updated_on_render:
+                setup_mask_file_output(shadow_scene)
             bpy_render_single_frame(shadow_scene, frame_at)
-        mask_image = get_rendered_mask_bpy_image(
-            GTConfig.gt_rendered_mask_image_name)
-        viewer_node_to_image(mask_image)
+            rendered = True
+        mask_image = get_rendered_mask_image()
+        if rendered:
+            _RenderedMaskCache.store(self.compositing_mask, frame_at,
+                                     valid=mask_image is not None)
         _log.output('update_compositing_mask exit')
         return mask_image
 
@@ -196,7 +229,8 @@ class TrackerItem(PropertyGroup):
             _log.output('check_pins_on_geometry 1 end >>>')
             return False
 
-        verts_count = len(geomobj.data.vertices)
+        mesh = evaluated_mesh(geomobj)
+        verts_count = len(mesh.vertices)
 
         keyframes = gt.keyframes()
         if len(keyframes) == 0:
@@ -204,7 +238,6 @@ class TrackerItem(PropertyGroup):
             _log.output('check_pins_on_geometry 2 end >>>')
             return False
 
-        mesh = geomobj.data
         poly_set_list: List[Set] = []
 
         if deep_analyze:
@@ -446,9 +479,11 @@ class TRSceneSetting(PropertyGroup):
 
     def start_calculating(self, mode: str) -> None:
         self.calculating_mode = mode
+        _RenderedMaskCache.reset(enabled=mode == 'TRACKING')
 
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'
+        _RenderedMaskCache.reset(enabled=False)
 
     def is_calculating(self, mode: Optional[str] = None) -> bool:
         if mode is None:

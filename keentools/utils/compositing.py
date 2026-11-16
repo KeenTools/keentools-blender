@@ -16,17 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional, List, Any
+import os
+from typing import Optional, List, Any, Callable
 
 from bpy.types import Image, Scene, Mask
 
 from ..utils.version import BVersion
+from ..geotracker_config import GTConfig
 from .kt_logging import KTLogger
 from .bpy_common import (bpy_new_scene,
                          bpy_new_image,
+                         bpy_load_image,
                          bpy_render_frame,
                          bpy_scene,
                          bpy_data,
+                         bpy_tempdir,
                          get_scene_by_name)
 from .images import copy_pixels_data, find_bpy_image_by_name, remove_bpy_image
 
@@ -68,12 +72,21 @@ def create_compositing_shadow_scene(src_scene: Scene, scene_name: str,
     return shadow_scene
 
 
+def _set_cpu_compositor_device(scene: Scene) -> None:
+    # Mask is rendered faster by CPU compositor than by GPU one
+    render = scene.render
+    if hasattr(render, 'compositor_device') \
+            and render.compositor_device != 'CPU':
+        render.compositor_device = 'CPU'
+
+
 def get_compositing_shadow_scene(scene_name: str) -> Scene:
     shadow_scene = get_scene_by_name(scene_name)
     if shadow_scene is None:
         _log.output(_log.color('cyan', 'get_compositing_shadow_scene create!'))
         shadow_scene = create_compositing_shadow_scene(
             bpy_scene(), scene_name, mask_name='')  # Scene with empty mask
+    _set_cpu_compositor_device(shadow_scene)
     return shadow_scene
 
 
@@ -87,6 +100,25 @@ def scene_node_tree(scene: Scene) -> Any:
     return scene.compositing_node_group
 
 
+def _ensure_single_output_socket(node_tree: Any) -> None:
+    outputs = [item for item in node_tree.interface.items_tree
+               if item.item_type == 'SOCKET' and item.in_out == 'OUTPUT']
+    if len(outputs) == 0:
+        node_tree.interface.new_socket('Socket', in_out='OUTPUT',
+                                       socket_type='NodeSocketColor')
+        return
+    for item in outputs[1:]:
+        node_tree.interface.remove(item)
+
+
+def _ensure_output_socket(node_tree: Any) -> None:
+    outputs = [item for item in node_tree.interface.items_tree
+               if item.item_type == 'SOCKET' and item.in_out == 'OUTPUT']
+    if len(outputs) == 0:
+        node_tree.interface.new_socket('Image', in_out='OUTPUT',
+                                       socket_type='NodeSocketColor')
+
+
 def create_mask_compositing_node_tree(scene: Scene, mask_name: str,
                                       clear_nodes: bool=True) -> None:
     mask = get_mask_by_name(mask_name)
@@ -98,8 +130,7 @@ def create_mask_compositing_node_tree(scene: Scene, mask_name: str,
         comp_node = node_tree.nodes.new(type='CompositorNodeComposite')
     else:
         comp_node = node_tree.nodes.new(type='NodeGroupOutput')
-        node_tree.interface.new_socket('Socket', in_out='OUTPUT',
-                                       socket_type='NodeSocketColor')
+        _ensure_single_output_socket(node_tree)
 
     mask_node = node_tree.nodes.new(type='CompositorNodeMask')
     viewer_node = node_tree.nodes.new(type='CompositorNodeViewer')
@@ -123,6 +154,98 @@ def viewer_node_to_image(img: Image) -> bool:
         return False
     copy_pixels_data(vn_img.pixels, img.pixels)
     return True
+
+
+def _get_mask_file_output_node(node_tree: Any) -> Any:
+    node = get_node_by_name(node_tree.nodes,
+                            GTConfig.gt_mask_file_output_node_name)
+    if node is None or node.bl_idname != 'CompositorNodeOutputFile':
+        node = node_tree.nodes.new(type='CompositorNodeOutputFile')
+        node.name = GTConfig.gt_mask_file_output_node_name
+        node.location = (200, -600)
+    return node
+
+
+def rendered_mask_file_path() -> str:
+    return os.path.join(bpy_tempdir(),
+                        f'{GTConfig.gt_rendered_mask_file_prefix}'
+                        f'{GTConfig.gt_rendered_mask_file_item_name}.exr')
+
+
+def setup_mask_file_output(scene: Scene) -> bool:
+    ''' Blender 5.3+ does not update Viewer node on render,
+        so the mask is written to a file in Blender session temp dir.
+        Path is set before every render because the node is saved
+        in .blend and its directory belongs to previous session. '''
+    node_tree = scene_node_tree(scene)
+    mask_nodes = [node for node in node_tree.nodes
+                  if node.bl_idname == 'CompositorNodeMask']
+    if len(mask_nodes) == 0:
+        _log.error('setup_mask_file_output: no Mask node')
+        return False
+
+    file_node = _get_mask_file_output_node(node_tree)
+    if len(file_node.file_output_items) == 0:
+        file_node.file_output_items.new(
+            'FLOAT', GTConfig.gt_rendered_mask_file_item_name)
+    file_node.file_output_items[0].name = \
+        GTConfig.gt_rendered_mask_file_item_name
+
+    file_format = file_node.format
+    file_format.media_type = 'IMAGE'
+    file_format.file_format = 'OPEN_EXR'
+    file_format.color_mode = 'BW'
+    file_format.color_depth = '32'
+    file_format.exr_codec = 'ZIP'
+    file_node.save_as_render = False
+    file_node.use_file_extension = True
+
+    file_node.directory = bpy_tempdir()
+    file_node.file_name = GTConfig.gt_rendered_mask_file_prefix
+    node_tree.links.new(mask_nodes[0].outputs[0], file_node.inputs[0])
+    return True
+
+
+def _load_rendered_mask_file_image(file_path: str) -> Optional[Image]:
+    if not os.path.exists(file_path):
+        _log.output(f'_load_rendered_mask_file_image no file: {file_path}')
+        return None
+    img = find_bpy_image_by_name(GTConfig.gt_rendered_mask_file_image_name)
+    if img is not None and img.source != 'FILE':
+        remove_bpy_image(img)
+        img = None
+    if img is None:
+        img = bpy_load_image(file_path)
+        img.name = GTConfig.gt_rendered_mask_file_image_name
+        return img
+    if img.filepath != file_path:
+        img.filepath = file_path
+    img.reload()
+    return img
+
+
+def _get_rendered_mask_image_old() -> Image:
+    mask_image = get_rendered_mask_bpy_image(
+        GTConfig.gt_rendered_mask_image_name)
+    viewer_node_to_image(mask_image)
+    return mask_image
+
+
+def _get_rendered_mask_image_new() -> Optional[Image]:
+    return _load_rendered_mask_file_image(rendered_mask_file_path())
+
+
+get_rendered_mask_image: Callable[[], Optional[Image]] = (
+    _get_rendered_mask_image_new
+    if BVersion.viewer_node_not_updated_on_render
+    else _get_rendered_mask_image_old)
+
+
+def find_rendered_mask_image() -> Optional[Image]:
+    return find_bpy_image_by_name(
+        GTConfig.gt_rendered_mask_file_image_name
+        if BVersion.viewer_node_not_updated_on_render
+        else GTConfig.gt_rendered_mask_image_name)
 
 
 def get_rendered_mask_bpy_image(img_name: str) -> Image:
@@ -176,10 +299,15 @@ def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
                                                 'Render Layers',
                                                 'R_LAYERS',
                                                 'CompositorNodeRLayers')
-    node_composite = _get_node_by_type_or_by_name(node_tree,
-                                                  'Composite',
-                                                  'COMPOSITE',
-                                                  'CompositorNodeComposite')
+    if not BVersion.node_tree_api_changes:
+        node_composite = _get_node_by_type_or_by_name(
+            node_tree, 'Composite', 'COMPOSITE', 'CompositorNodeComposite')
+        composite_input = node_composite.inputs['Image']
+    else:
+        _ensure_output_socket(node_tree)
+        node_composite = _get_node_by_type_or_by_name(
+            node_tree, 'Group Output', 'GROUP_OUTPUT', 'NodeGroupOutput')
+        composite_input = node_composite.inputs[0]
     node_alpha_over = _get_node_by_name_or_create(node_tree,
                                                   'gt_alpha_over',
                                                   'ALPHAOVER',
@@ -188,12 +316,15 @@ def create_nodes_for_rendering_with_background(scene: Scene) -> Any:
                                                 'gt_background_image',
                                                 'IMAGE',
                                                 'CompositorNodeImage')
-    node_tree.links.new(node_bg_image.outputs['Image'],
-                        node_alpha_over.inputs[1])  # Image1 socket
-    node_tree.links.new(node_rlayers.outputs['Image'],
-                        node_alpha_over.inputs[2])  # Image2 socket
-    node_tree.links.new(node_alpha_over.outputs['Image'],
-                        node_composite.inputs['Image'])
+    inputs = node_alpha_over.inputs
+    # Image1 and Image2 sockets are renamed and moved in new Blender versions
+    background_input = inputs['Background'] \
+        if 'Background' in inputs else inputs[1]
+    foreground_input = inputs['Foreground'] \
+        if 'Foreground' in inputs else inputs[2]
+    node_tree.links.new(node_bg_image.outputs['Image'], background_input)
+    node_tree.links.new(node_rlayers.outputs['Image'], foreground_input)
+    node_tree.links.new(node_alpha_over.outputs['Image'], composite_input)
     if node_alpha_over.location[0] == node_bg_image.location[0]:
         node_alpha_over.location[0] += 200  # offset to avoid overlapping
     return node_bg_image
@@ -211,8 +342,12 @@ def revert_default_compositing(scene: Scene) -> bool:
     else:
         node_rlayers = get_node_by_name(nodes, name)
 
-    name = 'Composite'
-    node_type = 'COMPOSITE'
+    if not BVersion.node_tree_api_changes:
+        name = 'Composite'
+        node_type = 'COMPOSITE'
+    else:
+        name = 'Group Output'
+        node_type = 'GROUP_OUTPUT'
     nodes = get_nodes_by_type(node_tree.nodes, node_type)
     if len(nodes) == 0:
         node_composite = None
@@ -224,13 +359,18 @@ def revert_default_compositing(scene: Scene) -> bool:
     if node_composite is None:
         return False
 
+    if not BVersion.node_tree_api_changes:
+        composite_input = node_composite.inputs['Image']
+    else:
+        _ensure_output_socket(node_tree)
+        composite_input = node_composite.inputs[0]
+
     if node_rlayers is not None:
-        node_tree.links.new(node_rlayers.outputs['Image'],
-                            node_composite.inputs['Image'])
+        node_tree.links.new(node_rlayers.outputs['Image'], composite_input)
     else:
         for link in node_tree.links:
             if link.to_node == node_composite \
-                    and link.to_socket == node_composite.inputs['Image']:
+                    and link.to_socket == composite_input:
                 node_tree.links.remove(link)
         return False
     return True

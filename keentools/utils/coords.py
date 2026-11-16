@@ -296,7 +296,7 @@ def blender_zoom_scale_factor(z: float) -> float:
     return (z * 0.01 + math.sqrt(0.5)) ** 2
 
 
-def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
+def get_camera_border_old(area: Area) -> Tuple[float, float, float, float]:
     if bpy_background_mode():
         context = get_fake_context()
         area = context.area
@@ -341,7 +341,42 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     return x1, y1, x2, y2
 
 
-def calc_camera_zoom_and_offset(
+def get_camera_border_new(area: Area) -> Tuple[float, float, float, float]:
+    if bpy_background_mode():
+        context = get_fake_context()
+        area = context.area
+
+    region = get_area_region(area)
+    assert region.type == 'WINDOW'
+    reg_w, reg_h = region.width, region.height
+
+    rv3d = get_area_region_3d(area)
+    z = rv3d.view_camera_zoom
+    f = blender_zoom_scale_factor(z)
+
+    render_aspect = bpy_render_aspect()
+
+    offset = (rv3d.view_camera_offset[0] * reg_w * 2 * f,
+              rv3d.view_camera_offset[1] * reg_h * 2 * f)
+
+    # Blender 5.3+: camera frame is fitted inside the viewport
+    # by render aspect, Camera Sensor Fit does not affect it
+    frame_w = f * min(reg_w, reg_h * render_aspect)
+    frame_h = frame_w / render_aspect
+
+    x1 = (reg_w - frame_w) * 0.5 - offset[0]
+    x2 = (reg_w + frame_w) * 0.5 - offset[0]
+    y1 = (reg_h - frame_h) * 0.5 - offset[1]
+    y2 = (reg_h + frame_h) * 0.5 - offset[1]
+    return x1, y1, x2, y2
+
+
+get_camera_border: Callable[[Area], Tuple[float, float, float, float]] = (
+    get_camera_border_new if BVersion.camera_frame_fit_to_render_aspect
+    else get_camera_border_old)
+
+
+def calc_camera_zoom_and_offset_old(
         area: Area, region_x1: float, region_y1: float,
         width: float) -> Tuple[float, Tuple[float, float]]:
     region = get_area_region(area)
@@ -369,6 +404,32 @@ def calc_camera_zoom_and_offset(
     offset = (offset_x / (reg_w * 2 * f),
               offset_y / (reg_h * 2 * f))
     return z, offset
+
+
+def calc_camera_zoom_and_offset_new(
+        area: Area, region_x1: float, region_y1: float,
+        width: float) -> Tuple[float, Tuple[float, float]]:
+    region = get_area_region(area)
+    reg_w, reg_h = region.width, region.height
+    render_asp = bpy_render_aspect()
+    kx = width / reg_w
+    # Blender 5.3+: camera frame is fitted inside the viewport
+    # by render aspect, Camera Sensor Fit does not affect it
+    f = width / min(reg_w, reg_h * render_asp)
+    ky = width / render_asp / reg_h
+    z = blender_zoom_formula(f)
+    offset_x = reg_w * 0.5 * (1.0 - kx) - region_x1
+    offset_y = reg_h * 0.5 * (1.0 - ky) - region_y1
+    offset = (offset_x / (reg_w * 2 * f),
+              offset_y / (reg_h * 2 * f))
+    return z, offset
+
+
+calc_camera_zoom_and_offset: Callable[
+    [Area, float, float, float], Tuple[float, Tuple[float, float]]] = (
+    calc_camera_zoom_and_offset_new
+    if BVersion.camera_frame_fit_to_render_aspect
+    else calc_camera_zoom_and_offset_old)
 
 
 def point_is_in_area(area: Area, x: float, y: float, *,

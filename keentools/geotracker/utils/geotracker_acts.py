@@ -1406,7 +1406,10 @@ def render_with_background_action(*, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     scene = bpy_scene()
-    scene.use_nodes = True
+    if BVersion.node_tree_api_changes:
+        scene.render.use_compositing = True
+    else:
+        scene.use_nodes = True
     scene.render.film_transparent = True
 
     bg_img = get_background_image_object(geotracker.camobj)
@@ -1446,7 +1449,10 @@ def revert_default_render_action(*, product: int) -> ActionStatus:
     if not img:
         return ActionStatus(False, 'Camera background is not initialized2')
     if not revert_default_compositing(scene):
-        scene.use_nodes = False
+        if BVersion.node_tree_api_changes:
+            scene.render.use_compositing = False
+        else:
+            scene.use_nodes = False
     bpy.ops.render.view_show('INVOKE_DEFAULT')
     bpy_render_single_frame(scene)
     _log.output('revert_default_render_action end >>>')
