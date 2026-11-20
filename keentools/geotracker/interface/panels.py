@@ -1065,8 +1065,12 @@ class GT_PT_RenderingPanel(AllVisible):
         col = box.column(align=True)
         col.prop(bpy_scene().render, 'film_transparent',
                  text='Transparent background')
-        col.prop(bpy_scene(), 'use_nodes',
-                 text='Use compositing nodes')
+        if BVersion.node_tree_api_changes:
+            col.prop(bpy_scene().render, 'use_compositing',
+                     text='Use compositing nodes')
+        else:
+            col.prop(bpy_scene(), 'use_nodes',
+                     text='Use compositing nodes')
 
 
 class GT_PT_SmoothingPanel(AllVisible):

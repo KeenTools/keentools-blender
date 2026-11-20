@@ -76,6 +76,9 @@ class BVersion:
     uv_data_select_deprecated: bool = ver >= (5, 0, 0)
     sequences_renamed_to_strips: bool = ver >= (5, 0, 0)
     separate_sequencer_scene: bool = ver >= (5, 0, 0)
+    camera_frame_fit_to_render_aspect: bool = ver >= (5, 3, 0)
+    viewer_node_not_updated_on_render: bool = ver >= (5, 3, 0)
+    image_sequence_gpu_texture_bug: bool = ver >= (5, 3, 0)
 
     pack_uv_problem_exists: bool = ver == (3, 6, 0)
 

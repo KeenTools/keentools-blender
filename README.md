@@ -6,6 +6,8 @@
 
 ## Release History
 
+2026.4.0 - 20 November 2026
+
 2026.3.1 - 20 August 2026
 
 2026.3.0 - 21 July 2026
